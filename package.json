@@ -1,0 +1,47 @@
+{
+  "name": "insurwallet-reconversion",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:rules": "vitest run firestore.rules.test.ts",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "prepare": "husky",
+    "emulators": "firebase emulators:start",
+    "emulators:exec": "firebase emulators:exec"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "firebase": "^11.3.0",
+    "lucide-react": "^1.17.0",
+    "next": "16.2.9",
+    "next-intl": "^4.13.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.4.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.4.0",
+    "prettier": "^3.5.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^3.0.0"
+  }
+}

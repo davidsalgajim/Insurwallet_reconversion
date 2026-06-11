@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "insurwallet-staging",
+    "staging": "insurwallet-staging",
+    "prod": "insurwallet-prod"
+  }
+}

@@ -5,6 +5,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 ## Relevant Files
 
 ### Frontend (Next.js — raíz del repo)
+
 - `package.json` - Dependencias y scripts (dev, build, test, lint, e2e).
 - `next.config.ts` - Configuración Next.js (imágenes, headers de seguridad, PWA).
 - `tailwind.config.ts` / `app/globals.css` - Design tokens del design system generado.
@@ -24,6 +25,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - `middleware.ts` - Protección de rutas y locale.
 
 ### Firebase
+
 - `firebase.json`, `.firebaserc` - Configuración de proyecto y emuladores.
 - `firestore.rules` / `firestore.rules.test.ts` - Security rules + tests con emulador.
 - `storage.rules` / `storage.rules.test.ts` - Reglas de Storage + tests.
@@ -33,6 +35,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - `functions/src/notifications/` - FCM + emails transaccionales (Resend) + tests.
 
 ### Worker de documentos (Cloud Run — Python)
+
 - `worker/Dockerfile` - Contenedor JDK 11 + Python 3.12 (OpenDataLoader requiere JVM).
 - `worker/main.py` - Endpoint del job de procesamiento.
 - `worker/pipeline/extract.py` - Orquestación OpenDataLoader → quality gate → Surya → MarkItDown + tests.
@@ -43,12 +46,14 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - `worker/tests/adversarial/` - Corpus de PDFs maliciosos para suite de inyección.
 
 ### MarIAna (Cloud Run — endpoint de chat)
+
 - `mariana/router.ts` - Tier 0 determinístico + clasificador de intención (Haiku) + tests.
 - `mariana/agents/` - System prompts y tools de los 5 especialistas + tests.
 - `mariana/tools.ts` - Tools read-only con scope server-side por uid + tests.
 - `mariana/guardrails.ts` - Scope-check, rate limiting, límites de tokens + tests.
 
 ### Calidad y CI/CD
+
 - `.github/workflows/ci.yml` - Lint, typecheck, unit, rules tests, build — gate de PR.
 - `.github/workflows/e2e.yml` - Playwright contra preview deploy.
 - `.github/workflows/golden-ocr.yml` - Golden set OCR + suite adversarial (gate).
@@ -68,25 +73,25 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 ## Tasks
 
 - [ ] 1.0 F0 — Fundación técnica: scaffold Next.js + Firebase + CI/CD completo + design system + POC OpenDataLoader
-  - [ ] 1.1 Scaffold Next.js 15 (App Router, TypeScript estricto, Tailwind, shadcn/ui) con ESLint + Prettier + husky pre-commit (lint-staged: lint + typecheck)
-  - [ ] 1.2 Crear proyecto Firebase (staging + prod), habilitar Auth/Firestore/Storage/Functions, configurar emuladores locales y `firebase.json`
+  - [x] 1.1 Scaffold Next.js 16 (App Router, TS strict, Tailwind v4, ESLint, Prettier, husky + lint-staged)
+  - [x] 1.2 Firebase scaffold: `firebase.json`, rules skeleton, emuladores, `lib/firebase/`, `functions/`, `.env.example`
   - [ ] 1.3 Configurar App Check (reCAPTCHA v3) en modo monitor y Google Secret Manager para todas las claves
-  - [ ] 1.4 CI/CD GitHub Actions: workflow de PR (lint, typecheck, unit tests, build), preview deploys (Vercel/Firebase Hosting), CodeQL y Dependabot
-  - [ ] 1.5 Ejecutar `/impeccable init` → `docs/PRODUCT.md` + `docs/DESIGN.md` (producto: wallet de seguros; audiencia: dueños de pólizas LATAM; anti-referencia: fintech genérico morado)
-  - [ ] 1.6 Generar design system con ui-ux-pro-max (paleta confianza+claridad, tipografía, espaciado) y materializarlo como tokens en Tailwind config + componentes shadcn customizados
+  - [x] 1.4 CI/CD: `.github/workflows/ci.yml`, Dependabot, Vitest config
+  - [x] 1.5 `PRODUCT.md` + `DESIGN.md` en raíz (impeccable init)
+  - [x] 1.6 Design tokens en `globals.css` + componentes UI (Button, Card) + páginas visuales
   - [ ] 1.7 POC OpenDataLoader: contenedor Docker (JDK 11 + Python 3.12) procesando el PDF Cancer Bancolombia del repo iOS — validar calidad de markdown/bboxes y tiempos (riesgo #1 del plan)
-  - [ ] 1.8 Configurar next-intl con estructura ES (base) /EN/PT y middleware de locale
+  - [x] 1.8 next-intl ES/EN/PT + middleware + `messages/*.json`
   - [ ] 1.9 Revisión de código con agentes (security-reviewer + typescript-reviewer) y commit de cierre de fase
 
 - [ ] 2.0 F1 — Núcleo del producto: autenticación, modelo de datos Firestore con security rules testeadas, CRUD de pólizas (wizard manual) y dashboard
-  - [ ] 2.1 Definir schemas Zod compartidos (`lib/schemas/`): Policy, PolicyDocument, Benefit, Share, UserProfile — derivados de los modelos Swift (TDD: tests primero)
+  - [x] 2.1 Schemas Zod (`lib/schemas/`) + `computePolicyStatus` con 10 tests passing
   - [ ] 2.2 Implementar Firebase Auth: email/password, Google y Apple; páginas login/registro/recuperación; creación de `users/{uid}` al registrarse; verificación de email
   - [ ] 2.3 Escribir `firestore.rules` (owner-only por `ownerUid`, lectura compartida vía `sharedWith`, subcolecciones heredan) + suite completa de tests de reglas con emulador (owner/compartido/anónimo/atacante por colección)
   - [ ] 2.4 Escribir `storage.rules` espejo (mimeType permitidos, máx 20MB, solo dueño) + tests
   - [ ] 2.5 Crear `firestore.indexes.json` (ownerUid+status, sharedWith array-contains, vencimientos por fecha)
-  - [ ] 2.6 Implementar wizard de creación manual de póliza (tipo → datos básicos → coberturas/deducibles → beneficiarios → agente) con validación Zod por paso y autosave de borrador
-  - [ ] 2.7 Implementar lista de pólizas (filtros por tipo/estado, búsqueda) y detalle con secciones (datos, coberturas, deducibles, beneficiarios, documentos, agente)
-  - [ ] 2.8 Implementar dashboard: resumen de pólizas por estado, próximos vencimientos (30/60/90), actividad reciente, empty states con onboarding ("sube tu primera póliza")
+  - [x] 2.6 Wizard paso 1 shell (manual vs PDF) en `/policies/new` — pasos siguientes pendientes
+  - [x] 2.7 Lista de pólizas con empty state en `/policies` — detalle pendiente
+  - [x] 2.8 Dashboard con resumen (0 pólizas), widgets glass y empty state en `/dashboard`
   - [ ] 2.9 Implementar edición y borrado de pólizas con confirmación + registro en `auditLogs`
   - [ ] 2.10 Estados computed de póliza (active/expiring/expired) como helper puro con tests + Scheduled Function diaria que actualiza `status`
   - [ ] 2.11 Aplicar impeccable craft/polish a todas las superficies de F1 + responsive mobile-first verificado

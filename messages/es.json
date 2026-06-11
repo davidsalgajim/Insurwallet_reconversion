@@ -1,0 +1,42 @@
+{
+  "common": {
+    "appName": "InsurWallet",
+    "tagline": "Todas tus pólizas en un solo lugar",
+    "login": "Iniciar sesión",
+    "register": "Crear cuenta",
+    "dashboard": "Inicio",
+    "policies": "Pólizas",
+    "mariana": "MarIAna",
+    "alerts": "Alertas",
+    "settings": "Perfil",
+    "getStarted": "Comenzar gratis"
+  },
+  "landing": {
+    "heroTitle": "Entiende tus seguros sin complicaciones",
+    "heroSubtitle": "Centraliza pólizas, sube documentos con IA y consulta a MarIAna cuando lo necesites.",
+    "feature1Title": "Todas tus pólizas",
+    "feature1Desc": "Vida, salud, auto, hogar y más en un solo dashboard.",
+    "feature2Title": "Lectura inteligente",
+    "feature2Desc": "Sube tu PDF y revisa los datos extraídos antes de guardar.",
+    "feature3Title": "MarIAna te asiste",
+    "feature3Desc": "Pregunta sobre coberturas, vencimientos o a quién llamar en emergencias."
+  },
+  "auth": {
+    "welcomeBack": "Bienvenido de nuevo",
+    "createAccount": "Crea tu cuenta",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "continueWithGoogle": "Continuar con Google"
+  },
+  "dashboard": {
+    "greeting": "Hola",
+    "summary": "Resumen",
+    "activePolicies": "Pólizas activas",
+    "expiringSoon": "Por vencer",
+    "totalPremium": "Prima mensual",
+    "upcoming": "Próximos vencimientos",
+    "emptyTitle": "Aún no tienes pólizas",
+    "emptyDesc": "Sube tu primera póliza en PDF o ingrésala manualmente.",
+    "addPolicy": "Agregar póliza"
+  }
+}

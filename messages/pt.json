@@ -1,0 +1,42 @@
+{
+  "common": {
+    "appName": "InsurWallet",
+    "tagline": "Todas as suas apólices em um só lugar",
+    "login": "Entrar",
+    "register": "Criar conta",
+    "dashboard": "Início",
+    "policies": "Apólices",
+    "mariana": "MarIAna",
+    "alerts": "Alertas",
+    "settings": "Perfil",
+    "getStarted": "Começar grátis"
+  },
+  "landing": {
+    "heroTitle": "Entenda seus seguros sem complicação",
+    "heroSubtitle": "Centralize apólices, envie documentos com IA e consulte a MarIAna quando precisar.",
+    "feature1Title": "Todas as suas apólices",
+    "feature1Desc": "Vida, saúde, auto, casa e mais em um só painel.",
+    "feature2Title": "Leitura inteligente",
+    "feature2Desc": "Envie seu PDF e revise os dados extraídos antes de salvar.",
+    "feature3Title": "MarIAna te ajuda",
+    "feature3Desc": "Pergunte sobre coberturas, vencimentos ou quem ligar em emergências."
+  },
+  "auth": {
+    "welcomeBack": "Bem-vindo de volta",
+    "createAccount": "Crie sua conta",
+    "email": "E-mail",
+    "password": "Senha",
+    "continueWithGoogle": "Continuar com Google"
+  },
+  "dashboard": {
+    "greeting": "Olá",
+    "summary": "Resumo",
+    "activePolicies": "Apólices ativas",
+    "expiringSoon": "A vencer",
+    "totalPremium": "Prêmio mensal",
+    "upcoming": "Próximos vencimentos",
+    "emptyTitle": "Ainda sem apólices",
+    "emptyDesc": "Envie sua primeira apólice em PDF ou cadastre manualmente.",
+    "addPolicy": "Adicionar apólice"
+  }
+}

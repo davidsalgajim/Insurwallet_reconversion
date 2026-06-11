@@ -1,0 +1,29 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "policies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "policies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "endDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "policies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sharedWith", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "endDate", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

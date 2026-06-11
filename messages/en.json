@@ -1,0 +1,42 @@
+{
+  "common": {
+    "appName": "InsurWallet",
+    "tagline": "All your policies in one place",
+    "login": "Log in",
+    "register": "Sign up",
+    "dashboard": "Home",
+    "policies": "Policies",
+    "mariana": "MarIAna",
+    "alerts": "Alerts",
+    "settings": "Profile",
+    "getStarted": "Get started free"
+  },
+  "landing": {
+    "heroTitle": "Understand your insurance without the hassle",
+    "heroSubtitle": "Centralize policies, upload documents with AI, and ask MarIAna when you need help.",
+    "feature1Title": "All your policies",
+    "feature1Desc": "Life, health, auto, home and more in one dashboard.",
+    "feature2Title": "Smart reading",
+    "feature2Desc": "Upload your PDF and review extracted data before saving.",
+    "feature3Title": "MarIAna assists you",
+    "feature3Desc": "Ask about coverages, renewals, or who to call in emergencies."
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create your account",
+    "email": "Email",
+    "password": "Password",
+    "continueWithGoogle": "Continue with Google"
+  },
+  "dashboard": {
+    "greeting": "Hello",
+    "summary": "Summary",
+    "activePolicies": "Active policies",
+    "expiringSoon": "Expiring soon",
+    "totalPremium": "Monthly premium",
+    "upcoming": "Upcoming renewals",
+    "emptyTitle": "No policies yet",
+    "emptyDesc": "Upload your first policy PDF or enter it manually.",
+    "addPolicy": "Add policy"
+  }
+}
