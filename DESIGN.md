@@ -4,17 +4,19 @@
 
 ## Design Read
 
-**Reading this as:** product UI (dashboard + wizard + chat) para dueños de pólizas LATAM, con lenguaje de confianza premium y continuidad iOS, con liquid glass en superficies flotantes y light mode por defecto.
+**Reading this as:** CRM-style product UI (dashboard bento + journey widgets + sidebar) para dueños de pólizas LATAM, con lenguaje premium tipo Customer Journey CRM Dashboard (Dribbble #24659454), continuidad iOS, light mode en app y navy en marketing.
+
+**Referencia visual:** [Customer Journey CRM Dashboard](https://dribbble.com/shots/24659454-Customer-Journey-CRM-Dashboard) — sidebar sólida, topbar con búsqueda, KPI cards elevadas, bento grid, journey steps, densidad profesional sin clutter.
 
 ## Atmosphere
 
-| Dial | Value | Rationale |
-|------|-------|-----------|
-| Design Variance | 6 | Producto serio; asimetría moderada en marketing, simetría funcional en app |
-| Motion Intensity | 5 | Micro-interacciones útiles; sin secuencias de carga teatrales |
-| Visual Density | 5 | Balance entre resumen dashboard y detalle de póliza |
+| Dial             | Value | Rationale                                                               |
+| ---------------- | ----- | ----------------------------------------------------------------------- |
+| Design Variance  | 7     | Bento asimétrico en dashboard; hero marketing con mockup de producto    |
+| Motion Intensity | 5     | Hover en cards, fade-up en dashboard; sin animaciones teatrales         |
+| Visual Density   | 6     | CRM: más información por pantalla, jerarquía clara, sin sensación vacía |
 
-**Mood:** Calm authority — azul confianza, superficies claras, profundidad sutil con glass en capas flotantes.
+**Mood:** Calm authority + enterprise polish — sidebar blanca, shell con dot-grid, cards elevadas, acentos semánticos.
 
 ## Color Strategy
 
@@ -22,42 +24,42 @@
 
 ### Primitives (from iOS `Theme.swift`)
 
-| Token | Hex | OKLCH (approx) | Role |
-|-------|-----|----------------|------|
-| `--primitive-navy` | `#0F1729` | oklch(18% 0.03 265) | Marketing hero, auth backdrop |
-| `--primitive-deep-blue` | `#1A2447` | oklch(24% 0.06 265) | Gradient stops |
-| `--primitive-accent` | `#407AFF` | oklch(62% 0.19 264) | Primary actions, links, selection |
-| `--primitive-accent-cyan` | `#00D1C7` | oklch(78% 0.12 185) | MarIAna, IA features only |
-| `--primitive-success` | `#33C773` | oklch(72% 0.17 155) | Active policies, confirmations |
-| `--primitive-warning` | `#FFB833` | oklch(82% 0.15 80) | Expiring soon |
-| `--primitive-danger` | `#F55252` | oklch(65% 0.20 25) | Expired, errors, destructive |
+| Token                     | Hex       | OKLCH (approx)      | Role                              |
+| ------------------------- | --------- | ------------------- | --------------------------------- |
+| `--primitive-navy`        | `#0F1729` | oklch(18% 0.03 265) | Marketing hero, auth backdrop     |
+| `--primitive-deep-blue`   | `#1A2447` | oklch(24% 0.06 265) | Gradient stops                    |
+| `--primitive-accent`      | `#407AFF` | oklch(62% 0.19 264) | Primary actions, links, selection |
+| `--primitive-accent-cyan` | `#00D1C7` | oklch(78% 0.12 185) | MarIAna, IA features only         |
+| `--primitive-success`     | `#33C773` | oklch(72% 0.17 155) | Active policies, confirmations    |
+| `--primitive-warning`     | `#FFB833` | oklch(82% 0.15 80)  | Expiring soon                     |
+| `--primitive-danger`      | `#F55252` | oklch(65% 0.20 25)  | Expired, errors, destructive      |
 
 ### Semantic (light mode — app default)
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--background` | `oklch(98% 0.005 250)` | App shell — cool off-white, NOT cream |
-| `--foreground` | `oklch(22% 0.03 265)` | Body text |
-| `--card` | `oklch(100% 0 0)` | Cards sólidos en formularios/tablas |
-| `--card-foreground` | `var(--foreground)` | |
-| `--muted` | `oklch(96% 0.008 250)` | Secondary surfaces |
-| `--muted-foreground` | `oklch(48% 0.02 250)` | Helper text — ≥4.5:1 on muted |
-| `--border` | `oklch(90% 0.01 250)` | Dividers |
-| `--primary` | `var(--primitive-accent)` | CTAs |
-| `--primary-foreground` | `#FFFFFF` | |
-| `--accent` | `var(--primitive-accent-cyan)` | MarIAna badge, IA chips |
-| `--accent-foreground` | `oklch(22% 0.03 265)` | |
-| `--destructive` | `var(--primitive-danger)` | |
-| `--ring` | `var(--primitive-accent)` | Focus rings 2px |
+| Token                  | Value                          | Usage                                 |
+| ---------------------- | ------------------------------ | ------------------------------------- |
+| `--background`         | `oklch(98% 0.005 250)`         | App shell — cool off-white, NOT cream |
+| `--foreground`         | `oklch(22% 0.03 265)`          | Body text                             |
+| `--card`               | `oklch(100% 0 0)`              | Cards sólidos en formularios/tablas   |
+| `--card-foreground`    | `var(--foreground)`            |                                       |
+| `--muted`              | `oklch(96% 0.008 250)`         | Secondary surfaces                    |
+| `--muted-foreground`   | `oklch(48% 0.02 250)`          | Helper text — ≥4.5:1 on muted         |
+| `--border`             | `oklch(90% 0.01 250)`          | Dividers                              |
+| `--primary`            | `var(--primitive-accent)`      | CTAs                                  |
+| `--primary-foreground` | `#FFFFFF`                      |                                       |
+| `--accent`             | `var(--primitive-accent-cyan)` | MarIAna badge, IA chips               |
+| `--accent-foreground`  | `oklch(22% 0.03 265)`          |                                       |
+| `--destructive`        | `var(--primitive-danger)`      |                                       |
+| `--ring`               | `var(--primitive-accent)`      | Focus rings 2px                       |
 
 ### Dark mode (marketing / auth / optional user toggle)
 
-| Token | Value |
-|-------|-------|
-| `--background` | `var(--primitive-navy)` |
-| `--foreground` | `oklch(96% 0.01 250)` |
-| `--card` | `oklch(22% 0.04 265 / 0.6)` | Glass-friendly |
-| `--muted` | `oklch(28% 0.04 265)` |
+| Token          | Value                       |
+| -------------- | --------------------------- | -------------- |
+| `--background` | `var(--primitive-navy)`     |
+| `--foreground` | `oklch(96% 0.01 250)`       |
+| `--card`       | `oklch(22% 0.04 265 / 0.6)` | Glass-friendly |
+| `--muted`      | `oklch(28% 0.04 265)`       |
 
 ### Banned
 
@@ -69,11 +71,11 @@
 
 ## Typography
 
-| Role | Family | Weight | Notes |
-|------|--------|--------|-------|
-| Sans (UI) | **Plus Jakarta Sans** | 400–700 | Headings + body; cercano a SF Pro en legibilidad |
-| Mono (data) | **Geist Mono** | 400–500 | Números de póliza, fechas, primas, estados de job |
-| Display (marketing only) | Plus Jakarta Sans | 600–700 | Hero ≤ clamp(2.5rem, 5vw, 4rem) |
+| Role                     | Family                | Weight  | Notes                                             |
+| ------------------------ | --------------------- | ------- | ------------------------------------------------- |
+| Sans (UI)                | **Plus Jakarta Sans** | 400–700 | Headings + body; cercano a SF Pro en legibilidad  |
+| Mono (data)              | **Geist Mono**        | 400–500 | Números de póliza, fechas, primas, estados de job |
+| Display (marketing only) | Plus Jakarta Sans     | 600–700 | Hero ≤ clamp(2.5rem, 5vw, 4rem)                   |
 
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -87,11 +89,11 @@
 
 Ported from iOS:
 
-| Token | Value |
-|-------|-------|
-| `--radius-card` | `20px` |
-| `--radius-sm` | `14px` |
-| `--radius-button` | `12px` |
+| Token              | Value                                               |
+| ------------------ | --------------------------------------------------- |
+| `--radius-card`    | `20px`                                              |
+| `--radius-sm`      | `14px`                                              |
+| `--radius-button`  | `12px`                                              |
 | `--screen-padding` | `20px` (mobile), `24px` (tablet+), `32px` (desktop) |
 
 Spacing scale: 4px base — 4, 8, 12, 16, 20, 24, 32, 40, 48, 64.
@@ -137,6 +139,7 @@ Dark glass variant: `oklch(22% 0.04 265 / 0.55)` background with same inner high
 ### Policy Type Icons
 
 Gradient rounded square per type (port from iOS `PolicyTypeIcon`):
+
 - Life, health, auto, home, travel, other — each with distinct hue, white icon
 
 ### Forms & Wizard
@@ -163,9 +166,20 @@ Gradient rounded square per type (port from iOS `PolicyTypeIcon`):
 
 ## Layout
 
-- App max-width: `1280px` content, full-bleed nav
-- Dashboard: bento-style asymmetric grid on desktop; stacked on mobile
-- Marketing landing: asymmetric hero (text left, device mockup right) on navy mesh gradient
+- **App shell:** sidebar fija 260px (sólida, no glass) + área principal con `app-shell-bg` (dot grid sutil)
+- **Topbar:** título + búsqueda + CTA nueva póliza + notificaciones + avatar (sticky, blur)
+- **Dashboard:** fila de 4 KPI cards → bento 7/5 (vencimientos | MarIAna + journey)
+- App max-width: contenido fluido en shell; no centrar en 1280px con márgenes vacíos
+- Marketing landing: hero asimétrico + `DashboardPreview` component (mockup CRM real)
+
+## CRM Dashboard Patterns (obligatorio en app)
+
+- KPI cards con icono en badge con gradiente tonal (`stat-icon-*`)
+- Sidebar con sección "Menú", CTA primario arriba, promo MarIAna abajo
+- Empty states con icono grande + copy + un solo CTA — nunca pantalla vacía sin estructura
+- Búsqueda visible en desktop topbar
+- Journey widget de 4 pasos (upload → review → track → ask)
+- **Prohibido:** dashboard de 3 cards iguales en fila como único contenido
 
 ## Motion
 
@@ -177,15 +191,15 @@ Gradient rounded square per type (port from iOS `PolicyTypeIcon`):
 
 ## Surfaces Map
 
-| Surface | Register | Mode | Glass |
-|---------|----------|------|-------|
-| Landing `/` | brand | dark navy hero | hero CTA card |
-| Auth `/login` | brand | dark | auth card |
-| Dashboard `/app` | product | light | nav + summary widgets |
-| Policy list/detail | product | light | no |
-| Upload/review wizard | product | light | status overlay only |
-| MarIAna chat | product | light | panel + input bar |
-| Settings/profile | product | light | no |
+| Surface              | Register | Mode           | Glass                 |
+| -------------------- | -------- | -------------- | --------------------- |
+| Landing `/`          | brand    | dark navy hero | hero CTA card         |
+| Auth `/login`        | brand    | dark           | auth card             |
+| Dashboard `/app`     | product  | light          | nav + summary widgets |
+| Policy list/detail   | product  | light          | no                    |
+| Upload/review wizard | product  | light          | status overlay only   |
+| MarIAna chat         | product  | light          | panel + input bar     |
+| Settings/profile     | product  | light          | no                    |
 
 ## shadcn/ui Customization
 

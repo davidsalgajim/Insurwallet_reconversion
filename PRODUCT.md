@@ -6,7 +6,7 @@
 
 ## Purpose
 
-InsurWallet centraliza pólizas de seguro en un solo lugar seguro para usuarios LATAM. La web reemplaza la app iOS nativa y debe sentirse **premium, confiable y clara** — como apps de finanzas personales y salud, no como un template fintech genérico.
+InsurWallet centraliza pólizas de seguro en un solo lugar seguro para usuarios LATAM. La web reemplaza la app iOS nativa y debe sentirse **premium, confiable y clara** — nivel CRM dashboard profesional (referencia: Customer Journey CRM, Dribbble), no template fintech genérico ni UI básica de 3 cards.
 
 **Core value:** "Todas tus pólizas en un solo lugar, con IA que te ayuda a entenderlas y no olvidar nada."
 
@@ -38,6 +38,7 @@ InsurWallet centraliza pólizas de seguro en un solo lugar seguro para usuarios 
 - Fintech morado con gradientes neón
 - Cream/sand/beige como fondo por defecto
 - Tres cards iguales en fila como única composición
+- Dashboard vacío sin sidebar, topbar, búsqueda ni bento grid
 - Inter + slate-900 como look genérico de IA
 - Spinners centrados en lugar de skeletons contextuales
 - Modales para todo; preferir flujos inline y split-view

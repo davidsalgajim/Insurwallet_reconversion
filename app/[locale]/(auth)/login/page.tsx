@@ -20,7 +20,7 @@ export default async function LoginPage({ params }: Props) {
   return (
     <Card className="glass-surface-dark border-white/10 bg-card/60 text-white shadow-2xl">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
+        <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-[var(--primitive-ink)] text-sm font-bold text-white shadow-lg">
           IW
         </div>
         <CardTitle className="text-2xl text-white">
@@ -43,7 +43,7 @@ export default async function LoginPage({ params }: Props) {
               id="email"
               type="email"
               autoComplete="email"
-              className="h-11 w-full rounded-[var(--radius-button)] border border-white/15 bg-white/5 px-4 text-sm text-white outline-none ring-ring focus-visible:ring-2"
+              className="h-11 w-full rounded-[var(--radius-pill)] border border-white/15 bg-white/5 px-4 text-sm text-white outline-none ring-ring focus-visible:ring-2"
             />
           </div>
           <div className="space-y-2">
@@ -57,7 +57,7 @@ export default async function LoginPage({ params }: Props) {
               id="password"
               type="password"
               autoComplete="current-password"
-              className="h-11 w-full rounded-[var(--radius-button)] border border-white/15 bg-white/5 px-4 text-sm text-white outline-none ring-ring focus-visible:ring-2"
+              className="h-11 w-full rounded-[var(--radius-pill)] border border-white/15 bg-white/5 px-4 text-sm text-white outline-none ring-ring focus-visible:ring-2"
             />
           </div>
           <Button type="submit" className="w-full" size="lg">

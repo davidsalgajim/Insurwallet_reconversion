@@ -2,6 +2,8 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
+import { dmSans } from '@/lib/fonts'
+import { cn } from '@/lib/utils/cn'
 
 type Props = {
   children: React.ReactNode
@@ -23,8 +25,8 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages()
 
   return (
-    <html lang={locale} className="h-full antialiased">
-      <body className="min-h-full">
+    <html lang={locale} className={cn('h-full antialiased', dmSans.variable)}>
+      <body className={cn('min-h-full font-sans', dmSans.className)}>
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

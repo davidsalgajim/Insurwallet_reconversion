@@ -37,6 +37,14 @@
     "upcoming": "Upcoming renewals",
     "emptyTitle": "No policies yet",
     "emptyDesc": "Upload your first policy PDF or enter it manually.",
-    "addPolicy": "Add policy"
+    "addPolicy": "Add policy",
+    "journeyTitle": "Your insurance journey",
+    "journeyDesc": "Four steps to stay in control.",
+    "journey": {
+      "upload": "Upload your policy PDF",
+      "review": "Review extracted data",
+      "track": "Track renewals",
+      "ask": "Ask MarIAna"
+    }
   }
 }

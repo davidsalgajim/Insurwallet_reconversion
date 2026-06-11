@@ -37,6 +37,14 @@
     "upcoming": "Próximos vencimentos",
     "emptyTitle": "Ainda sem apólices",
     "emptyDesc": "Envie sua primeira apólice em PDF ou cadastre manualmente.",
-    "addPolicy": "Adicionar apólice"
+    "addPolicy": "Adicionar apólice",
+    "journeyTitle": "Sua jornada de seguros",
+    "journeyDesc": "Quatro passos para manter tudo sob controle.",
+    "journey": {
+      "upload": "Envie sua apólice em PDF",
+      "review": "Revise os dados extraídos",
+      "track": "Acompanhe vencimentos",
+      "ask": "Consulte a MarIAna"
+    }
   }
 }

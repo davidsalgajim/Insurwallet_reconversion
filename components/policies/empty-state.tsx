@@ -1,44 +1,41 @@
 import { FileText, Plus } from 'lucide-react'
-import Link from 'next/link'
-
+import { Button } from '@/components/ui/button'
+import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/cn'
 
 type PoliciesEmptyStateProps = {
-  locale?: string
   className?: string
 }
 
-export function PoliciesEmptyState({
-  locale = 'es',
-  className,
-}: PoliciesEmptyStateProps) {
+export function PoliciesEmptyState({ className }: PoliciesEmptyStateProps) {
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center px-5 py-16 text-center',
+        'flex flex-col items-center justify-center px-6 py-20 text-center',
         className
       )}
     >
-      <div
-        className="mb-6 flex size-16 items-center justify-center rounded-[20px] bg-[#407AFF]/10"
-        aria-hidden
-      >
-        <FileText className="size-8 text-[#407AFF]" strokeWidth={1.75} />
+      <div className="icon-circle mb-6 size-16 stat-icon-primary border-0">
+        <FileText className="size-7" strokeWidth={1.5} />
       </div>
-      <h2 className="max-w-sm text-balance text-xl font-semibold tracking-tight text-[#0F1729]">
+      <h2 className="max-w-sm text-balance text-xl font-semibold tracking-tight">
         Aún no tienes pólizas
       </h2>
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-[#64748B]">
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
         Centraliza tus seguros en un solo lugar. Sube un PDF o ingresa los datos
         manualmente.
       </p>
-      <Link
-        href={`/${locale}/policies/new`}
-        className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#407AFF] px-5 py-2.5 text-sm font-semibold text-white transition-[transform,background-color] duration-200 hover:bg-[#3366E6] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#407AFF] focus-visible:ring-offset-2"
+      <Button
+        asChild
+        size="lg"
+        variant="ink"
+        className="mt-8 rounded-[var(--radius-pill)]"
       >
-        <Plus className="size-4" aria-hidden />
-        Sube tu primera póliza
-      </Link>
+        <Link href="/policies/new">
+          <Plus className="size-4" strokeWidth={1.5} />
+          Sube tu primera póliza
+        </Link>
+      </Button>
     </div>
   )
 }

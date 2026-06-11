@@ -32,10 +32,13 @@ Antes de diseñar o implementar UI, lee `PRODUCT.md` y `DESIGN.md` en la raíz d
 
 1. **Paleta iOS:** primary `#407AFF`, MarIAna/IA `#00D1C7`, semánticos success/warning/danger del DESIGN.md
 2. **Light mode** en app; navy solo en marketing/auth
-3. **Liquid glass** solo en: nav flotante, panel MarIAna, overlays de proceso, card de auth — nunca en tablas ni formularios densos
-4. **Prohibido:** morado fintech, cream/sand body, Inter por defecto, gradient text, cards anidadas
-5. **shadcn/ui:** siempre customizar radius y tokens; nunca defaults sin tocar
-6. **Estados:** todo componente interactivo necesita default, hover, focus, active, disabled, loading
+3. **CRM shell (app):** sidebar sólida 260px + topbar con búsqueda + `app-shell-bg` dot-grid + KPI cards `elevated-card`
+4. **Referencia:** Dribbble Customer Journey CRM Dashboard — bento grid, journey steps, densidad profesional
+5. **Liquid glass** solo en: mockup marketing, panel MarIAna promo, auth card — sidebar y KPI cards son sólidas elevadas
+6. **Prohibido:** morado fintech, cream/sand body, Inter por defecto, gradient text, cards anidadas, dashboards vacíos de 3 cards genéricas
+7. **shadcn/ui:** siempre customizar radius y tokens; nunca defaults sin tocar
+8. **Estados:** todo componente interactivo necesita default, hover, focus, active, disabled, loading
+9. **impeccable** obligatorio en dashboards y app UI; **design-taste-frontend** solo en landing `/`
 
 ## ui-ux-pro-max (Python)
 

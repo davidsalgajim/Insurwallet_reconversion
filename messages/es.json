@@ -37,6 +37,14 @@
     "upcoming": "Próximos vencimientos",
     "emptyTitle": "Aún no tienes pólizas",
     "emptyDesc": "Sube tu primera póliza en PDF o ingrésala manualmente.",
-    "addPolicy": "Agregar póliza"
+    "addPolicy": "Agregar póliza",
+    "journeyTitle": "Tu recorrido de seguros",
+    "journeyDesc": "Cuatro pasos para tener todo bajo control.",
+    "journey": {
+      "upload": "Sube tu póliza en PDF",
+      "review": "Revisa los datos extraídos",
+      "track": "Monitorea vencimientos",
+      "ask": "Consulta con MarIAna"
+    }
   }
 }

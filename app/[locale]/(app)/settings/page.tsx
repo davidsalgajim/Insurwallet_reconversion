@@ -7,13 +7,8 @@ import {
   Trash2,
   User,
 } from 'lucide-react'
-
-import { AppShell } from '@/components/layout/app-shell'
+import { AppTopbar } from '@/components/layout/app-topbar'
 import { cn } from '@/lib/utils/cn'
-
-type SettingsPageProps = {
-  params: Promise<{ locale: string }>
-}
 
 const SECTIONS = [
   {
@@ -52,21 +47,15 @@ const SECTIONS = [
   },
 ] as const
 
-export default async function SettingsPage({ params }: SettingsPageProps) {
-  const { locale } = await params
-
+export default function SettingsPage() {
   return (
-    <AppShell locale={locale}>
-      <div className="mx-auto max-w-2xl space-y-8">
-        <div>
-          <h1 className="text-balance text-2xl font-semibold tracking-tight text-[#0F1729]">
-            Perfil
-          </h1>
-          <p className="mt-1 text-sm text-[#64748B]">
-            Administra tu cuenta, privacidad y preferencias.
-          </p>
-        </div>
+    <div className="animate-fade-up mx-auto max-w-2xl">
+      <AppTopbar
+        title="Perfil"
+        subtitle="Administra tu cuenta, privacidad y preferencias."
+      />
 
+      <div className="space-y-6">
         {SECTIONS.map((section) => (
           <section
             key={section.title}
@@ -74,51 +63,47 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
           >
             <h2
               id={`settings-${section.title}`}
-              className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#64748B]"
+              className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
             >
               {section.title}
             </h2>
-            <ul className="overflow-hidden rounded-[20px] border border-[#E2E8F0] bg-white shadow-sm">
-              {section.items.map((item, index) => {
+            <ul className="glass-panel divide-y divide-border/60 overflow-hidden">
+              {section.items.map((item) => {
                 const Icon = item.icon
-                const isLast = index === section.items.length - 1
                 return (
                   <li key={item.label}>
                     <button
                       type="button"
-                      className={cn(
-                        'flex w-full min-h-[3.25rem] items-center gap-4 px-4 py-3 text-left transition-colors duration-200 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#407AFF]',
-                        !isLast && 'border-b border-[#E2E8F0]'
-                      )}
+                      className="group flex w-full min-h-[3.25rem] items-center gap-4 px-5 py-3.5 text-left transition-[background-color] duration-200 hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     >
                       <span
                         className={cn(
-                          'flex size-9 shrink-0 items-center justify-center rounded-xl',
+                          'icon-circle size-10 shrink-0 border-0',
                           'destructive' in item && item.destructive
-                            ? 'bg-[#F55252]/10 text-[#C53030]'
-                            : 'bg-[#F1F5F9] text-[#475569]'
+                            ? 'bg-[var(--primitive-coral)]/12 text-[var(--primitive-coral)]'
+                            : 'bg-white/70 text-muted-foreground'
                         )}
                       >
-                        <Icon className="size-4" strokeWidth={1.75} />
+                        <Icon className="size-4" strokeWidth={1.5} />
                       </span>
-                      <span className="min-w-0 flex-1">
+                      <span className="min-w-0 flex-1 text-left">
                         <span
                           className={cn(
                             'block text-sm font-medium',
                             'destructive' in item && item.destructive
-                              ? 'text-[#C53030]'
-                              : 'text-[#0F1729]'
+                              ? 'text-[var(--primitive-coral)]'
+                              : 'text-foreground'
                           )}
                         >
                           {item.label}
                         </span>
-                        <span className="block truncate text-xs text-[#64748B]">
+                        <span className="block truncate text-xs text-muted-foreground">
                           {item.hint}
                         </span>
                       </span>
                       <ChevronRight
-                        className="size-4 shrink-0 text-[#94A3B8]"
-                        aria-hidden
+                        className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5"
+                        strokeWidth={1.5}
                       />
                     </button>
                   </li>
@@ -128,6 +113,6 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
           </section>
         ))}
       </div>
-    </AppShell>
+    </div>
   )
 }
