@@ -1,0 +1,67 @@
+---
+description: Estándares core de InsurWallet — estructura, stack, git, env y reglas de implementación
+alwaysApply: true
+---
+
+# InsurWallet — Core del Proyecto
+
+Lee `PRODUCT.md`, `DESIGN.md` y `tasks/tasks-plan-reconversion-insurwallet.md` antes de implementar.
+
+## Stack (no sustituir sin aprobación)
+
+| Capa | Tecnología |
+|------|------------|
+| Frontend | Next.js 15 App Router, TypeScript strict, Tailwind, shadcn/ui |
+| Auth/DB/Storage | **Firebase** (Auth, Firestore, Storage, Functions, FCM, App Check) |
+| Data fetching | TanStack Query + listeners Firestore donde aplique tiempo real |
+| Validación | Zod en cliente y servidor |
+| i18n | **next-intl** (ES base, EN/PT) — no next-i18next |
+| Tests TS | **Vitest** + Testing Library — no Jest |
+| Tests Python | pytest (worker) |
+| API servidor | Cloud Functions (Node) + Cloud Run (Python worker, MarIAna) |
+| Secretos prod | Google Secret Manager — no claves en repo |
+
+> Este proyecto **no usa Supabase ni Express**. Las guías que mencionen RLS/Supabase se mapean a Firestore Security Rules + Firebase Auth.
+
+## Estructura de carpetas
+
+```
+app/           # Rutas App Router (marketing, auth, app, share)
+components/    # UI reutilizable (ui/, policies/, mariana/, layout/)
+hooks/         # Custom hooks
+lib/           # firebase/, schemas/, i18n/, utils/, types/
+functions/     # Cloud Functions
+worker/        # Pipeline documentos (Python)
+mariana/       # Orquestador multi-agente
+e2e/           # Playwright
+docs/          # Plan, PRODUCT, DESIGN
+tasks/         # Task list de implementación
+```
+
+- Separar concerns: componentes presentacionales vs hooks de datos vs lógica en `lib/`
+- **Máximo ~400 líneas por archivo** — refactorizar en submódulos/hooks/componentes
+- Buscar código similar antes de escribir nuevo
+- No tocar código no relacionado con la tarea actual
+- No añadir dependencias sin verificar que existen y son necesarias
+
+## Documentación de librerías
+
+Usar **Context7 MCP** (`user-context7`) para docs actualizadas de Next.js, Firebase, TanStack Query, next-intl, shadcn/ui, Playwright, etc. No confiar solo en training data.
+
+## Datos
+
+- **Nunca** mock data en dev ni prod — usar emuladores Firebase y fixtures de test
+- La IA propone extracción; el usuario confirma antes de persistir pólizas
+
+## Git
+
+- Feature branches (`feat/`, `fix/`, `refactor/`)
+- Conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `chore:`
+- PR con CI verde + revisión de agentes antes de merge
+- Seguir `process-task-list.mdc`: una sub-tarea a la vez, marcar `[x]`, commit al cerrar parent task
+
+## Entorno
+
+- `.env.local` para desarrollo; `.env.*.local` por entorno
+- Validar env vars al arranque (`lib/env.ts` con Zod)
+- `.gitignore` debe incluir `.env*` y `node_modules/` — nunca commitear secretos

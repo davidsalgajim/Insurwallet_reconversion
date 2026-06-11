@@ -1,0 +1,50 @@
+---
+description: TypeScript estricto — tipos explícitos, narrowing y prohibición de any
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+alwaysApply: false
+---
+
+# TypeScript Standards
+
+## Configuración
+
+- `strict: true` en `tsconfig.json`
+- `noUncheckedIndexedAccess`, `noImplicitReturns` habilitados
+- Path aliases: `@/components`, `@/lib`, `@/hooks`
+
+## Tipos
+
+```typescript
+// ❌ Evitar
+const data: any = await fetchPolicy();
+function process(input) { ... }
+
+// ✅ Preferir
+interface PolicySummary {
+  id: string;
+  policyNumber: string;
+  insurerName: string;
+  status: PolicyStatus;
+}
+type PolicyStatus = "active" | "expiring" | "expired";
+
+function processPolicy(input: PolicySummary): ProcessedPolicy { ... }
+```
+
+- Interfaces para objetos de dominio; `type` para unions y utilidades
+- Inferir de Zod: `type Policy = z.infer<typeof PolicySchema>`
+- Evitar `as` salvo narrowing verificado; preferir type guards
+- Exportar tipos compartidos desde `lib/types/` o junto al schema Zod
+
+## Funciones
+
+- Una responsabilidad por función; idealmente <40 líneas
+- Parámetros con tipos explícitos; retorno explícito en funciones públicas
+- Async: siempre `try/catch` o propagar errores tipados (`AppError`, `DataFetchError`)
+
+## Imports
+
+- Orden: externos → `@/lib` → `@/components` → relativos
+- No importar desde rutas profundas de `app/` en `lib/` (evitar acoplamiento)

@@ -1,0 +1,44 @@
+---
+description: Seguridad — auth, validación, anti prompt-injection, secretos y cumplimiento
+alwaysApply: true
+---
+
+# Security Practices
+
+## Autenticación
+
+- Firebase Auth: email, Google, Apple
+- App Check (reCAPTCHA v3) en Firestore, Storage, Functions
+- Middleware Next.js: rutas `(app)/*` requieren sesión válida
+- Verificar `uid` server-side en Functions/Cloud Run — nunca confiar en IDs del cliente
+
+## Input & Output
+
+- Validar y sanitizar **todo** input con Zod
+- Sanitizador anti prompt-injection en texto de PDFs (zero-width, patrones imperativos)
+- Claude: salida estructurada obligatoria (tool-use/JSON schema)
+- MarIAna: read-only, scope-check (solo temas de seguros)
+
+## Datos sensibles
+
+- Pólizas, documentos, chats: solo dueño + `sharedWith` con permiso explícito
+- Tokens de share: hash en Firestore, expiración, revocable
+- Audit log: compartir, exportar, eliminar cuenta
+- No loguear PII ni contenido de documentos en producción
+
+## Secretos & Env
+
+- Prod/staging: Google Secret Manager
+- Local: `.env.local` (gitignored)
+- Validar env al boot; fallar rápido si faltan vars críticas
+
+## Pagos
+
+- Webhooks: verificación de firma Wompi/MP
+- Idempotencia; nunca confiar en estado del cliente para subscription
+
+## Cumplimiento
+
+- Consentimiento explícito para IA en nube
+- GDPR: exportar/borrar datos
+- Habeas Data (Ley 1581 Colombia): registro de tratamiento

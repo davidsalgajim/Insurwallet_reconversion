@@ -1,0 +1,54 @@
+---
+description: Orquestación de skills de diseño para InsurWallet — tokens, UI de producto, landing y motion
+globs:
+  - "**/*.tsx"
+  - "**/*.css"
+  - "PRODUCT.md"
+  - "DESIGN.md"
+  - "src/**"
+alwaysApply: false
+---
+
+# InsurWallet — Design Orchestration
+
+Antes de diseñar o implementar UI, lee `PRODUCT.md` y `DESIGN.md` en la raíz del proyecto.
+
+## Registro
+
+- **Product (default):** `/app/*`, dashboard, wizard, chat MarIAna, settings, tablas, formularios
+- **Brand:** landing `/`, marketing, auth hero
+
+## Skills por superficie
+
+| Superficie | Skill principal | Notas |
+|------------|-----------------|-------|
+| App UI, componentes, tokens | `impeccable` | craft / polish / audit; register product |
+| Tokens CSS + Tailwind | `ckm-design-system` | primitive → semantic → component |
+| Checklist UX/a11y | `ui-ux-pro-max` | contraste, touch targets, forms |
+| Landing pública | `design-taste-frontend` | solo marketing; no dashboards |
+| Motion / micro-interacciones | `emil-design-eng` | 150–250ms, ease-out, no `transition: all` |
+
+## Reglas no negociables
+
+1. **Paleta iOS:** primary `#407AFF`, MarIAna/IA `#00D1C7`, semánticos success/warning/danger del DESIGN.md
+2. **Light mode** en app; navy solo en marketing/auth
+3. **Liquid glass** solo en: nav flotante, panel MarIAna, overlays de proceso, card de auth — nunca en tablas ni formularios densos
+4. **Prohibido:** morado fintech, cream/sand body, Inter por defecto, gradient text, cards anidadas
+5. **shadcn/ui:** siempre customizar radius y tokens; nunca defaults sin tocar
+6. **Estados:** todo componente interactivo necesita default, hover, focus, active, disabled, loading
+
+## ui-ux-pro-max (Python)
+
+```powershell
+& "$env:USERPROFILE\anaconda3\python.exe" "$env:USERPROFILE\.agents\skills\ui-ux-pro-max\scripts\search.py" "<query>" --domain <ux|color|product|typography> -f markdown
+```
+
+Preferir dominio `product` + query "insurance platform" sobre el palette fintech/crypto genérico.
+
+## Pre-entrega
+
+- Contraste body ≥ 4.5:1
+- `cursor-pointer` en clickables
+- `prefers-reduced-motion`
+- Skeletons, no spinners en contenido
+- Iconos SVG (Lucide), no emojis

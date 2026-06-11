@@ -1,0 +1,54 @@
+---
+description: Testing, accesibilidad, i18n, performance monitoring y calidad de código
+globs:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "e2e/**/*"
+  - "worker/tests/**/*"
+alwaysApply: false
+---
+
+# Testing, A11y, i18n & Quality
+
+## Testing
+
+| Capa | Herramienta | Qué |
+|------|-------------|-----|
+| Unit TS | Vitest + Testing Library | schemas, hooks, validadores, adapters |
+| Unit Python | pytest | pipeline, sanitizador, validators |
+| Reglas | Firebase emulator + rules-unit-testing | owner/shared/anon/atacante |
+| E2E | Playwright | flujos críticos en preview deploy |
+| OCR | golden set | ≥95% campos críticos |
+| Seguridad | suite adversarial | PDFs maliciosos, prompt injection |
+
+- TDD en lógica de negocio: red → green → refactor
+- Tests junto al código (`Foo.ts` + `Foo.test.ts`)
+- Mock solo dependencias externas en tests — nunca en app
+- Edge cases: póliza expirada, share revocado, upload fallido, MarIAna sin contexto
+
+## Accesibilidad (WCAG 2.2 AA)
+
+- HTML semántico (`main`, `nav`, `button`, `label`)
+- `aria-*` donde el rol no sea obvio
+- Focus visible (ring 2px `--ring`)
+- Navegación completa por teclado
+- Contraste ≥4.5:1 en texto de cuerpo
+- Targets táctiles ≥44px
+- `prefers-reduced-motion`: reducir animaciones
+- axe-core en CI para páginas críticas
+
+## Internacionalización
+
+- **next-intl** — mensajes en `messages/es.json`, `en.json`, `pt.json`
+- ES base; diseñar UI con expansión de texto (alemán/portugués +30%)
+- Language switcher en settings; locale en middleware
+- Emails y plantillas Tier 0 localizados
+
+## Calidad de código
+
+- ESLint + Prettier; husky pre-commit (lint-staged)
+- Revisión con agentes al cerrar parent task: security-reviewer + language reviewer + Bugbot
+- Sentry: errores frontend, Functions, worker
+- PostHog: funnels de activación
+- Lighthouse CI: budgets Core Web Vitals

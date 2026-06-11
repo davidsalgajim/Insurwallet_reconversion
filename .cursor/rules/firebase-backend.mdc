@@ -1,0 +1,54 @@
+---
+description: Firebase, Cloud Functions, worker Python y MarIAna — backend y reglas de seguridad
+globs:
+  - "functions/**/*"
+  - "worker/**/*"
+  - "mariana/**/*"
+  - "firestore.rules"
+  - "storage.rules"
+  - "lib/firebase/**/*"
+  - "lib/schemas/**/*"
+alwaysApply: false
+---
+
+# Firebase & Backend
+
+## Firestore (equivalente a RLS de Supabase)
+
+- Security Rules: owner-only por `ownerUid`; lectura compartida vía `sharedWith`
+- **Toda regla nueva requiere test** en `firestore.rules.test.ts` (emulador)
+- Schemas Zod en `lib/schemas/` como contrato cliente ↔ Functions ↔ worker
+- Texto extraído >1MB → Cloud Storage; solo resumen en Firestore
+- Chunks RAG: `policies/{id}/documents/{docId}/chunks/{chunkId}` con vector index
+
+## Storage
+
+- Path: `users/{uid}/policies/{policyId}/docs/{docId}`
+- Validar mimeType y máx 20MB en cliente **y** Function
+- Reglas espejo de Firestore; tests en `storage.rules.test.ts`
+
+## Cloud Functions
+
+- Triggers: Storage upload → crear `jobs/{jobId}`
+- Webhooks pagos: verificar firma, idempotencia por event-id
+- Scheduled: vencimientos, backups Firestore
+- Secretos desde Secret Manager, nunca hardcodeados
+
+## Worker (Cloud Run — Python)
+
+- Pipeline: OpenDataLoader → quality gate → Surya → MarkItDown → sanitizador → Claude JSON
+- Endpoint autenticado OIDC service-to-service
+- Archivos <400 líneas; tests pytest junto a `pipeline/`
+- Golden set OCR ≥95% campos críticos como gate CI
+
+## MarIAna
+
+- Tier 0 determinístico sin LLM cuando aplique
+- Agentes read-only; tools con scope server-side por `uid` autenticado
+- Texto de documentos en `<document_data>` — input no confiable
+- Rate limiting y límite de tokens por sesión
+
+## Validación
+
+- Zod en toda entrada de usuario y salida de IA antes de escribir Firestore
+- Validadores post-IA portados del Swift (fechas, montos, números de póliza)

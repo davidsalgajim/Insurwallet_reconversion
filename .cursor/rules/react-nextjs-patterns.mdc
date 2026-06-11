@@ -1,0 +1,70 @@
+---
+description: React/Next.js — componentes, estado, data fetching, performance y error boundaries
+globs:
+  - "app/**/*.tsx"
+  - "components/**/*.tsx"
+  - "hooks/**/*.ts"
+  - "lib/**/*.ts"
+alwaysApply: false
+---
+
+# React & Next.js Patterns
+
+## Componentes
+
+- Functional components + hooks; Server Components por defecto en App Router
+- `'use client'` solo cuando haya estado, efectos, listeners o interactividad
+- Componentes pequeños; extraer lógica a custom hooks en `hooks/`
+- Props tipadas con `interface XxxProps`
+
+## Estado
+
+| Alcance | Herramienta |
+|---------|-------------|
+| UI local | `useState` |
+| Formularios | react-hook-form + Zod resolver |
+| Global ligero | React Context (auth, locale, theme) |
+| Global complejo | Zustand (wizard, chat MarIAna, upload pipeline) |
+| Server/async | TanStack Query |
+
+- Estado inmutable; no mutar objetos/arrays directamente
+- Evitar prop drilling >2 niveles — context o Zustand
+
+## Data Fetching (Firebase)
+
+```typescript
+// TanStack Query para lecturas con cache
+const { data, isLoading, error } = useQuery({
+  queryKey: ["policies", uid],
+  queryFn: () => fetchPolicies(uid),
+  staleTime: 60_000,
+});
+
+// Tiempo real: onSnapshot en hook dedicado, invalidar query al desmontar
+```
+
+- Siempre: loading skeleton (no spinner en contenido), error state, empty state
+- Mutaciones: `useMutation` + invalidación de queries relacionadas
+- No exponer `uid` ni IDs sensibles en URLs públicas sin token
+
+## Performance
+
+- `dynamic()` para chat MarIAna, visor PDF, componentes pesados
+- `React.memo` solo con evidencia de re-renders costosos
+- `useMemo`/`useCallback` para deps estables en listas grandes — no por defecto
+- Code splitting por ruta (App Router lo hace; verificar bundles con `@next/bundle-analyzer`)
+- Imágenes: `next/image` con sizes; fuentes: `next/font` (Plus Jakarta Sans, Geist Mono)
+- Objetivo: LCP <2.5s, INP <200ms, CLS <0.1
+
+## Error Handling
+
+- `app/error.tsx` y `app/global-error.tsx` como error boundaries
+- Errores async: log con contexto (Sentry) + mensaje amigable al usuario
+- Nunca `catch (e) {}` vacío
+
+## Rutas
+
+- `(marketing)` — landing brand
+- `(auth)` — login/register
+- `(app)` — producto autenticado (middleware protege)
+- `share/[token]` — compartir pólizas

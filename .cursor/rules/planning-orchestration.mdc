@@ -1,0 +1,43 @@
+---
+description: Orquestación Superpowers + task list — planear, implementar y verificar por fases F0–F5
+alwaysApply: false
+---
+
+# Planning & Engineering Orchestration
+
+Complementa `design-orchestration.mdc`. Task list: `tasks/tasks-plan-reconversion-insurwallet.md`.
+
+## Router de skills
+
+| Situación | Skill | Acción |
+|-----------|-------|--------|
+| Feature nueva | **brainstorming** | Diseño → aprobación. No codear hasta OK |
+| Spec → plan | **writing-plans** | Tareas pequeñas con paths y verificación |
+| Ejecutar plan | **executing-plans** / **subagent-driven-development** | Por fase F0–F5 |
+| Implementar lógica | **test-driven-development** | RED → GREEN → REFACTOR |
+| Bug | **systematic-debugging** | Root cause antes de parches |
+| Antes de "listo" | **verification-before-completion** | Evidencia en terminal |
+| Cerrar fase | **requesting-code-review** + agentes | security + language + Bugbot |
+
+## Task list (`process-task-list.mdc`)
+
+1. **Una sub-tarea a la vez** — pedir OK del usuario antes de la siguiente
+2. Marcar `[x]` al completar sub-tarea
+3. Al cerrar parent task: tests → `git add` → commit conventional → marcar parent `[x]`
+4. Actualizar sección Relevant Files en el task list
+
+## Fases del proyecto
+
+- **F0:** Scaffold, Firebase, CI/CD, design system, POC OpenDataLoader
+- **F1:** Auth, Firestore rules, CRUD pólizas, dashboard
+- **F2:** Pipeline documentos + revisión IA
+- **F3:** MarIAna multi-agente + compartir
+- **F4:** Pagos, notificaciones, legal
+- **F5:** Hardening, E2E, a11y, PWA, beta
+
+## Hard gates
+
+- No implementar sin diseño aprobado (brainstorming) en features nuevas
+- No declarar completo sin tests/verificación
+- No saltar security rules tests al tocar Firestore
+- Context7 para docs de librerías antes de integrar APIs nuevas
