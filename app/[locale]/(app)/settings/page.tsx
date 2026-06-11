@@ -49,7 +49,7 @@ const SECTIONS = [
 
 export default function SettingsPage() {
   return (
-    <div className="animate-fade-up mx-auto max-w-2xl">
+    <div className="animate-fade-up mx-auto w-full max-w-2xl">
       <AppTopbar
         title="Perfil"
         subtitle="Administra tu cuenta, privacidad y preferencias."

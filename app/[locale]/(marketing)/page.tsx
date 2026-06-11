@@ -39,7 +39,7 @@ export default async function LandingPage({ params }: Props) {
         }}
       />
 
-      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+      <header className="relative z-10 mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 sm:py-6">
         <div className="flex items-center gap-3">
           <span className="flex size-11 items-center justify-center rounded-full bg-[var(--primitive-ink)] text-sm font-bold text-white shadow-lg">
             IW
@@ -65,7 +65,7 @@ export default async function LandingPage({ params }: Props) {
         </div>
       </header>
 
-      <section className="relative z-10 mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-4 lg:grid-cols-2 lg:gap-16 lg:pb-28 lg:pt-10">
+      <section className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-2 sm:gap-12 sm:px-6 sm:pb-20 sm:pt-4 lg:grid-cols-2 lg:gap-16 lg:pb-28 lg:pt-10">
         <div className="space-y-8">
           <div className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80 backdrop-blur-sm">
             <MessageSquareText
@@ -74,7 +74,7 @@ export default async function LandingPage({ params }: Props) {
             />
             Asistente MarIAna incluido
           </div>
-          <h1 className="max-w-xl text-balance text-4xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl lg:text-[3.25rem]">
+          <h1 className="font-display max-w-xl text-balance text-3xl font-bold leading-[1.1] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[3.25rem]">
             {t('landing.heroTitle')}
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-white/65">

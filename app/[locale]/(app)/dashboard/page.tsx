@@ -1,17 +1,15 @@
 import {
   ArrowRight,
   CalendarClock,
-  FileSearch,
   FileText,
   MessageSquareText,
   Shield,
-  Upload,
   Wallet,
 } from 'lucide-react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { JourneyVisual } from '@/components/dashboard/journey-visual'
+import { JourneyWorkflowSection } from '@/components/dashboard/journey-workflow-section'
 import { StatCard } from '@/components/dashboard/stat-card'
-import { WorkflowBoard } from '@/components/dashboard/workflow-board'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
@@ -28,7 +26,7 @@ export default async function DashboardPage({ params }: Props) {
     <div className="animate-fade-up">
       <AppTopbar title={t('greeting')} subtitle={tc('tagline')} />
 
-      <div className="glass-panel mb-6 inline-flex items-center gap-1 p-1.5">
+      <div className="glass-panel mb-4 inline-flex max-w-full flex-wrap items-center gap-1 p-1.5 sm:mb-6">
         {['01', '02', '03', '04'].map((id, i) => (
           <span
             key={id}
@@ -80,80 +78,44 @@ export default async function DashboardPage({ params }: Props) {
         />
       </section>
 
-      <section
-        className="glass-panel mb-6 p-5 sm:p-6"
-        aria-labelledby="workflow-heading"
-      >
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2
-              id="workflow-heading"
-              className="text-lg font-semibold tracking-tight"
-            >
-              {t('journeyTitle')}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t('journeyDesc')}
-            </p>
-          </div>
-          <div className="flex gap-1 rounded-[var(--radius-pill)] bg-white/50 p-1 ring-1 ring-border">
-            {['Todas', 'Activas', 'Pendientes'].map((tab, i) => (
-              <button
-                key={tab}
-                type="button"
-                className={
-                  i === 0
-                    ? 'rounded-[var(--radius-pill)] bg-[var(--primitive-ink)] px-4 py-1.5 text-xs font-semibold text-white shadow-md'
-                    : 'rounded-[var(--radius-pill)] px-4 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
-                }
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <WorkflowBoard
-          steps={[
-            {
-              id: 'upload',
-              columnTitle: 'Carga',
-              title: t('journey.upload'),
-              meta: 'PDF · imagen',
-              icon: Upload,
-            },
-            {
-              id: 'review',
-              columnTitle: 'Revisión',
-              title: t('journey.review'),
-              meta: 'Datos extraídos',
-              icon: FileSearch,
-              active: true,
-            },
-            {
-              id: 'track',
-              columnTitle: 'Seguimiento',
-              title: t('journey.track'),
-              meta: 'Vencimientos',
-              icon: CalendarClock,
-            },
-            {
-              id: 'ask',
-              columnTitle: 'MarIAna',
-              title: t('journey.ask'),
-              meta: 'Consultas IA',
-              icon: MessageSquareText,
-            },
-          ]}
-        />
-      </section>
+      <JourneyWorkflowSection
+        title={t('journeyTitle')}
+        description={t('journeyDesc')}
+        defaultActiveIndex={1}
+        steps={[
+          {
+            id: 'upload',
+            columnTitle: 'Carga',
+            title: t('journey.upload'),
+            meta: 'PDF · imagen',
+          },
+          {
+            id: 'review',
+            columnTitle: 'Revisión',
+            title: t('journey.review'),
+            meta: 'Datos extraídos',
+          },
+          {
+            id: 'track',
+            columnTitle: 'Seguimiento',
+            title: t('journey.track'),
+            meta: 'Vencimientos',
+          },
+          {
+            id: 'ask',
+            columnTitle: 'MarIAna',
+            title: t('journey.ask'),
+            meta: 'Consultas IA',
+          },
+        ]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-12">
         <section
           className="glass-panel lg:col-span-7"
           aria-labelledby="upcoming-heading"
         >
-          <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-3 sm:px-6 sm:py-4">
             <h2 id="upcoming-heading" className="font-semibold text-foreground">
               {t('upcoming')}
             </h2>
@@ -161,7 +123,7 @@ export default async function DashboardPage({ params }: Props) {
               30 · 60 · 90 días
             </span>
           </div>
-          <div className="flex flex-col items-center gap-5 px-6 py-12 text-center">
+          <div className="flex flex-col items-center gap-5 px-4 py-10 text-center sm:px-6 sm:py-12">
             <div className="icon-circle size-16 stat-icon-primary border-0">
               <FileText className="size-7" strokeWidth={1.5} />
             </div>
@@ -187,7 +149,7 @@ export default async function DashboardPage({ params }: Props) {
 
         <aside className="flex flex-col gap-6 lg:col-span-5">
           <div className="glass-panel overflow-hidden">
-            <div className="border-b border-border/60 bg-gradient-to-r from-accent/8 via-primary/4 to-transparent px-6 py-4">
+            <div className="border-b border-border/60 bg-gradient-to-r from-accent/8 via-primary/4 to-transparent px-4 py-3 sm:px-6 sm:py-4">
               <div className="flex items-center gap-2.5">
                 <span className="icon-circle size-9 stat-icon-accent border-0">
                   <MessageSquareText className="size-4" strokeWidth={1.5} />
@@ -198,7 +160,7 @@ export default async function DashboardPage({ params }: Props) {
                 Asistente de seguros con citas a tus documentos
               </p>
             </div>
-            <div className="space-y-2.5 px-5 py-5">
+            <div className="space-y-2.5 px-3 py-4 sm:px-5 sm:py-5">
               {[
                 '¿Estoy cubierto para un viaje?',
                 '¿Cuándo vence mi póliza de auto?',

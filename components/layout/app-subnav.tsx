@@ -49,28 +49,30 @@ export function AppSubnav({ locale, className }: AppSubnavProps) {
     <nav
       aria-label="Secciones de la aplicación"
       className={cn(
-        'mb-6 inline-flex max-w-full flex-wrap gap-1 rounded-[var(--radius-pill)] bg-white/45 p-1 ring-1 ring-border backdrop-blur-sm',
+        'mb-4 hidden w-full overflow-x-auto md:block sm:mb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         className
       )}
     >
-      {APP_NAV.map((item) => {
-        const active = item.match(relativePath)
-        return (
-          <Link
-            key={item.href}
-            href={`/${locale}${item.href}`}
-            aria-current={active ? 'page' : undefined}
-            className={cn(
-              'rounded-[var(--radius-pill)] px-4 py-2 text-xs font-semibold tracking-wide transition-[background-color,color,box-shadow] duration-200',
-              active
-                ? 'bg-[var(--primitive-ink)] text-white shadow-md'
-                : 'text-muted-foreground hover:bg-white/70 hover:text-foreground'
-            )}
-          >
-            {item.label}
-          </Link>
-        )
-      })}
+      <div className="inline-flex min-w-min gap-1 rounded-[var(--radius-pill)] bg-white/45 p-1 ring-1 ring-border backdrop-blur-sm">
+        {APP_NAV.map((item) => {
+          const active = item.match(relativePath)
+          return (
+            <Link
+              key={item.href}
+              href={`/${locale}${item.href}`}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'shrink-0 rounded-[var(--radius-pill)] px-3 py-2 text-xs font-semibold tracking-wide transition-[background-color,color,box-shadow] duration-200 sm:px-4',
+                active
+                  ? 'bg-[var(--primitive-ink)] text-white shadow-md'
+                  : 'text-muted-foreground hover:bg-white/70 hover:text-foreground'
+              )}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
+      </div>
     </nav>
   )
 }

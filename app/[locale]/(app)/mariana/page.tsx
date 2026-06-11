@@ -11,13 +11,13 @@ const SUGGESTED_QUESTIONS = [
 
 export default function MarianaPage() {
   return (
-    <div className="animate-fade-up mx-auto flex max-w-4xl flex-col">
+    <div className="animate-fade-up mx-auto flex w-full max-w-4xl flex-col">
       <AppTopbar
         title="MarIAna"
         subtitle="Asistente de seguros — solo lectura, con citas a tus documentos."
       />
 
-      <div className="glass-panel flex min-h-[min(560px,calc(100dvh-14rem))] flex-col overflow-hidden">
+      <div className="glass-panel flex min-h-[min(480px,calc(100dvh-12rem))] flex-col overflow-hidden sm:min-h-[min(560px,calc(100dvh-14rem))]">
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
           <div className="icon-circle mb-5 size-16 stat-icon-accent border-0">
             <MessageSquareText className="size-7" strokeWidth={1.5} />

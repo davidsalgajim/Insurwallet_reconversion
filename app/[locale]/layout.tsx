@@ -1,3 +1,4 @@
+import type { Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
@@ -8,6 +9,12 @@ import { cn } from '@/lib/utils/cn'
 type Props = {
   children: React.ReactNode
   params: Promise<{ locale: string }>
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export function generateStaticParams() {

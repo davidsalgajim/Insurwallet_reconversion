@@ -28,7 +28,7 @@ export function StatCard({
   return (
     <article
       className={cn(
-        'glass-panel group flex flex-col gap-4 p-5 hover:-translate-y-0.5',
+        'glass-panel group flex flex-col gap-3 p-4 hover:-translate-y-0.5 sm:gap-4 sm:p-5',
         className
       )}
     >
@@ -49,7 +49,7 @@ export function StatCard({
       </div>
       <div>
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="mt-1 font-mono text-3xl font-semibold tracking-tight text-foreground">
+        <p className="mt-1 font-mono text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           {value}
         </p>
       </div>
