@@ -32,6 +32,14 @@
         { "fieldPath": "policyId", "order": "ASCENDING" },
         { "fieldPath": "docId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "shares",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "policyId", "order": "ASCENDING" },
+        { "fieldPath": "ownerUid", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

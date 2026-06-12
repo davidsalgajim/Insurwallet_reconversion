@@ -128,6 +128,16 @@ service cloud.firestore {
         allow update: if canWriteParentPolicy(policyId)
           && isValidDocumentData(policyId, docId, request.resource.data);
         allow delete: if canWriteParentPolicy(policyId);
+
+        match /chunks/{chunkId} {
+          allow read: if canReadParentPolicy(policyId);
+          allow write: if false;
+        }
+      }
+
+      match /beneficiaries/{beneficiaryId} {
+        allow read: if canReadParentPolicy(policyId);
+        allow create, update, delete: if canWriteParentPolicy(policyId);
       }
 
       match /auditLogs/{logId} {

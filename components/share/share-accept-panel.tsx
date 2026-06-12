@@ -98,6 +98,14 @@ export function ShareAcceptPanel({ token, preview }: ShareAcceptPanelProps) {
             <dt className="text-muted-foreground">{t('recipientLabel')}</dt>
             <dd className="truncate">{preview.recipientEmail}</dd>
           </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{t('permissionLabel')}</dt>
+            <dd>
+              {preview.permission === 'view_download'
+                ? t('permissionViewDownload')
+                : t('permissionView')}
+            </dd>
+          </div>
         </dl>
 
         {error ? (

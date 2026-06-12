@@ -198,3 +198,6 @@ function parseEnv(): z.infer<typeof envSchema> {
 export const env = parseEnv()
 
 export type Env = z.infer<typeof envSchema>
+
+export { getServerEnv, resetServerEnvCache } from '@/lib/env-server'
+export type { ServerEnv } from '@/lib/env-server'

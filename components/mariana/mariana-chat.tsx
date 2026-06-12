@@ -1,17 +1,20 @@
 'use client'
 
-import { MessageSquareText, Send } from 'lucide-react'
+import { ExternalLink, MessageSquareText, Send } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useRef, useState } from 'react'
 
 import { useAuth } from '@/components/auth/auth-provider'
+import { Link } from '@/i18n/navigation'
 import { incrementMarianaQueryCount } from '@/lib/utils/mariana-stats'
+import type { MarianaCitation } from '@/mariana/types'
 import { cn } from '@/lib/utils/cn'
 
 type ChatMessage = {
   id: string
   role: 'user' | 'assistant'
   content: string
+  citations?: MarianaCitation[]
 }
 
 type MarianaChatProps = {
@@ -19,8 +22,43 @@ type MarianaChatProps = {
 }
 
 type StreamChunk = {
-  type: 'delta' | 'done' | 'error'
+  type: 'delta' | 'done' | 'error' | 'citation'
   content?: string
+  citation?: MarianaCitation
+  citations?: MarianaCitation[]
+}
+
+function CitationLinks({
+  citations,
+  t,
+}: {
+  citations: MarianaCitation[]
+  t: ReturnType<typeof useTranslations<'mariana'>>
+}) {
+  if (citations.length === 0) {
+    return null
+  }
+
+  return (
+    <ul className="mt-3 flex flex-wrap gap-2 border-t border-border/50 pt-3">
+      {citations.map((citation) => (
+        <li
+          key={`${citation.policyId}-${citation.documentId}-${citation.page}`}
+        >
+          <Link
+            href={`/policies/${citation.policyId}/review`}
+            className="inline-flex items-center gap-1 rounded-[var(--radius-pill)] bg-accent/10 px-2.5 py-1 text-xs font-medium text-[#0a6b66] transition hover:bg-accent/20"
+          >
+            <ExternalLink className="size-3" strokeWidth={1.5} />
+            {t('citationLabel', {
+              label: citation.label,
+              page: citation.page ?? 1,
+            })}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
@@ -61,7 +99,7 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
       setMessages((prev) => [
         ...prev,
         userMessage,
-        { id: assistantId, role: 'assistant', content: '' },
+        { id: assistantId, role: 'assistant', content: '', citations: [] },
       ])
 
       try {
@@ -85,6 +123,7 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
 
         const decoder = new TextDecoder()
         let assistantText = ''
+        let citations: MarianaCitation[] = []
         let buffer = ''
 
         while (true) {
@@ -105,10 +144,27 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
             const chunk = JSON.parse(line.slice(6)) as StreamChunk
             if (chunk.type === 'delta' && chunk.content) {
               assistantText += chunk.content
+            }
+            if (chunk.type === 'citation' && chunk.citation) {
+              citations = [...citations, chunk.citation]
+            }
+            if (chunk.type === 'done' && chunk.citations) {
+              citations = chunk.citations
+            }
+
+            if (
+              chunk.type === 'delta' ||
+              chunk.type === 'citation' ||
+              chunk.type === 'done'
+            ) {
               setMessages((prev) =>
                 prev.map((message) =>
                   message.id === assistantId
-                    ? { ...message, content: assistantText }
+                    ? {
+                        ...message,
+                        content: assistantText,
+                        citations,
+                      }
                     : message
                 )
               )
@@ -199,7 +255,12 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
                     ? t('userLabel')
                     : t('assistantLabel')}
                 </span>
-                {message.content || (isStreaming ? t('streaming') : '')}
+                <div className="whitespace-pre-wrap">
+                  {message.content || (isStreaming ? t('streaming') : '')}
+                </div>
+                {message.role === 'assistant' && message.citations ? (
+                  <CitationLinks citations={message.citations} t={t} />
+                ) : null}
               </li>
             ))}
           </ul>

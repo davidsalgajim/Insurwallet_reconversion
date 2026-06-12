@@ -2,7 +2,7 @@
 
 Migración de InsurWallet (iOS nativa) a una web app moderna para LATAM.
 
-**Estado actual (jun 2026):** F0 ~90% · F1 ~85%. Auth con verificación de email, CRUD de pólizas (manual + upload PDF a Storage), dashboard con datos reales, landing editorial, App Check (monitor), reglas Firebase testeadas. Pendiente: pipeline IA (F2), MarIAna backend, pagos, deploy staging, E2E.
+**Estado actual (jun 2026):** F0 ~90% · F1 ~85% · F5 parcial (E2E, PWA, Sentry stub, production checklist). Auth, CRUD pólizas, dashboard, App Check (monitor), reglas testeadas en CI. Pendiente: pipeline IA (F2), deploy staging, App Check Enforce en consola.
 
 Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md). Plan de tareas: [`tasks/tasks-plan-reconversion-insurwallet.md`](tasks/tasks-plan-reconversion-insurwallet.md).
 
@@ -41,16 +41,19 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **Estados de póliza:** `computePolicyStatus` (active/expiring/expired) + scheduled Function diaria `refreshPolicyStatuses`
 - **Shell:** icon rail desktop + nav inferior móvil, topbar, dot-grid background
 - **Firebase:** `firestore.rules` + `storage.rules` con tests; emuladores configurados; proyecto staging `insurwallet-staging`
-- **CI:** lint, typecheck, unit tests, build (`.github/workflows/ci.yml`)
+- **CI:** lint, typecheck, unit tests, **rules tests (emulators)**, build (`.github/workflows/ci.yml`)
+- **E2E:** Playwright smoke + flujos con emuladores (`e2e/`, `npm run test:e2e:emulators`)
+- **PWA:** manifest + service worker shell (`public/sw.js`)
+- **Observability:** Sentry stub (no-op sin DSN)
 - **Notificaciones (prefs):** canal email/push/ambos + tipos de aviso en Configuración; API `GET/PUT /api/notifications/prefs`; registro FCM si push activo — envío real email/push en F4 (ver [`docs/notifications.md`](docs/notifications.md))
 
 ## Pendiente (próximos hitos)
 
-- Deploy staging (checklist abajo; deploy real)
+- Deploy staging (checklist: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md))
 - POC OpenDataLoader / worker Cloud Run (F2 — ver tarea 1.7 stub en tasks)
 - Pipeline IA post-upload, pantalla de revisión split-view
-- MarIAna backend, pagos, E2E Playwright
-- App Check **Enforce** + dominio producción en reCAPTCHA Admin (tarea 6.13)
+- MarIAna backend completo, pagos
+- App Check **Enforce** en Firebase Console (checklist documentado en 6.13)
 
 ## Firebase staging
 
@@ -157,6 +160,40 @@ App Check se omite automáticamente con emuladores. Sin emuladores, el cliente i
 4. Desarrollo local contra Firebase real: **App Check → Manage debug tokens** y en `.env.local` usar `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN=true` (token auto) o pegar el token.
 5. Claves de servidor (Claude, pagos, Resend) → **Google Secret Manager** en prod/staging; la site key de reCAPTCHA es pública (`NEXT_PUBLIC_*`).
 
+#### Checklist Enforce (producción — tarea 6.13)
+
+Antes de pasar Firestore/Storage a **Enforce**:
+
+- [ ] Dominio custom (p. ej. `app.insurwallet.com`) en reCAPTCHA Admin → **Allowed domains** (además de `localhost` y preview Vercel en staging).
+- [ ] `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_SITE_KEY` configurada en Vercel Production.
+- [ ] **Sin** `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` en preview/producción (solo dev local o emuladores).
+- [ ] Monitor mode ≥1–2 semanas con ≥95% solicitudes válidas desde dominios reales.
+- [ ] Cliente inicializa App Check: `lib/firebase/app-check.ts` (omitido con `NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true`).
+- [ ] Smoke post-Enforce: login, crear póliza, upload PDF, MarIAna — sin errores `app-check/failed`.
+- [ ] Documentación completa: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) §5.
+
+### Observabilidad (Sentry)
+
+- Opcional: `NEXT_PUBLIC_SENTRY_DSN` (cliente) y/o `SENTRY_DSN` (servidor). Sin DSN → no-op.
+- Inicialización: `instrumentation.ts` (server), `components/observability/sentry-client-init.tsx` (client).
+- Upgrade a `@sentry/nextjs` + source maps pendiente (tarea 7.1).
+
+### PWA
+
+- Manifest: `public/manifest.webmanifest` (referenciado en `app/layout.tsx`).
+- Service worker shell: `public/sw.js` — caché de assets + lista de pólizas read-only; registrado en `app/[locale]/layout.tsx` (solo producción).
+- Offline fallback: `public/offline.html`.
+- FCM usa worker separado: `/firebase-messaging-sw.js`.
+
+### E2E (Playwright)
+
+```bash
+npm run test:e2e                              # smoke (sin emuladores)
+E2E_FIREBASE_EMULATORS=true npm run test:e2e  # auth, CRUD, upload, settings, MarIAna
+```
+
+Flujos en `e2e/`: `auth-policy.spec.ts`, `policy-flows.spec.ts`, `settings-mariana.spec.ts`. Ver [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) §4.
+
 ### Verificación de email
 
 - Staging/prod: `NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION=true` — middleware bloquea rutas `(app)/*` hasta verificar.
@@ -171,17 +208,19 @@ App Check se omite automáticamente con emuladores. Sin emuladores, el cliente i
 
 ### Scripts
 
-| Script                                           | Descripción                               |
-| ------------------------------------------------ | ----------------------------------------- |
-| `npm run dev`                                    | Servidor de desarrollo                    |
-| `npm run build`                                  | Build de producción                       |
-| `npm run lint`                                   | ESLint                                    |
-| `npm run typecheck`                              | TypeScript                                |
-| `npm run test`                                   | Vitest (unit)                             |
-| `npm run test:rules`                             | Tests Firestore rules (requiere emulador) |
-| `npm run test:storage-rules`                     | Tests Storage rules (requiere emulador)   |
-| `npm run emulators`                              | Emuladores Firebase                       |
-| `npm run emulators:exec -- "npm run test:rules"` | Tests de reglas en emulador efímero       |
+| Script                                           | Descripción                                |
+| ------------------------------------------------ | ------------------------------------------ |
+| `npm run dev`                                    | Servidor de desarrollo                     |
+| `npm run build`                                  | Build de producción                        |
+| `npm run lint`                                   | ESLint                                     |
+| `npm run typecheck`                              | TypeScript                                 |
+| `npm run test`                                   | Vitest (unit)                              |
+| `npm run test:rules`                             | Tests Firestore rules (requiere emulador)  |
+| `npm run test:storage-rules`                     | Tests Storage rules (requiere emulador)    |
+| `npm run emulators`                              | Emuladores Firebase                        |
+| `npm run emulators:exec -- "npm run test:rules"` | Tests de reglas en emulador efímero        |
+| `npm run test:e2e`                               | Playwright smoke                           |
+| `npm run test:e2e:emulators`                     | Playwright + emuladores (flujos completos) |
 
 Variables de entorno validadas en `lib/env.ts` (Zod). En desarrollo faltan claves Firebase → fallbacks demo; en producción falla rápido si faltan.
 

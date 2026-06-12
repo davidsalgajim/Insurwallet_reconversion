@@ -16,7 +16,7 @@ COPY pipeline ./pipeline
 COPY main.py ./
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
-  && python -m pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic
+  && python -m pip install --no-cache-dir -e .
 
 ENV PYTHONPATH=/app
 ENV PORT=8080

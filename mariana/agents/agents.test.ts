@@ -18,7 +18,11 @@ describe('MarIAna agent prompts', () => {
     expect(prompt).toContain('locale: en')
   })
 
-  it('returns null for agents without stub prompts yet', () => {
-    expect(getAgentSystemPrompt('emergency', 'es')).toBeNull()
+  it('returns null for tier0 (deterministic, no LLM prompt)', () => {
+    expect(getAgentSystemPrompt('tier0', 'es')).toBeNull()
+  })
+
+  it('returns prompt for emergency agent', () => {
+    expect(getAgentSystemPrompt('emergency', 'es')).toContain('Emergency')
   })
 })

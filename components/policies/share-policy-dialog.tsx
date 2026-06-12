@@ -2,7 +2,7 @@
 
 import { Copy, Share2 } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 
@@ -11,6 +11,7 @@ type SharePolicyDialogProps = {
   policyId: string
   ownerUid: string
   onClose: () => void
+  onCreated?: () => void
 }
 
 export function SharePolicyDialog({
@@ -18,10 +19,14 @@ export function SharePolicyDialog({
   policyId,
   ownerUid,
   onClose,
+  onCreated,
 }: SharePolicyDialogProps) {
   const t = useTranslations('policies.share')
+  const locale = useLocale() as 'es' | 'en' | 'pt'
   const [email, setEmail] = useState('')
+  const [permission, setPermission] = useState<'view' | 'view_download'>('view')
   const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [emailSent, setEmailSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -34,24 +39,34 @@ export function SharePolicyDialog({
     event.preventDefault()
     setError(null)
     setShareUrl(null)
+    setEmailSent(false)
     setSubmitting(true)
 
     try {
-      const [{ db }, { createShare }] = await Promise.all([
-        import('@/lib/firebase/client'),
-        import('@/lib/firebase/shares'),
-      ])
-
-      const { token } = await createShare(db, {
-        policyId,
-        ownerUid,
-        recipientEmail: email.trim(),
-        permission: 'view',
-        expiresInDays: 7,
+      const response = await fetch('/api/shares', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          policyId,
+          ownerUid,
+          recipientEmail: email.trim(),
+          permission,
+          expiresInDays: 7,
+          locale,
+        }),
       })
 
-      const path = `${window.location.origin}/share/${token}`
-      setShareUrl(path)
+      if (!response.ok) {
+        throw new Error('create failed')
+      }
+
+      const payload = (await response.json()) as {
+        shareUrl: string
+        emailSent: boolean
+      }
+      setShareUrl(payload.shareUrl)
+      setEmailSent(payload.emailSent)
+      onCreated?.()
     } catch {
       setError(t('createError'))
     } finally {
@@ -113,6 +128,34 @@ export function SharePolicyDialog({
             />
           </div>
 
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('permissionLabel')}
+            </span>
+            <div className="mt-2 flex flex-col gap-2">
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="share-permission"
+                  value="view"
+                  checked={permission === 'view'}
+                  onChange={() => setPermission('view')}
+                />
+                {t('permissionView')}
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="share-permission"
+                  value="view_download"
+                  checked={permission === 'view_download'}
+                  onChange={() => setPermission('view_download')}
+                />
+                {t('permissionViewDownload')}
+              </label>
+            </div>
+          </div>
+
           {error ? (
             <p className="text-sm text-[var(--primitive-danger)]" role="alert">
               {error}
@@ -125,6 +168,15 @@ export function SharePolicyDialog({
                 {t('linkLabel')}
               </p>
               <p className="mt-2 break-all font-mono text-xs">{shareUrl}</p>
+              {emailSent ? (
+                <p className="mt-2 text-xs text-[var(--primitive-success)]">
+                  {t('emailSent')}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t('emailNotSent')}
+                </p>
+              )}
               <Button
                 type="button"
                 variant="secondary"

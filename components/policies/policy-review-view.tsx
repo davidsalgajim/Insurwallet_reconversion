@@ -14,8 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Link, useRouter } from '@/i18n/navigation'
 import { usePolicy } from '@/hooks/usePolicy'
 import type { PolicyDocument } from '@/lib/firebase/policies'
+import type { PolicyExtraction } from '@/lib/schemas/extraction'
 import { cn } from '@/lib/utils/cn'
-import { isDraftPolicy } from '@/lib/utils/draft-policy'
 
 type ConfidenceLevel = 'high' | 'medium' | 'low'
 
@@ -30,21 +30,18 @@ type ReviewFieldState = {
 function confidenceForField(
   fieldId: ReviewFieldId,
   value: string,
-  isDraft: boolean
+  extraction?: PolicyExtraction
 ): ConfidenceLevel {
-  if (!isDraft) {
-    return 'high'
+  const fromExtraction = extraction?.confidence[fieldId]
+  if (
+    fromExtraction === 'high' ||
+    fromExtraction === 'medium' ||
+    fromExtraction === 'low'
+  ) {
+    return fromExtraction
   }
 
-  if (fieldId === 'insurerName' && value === 'Por confirmar') {
-    return 'low'
-  }
-
-  if (fieldId === 'policyNumber' && value.startsWith('DRAFT-')) {
-    return 'medium'
-  }
-
-  if (fieldId === 'premium' && (value === '0' || value === '')) {
+  if (!value.trim()) {
     return 'low'
   }
 
@@ -69,36 +66,56 @@ function parsePremiumInput(value: string): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
 }
 
-function buildReviewFields(policy: PolicyDocument): ReviewFieldState[] {
-  const draft = isDraftPolicy(policy)
+function buildReviewFields(
+  policy: PolicyDocument,
+  extraction?: PolicyExtraction
+): ReviewFieldState[] {
+  const fields = extraction?.fields
 
   return [
     {
       id: 'insurerName',
-      value: policy.insurerName,
-      confidence: confidenceForField('insurerName', policy.insurerName, draft),
+      value: fields?.insurerName ?? policy.insurerName,
+      confidence: confidenceForField(
+        'insurerName',
+        fields?.insurerName ?? policy.insurerName,
+        extraction
+      ),
     },
     {
       id: 'policyNumber',
-      value: policy.policyNumber,
+      value: fields?.policyNumber ?? policy.policyNumber,
       confidence: confidenceForField(
         'policyNumber',
-        policy.policyNumber,
-        draft
+        fields?.policyNumber ?? policy.policyNumber,
+        extraction
       ),
     },
     {
       id: 'holderName',
-      value: policy.holderName,
-      confidence: confidenceForField('holderName', policy.holderName, draft),
+      value: fields?.holderName ?? policy.holderName,
+      confidence: confidenceForField(
+        'holderName',
+        fields?.holderName ?? policy.holderName,
+        extraction
+      ),
     },
     {
       id: 'premium',
-      value: policy.premium > 0 ? String(policy.premium) : '',
+      value:
+        fields?.premium != null && fields.premium > 0
+          ? String(fields.premium)
+          : policy.premium > 0
+            ? String(policy.premium)
+            : '',
       confidence: confidenceForField(
         'premium',
-        policy.premium > 0 ? String(policy.premium) : '',
-        draft
+        fields?.premium != null && fields.premium > 0
+          ? String(fields.premium)
+          : policy.premium > 0
+            ? String(policy.premium)
+            : '',
+        extraction
       ),
     },
   ]
@@ -109,6 +126,7 @@ type ReviewPolicyFormProps = {
   userUid: string
   storagePath?: string
   fileName?: string
+  extraction?: PolicyExtraction
 }
 
 function ReviewPolicyForm({
@@ -116,6 +134,7 @@ function ReviewPolicyForm({
   userUid,
   storagePath,
   fileName,
+  extraction,
 }: ReviewPolicyFormProps) {
   const t = useTranslations('policies.review')
   const tFields = useTranslations('policies.fields')
@@ -123,13 +142,13 @@ function ReviewPolicyForm({
   const router = useRouter()
 
   const [fields, setFields] = useState<ReviewFieldState[]>(() =>
-    buildReviewFields(policy)
+    buildReviewFields(policy, extraction)
   )
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  const isDraft = isDraftPolicy(policy)
+  const isDraft = policy.policyNumber.startsWith('DRAFT-')
 
   const fieldMap = useMemo(() => {
     return Object.fromEntries(
@@ -144,7 +163,7 @@ function ReviewPolicyForm({
           ? {
               ...field,
               value,
-              confidence: confidenceForField(id, value, isDraftPolicy(policy)),
+              confidence: confidenceForField(id, value, extraction),
             }
           : field
       )
@@ -192,6 +211,9 @@ function ReviewPolicyForm({
       )
 
       if (mode === 'confirm') {
+        await fetch(`/api/policies/${policy.id}/index-documents`, {
+          method: 'POST',
+        }).catch(() => undefined)
         router.push(`/policies/${policy.id}`)
         return
       }
@@ -393,11 +415,12 @@ export function PolicyReviewView() {
         </p>
       ) : (
         <ReviewPolicyForm
-          key={policy.id}
+          key={`${policy.id}-${primaryDocument?.extraction?.extractedAt?.toString() ?? 'none'}`}
           policy={policy}
           userUid={user.uid}
           storagePath={primaryDocument?.storagePath}
           fileName={primaryDocument?.fileName}
+          extraction={primaryDocument?.extraction}
         />
       )}
     </div>

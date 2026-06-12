@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { PolicyExtractionSchema } from '@/lib/schemas/extraction'
 import { PDF_MIME_TYPE } from '@/lib/schemas/upload'
 
 /** users/{uid}/policies/{policyId}/docs/{docId}/{fileName} */
@@ -55,6 +56,7 @@ export const PolicyDocumentSchema = z.object({
   fileSize: z.number().int().positive(),
   mimeType: z.literal(PDF_MIME_TYPE),
   processing: DocumentProcessingSchema,
+  extraction: PolicyExtractionSchema.optional(),
   extractedTextPath: z.string().min(1).optional(),
   extractedSummary: z.string().max(10_000).optional(),
   createdAt: z.coerce.date(),

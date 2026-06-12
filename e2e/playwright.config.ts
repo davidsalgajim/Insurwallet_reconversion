@@ -13,14 +13,40 @@ const emulatorEnv: Record<string, string> = {
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '123456789012',
   NEXT_PUBLIC_FIREBASE_APP_ID: '1:123456789012:web:abcdef123456',
   NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION: 'false',
+  FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
+  FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
+  FIREBASE_STORAGE_EMULATOR_HOST: '127.0.0.1:9199',
 }
+
+const nextServer = {
+  command: process.env.CI
+    ? `npm run start -- -p ${port}`
+    : `npm run dev -- -p ${port}`,
+  url: baseURL,
+  reuseExistingServer: !process.env.CI,
+  timeout: 120_000,
+  env: {
+    ...(useEmulators ? emulatorEnv : {}),
+  },
+}
+
+const emulatorServer = useEmulators
+  ? {
+      command: 'npm run emulators',
+      url: 'http://127.0.0.1:4000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+      stdout: 'pipe' as const,
+      stderr: 'pipe' as const,
+    }
+  : null
 
 export default defineConfig({
   testDir: '.',
-  fullyParallel: true,
+  fullyParallel: !useEmulators,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: useEmulators ? 1 : process.env.CI ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL,
@@ -33,15 +59,5 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: process.env.CI
-      ? `npm run start -- -p ${port}`
-      : `npm run dev -- -p ${port}`,
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    env: {
-      ...(useEmulators ? emulatorEnv : {}),
-    },
-  },
+  webServer: emulatorServer ? [emulatorServer, nextServer] : nextServer,
 })

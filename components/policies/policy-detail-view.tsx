@@ -16,6 +16,8 @@ import { useParams } from 'next/navigation'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { DeletePolicyDialog } from '@/components/policies/delete-policy-dialog'
+import { BeneficiariesPanel } from '@/components/policies/beneficiaries-panel'
+import { PolicySharesPanel } from '@/components/policies/policy-shares-panel'
 import { SharePolicyDialog } from '@/components/policies/share-policy-dialog'
 import { PolicyStatusBadge } from '@/components/policies/policy-status-badge'
 import { AppTopbar } from '@/components/layout/app-topbar'
@@ -86,6 +88,7 @@ export function PolicyDetailView() {
   const { policy, loading, error, isOwner } = usePolicy(policyId)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [shareRefreshKey, setShareRefreshKey] = useState(0)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -303,6 +306,18 @@ export function PolicyDetailView() {
             ) : null}
           </div>
 
+          {isOwner ? (
+            <div className="elevated-card mb-4 space-y-4 p-6">
+              <h2 className="font-semibold">{t('share.listTitle')}</h2>
+              <PolicySharesPanel
+                policyId={policy.id}
+                refreshKey={shareRefreshKey}
+              />
+            </div>
+          ) : null}
+
+          <BeneficiariesPanel policyId={policy.id} isOwner={isOwner} />
+
           {deleteError ? (
             <p className="mt-4 text-sm text-[var(--primitive-danger)]">
               {deleteError}
@@ -328,6 +343,7 @@ export function PolicyDetailView() {
               policyId={policy.id}
               ownerUid={user.uid}
               onClose={() => setShareOpen(false)}
+              onCreated={() => setShareRefreshKey((key) => key + 1)}
             />
           ) : null}
         </>

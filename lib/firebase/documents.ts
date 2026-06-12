@@ -8,6 +8,10 @@ import {
 } from 'firebase/firestore'
 
 import { PolicyDocumentSchema } from '@/lib/schemas/document'
+import {
+  PolicyExtractionSchema,
+  type PolicyExtraction,
+} from '@/lib/schemas/extraction'
 import { PDF_MIME_TYPE } from '@/lib/schemas/upload'
 import { createPolicy, type PolicyDocument } from '@/lib/firebase/policies'
 
@@ -74,6 +78,31 @@ export type PolicyFileDocument = {
   fileName: string
   storagePath: string
   fileSize: number
+  extraction?: PolicyExtraction
+}
+
+function parseDocumentExtraction(
+  data: Record<string, unknown>
+): PolicyExtraction | undefined {
+  if (!data.extraction || typeof data.extraction !== 'object') {
+    return undefined
+  }
+
+  const raw = data.extraction as Record<string, unknown>
+  const extractedAt =
+    raw.extractedAt &&
+    typeof raw.extractedAt === 'object' &&
+    'toDate' in raw.extractedAt &&
+    typeof (raw.extractedAt as { toDate: () => Date }).toDate === 'function'
+      ? (raw.extractedAt as { toDate: () => Date }).toDate()
+      : raw.extractedAt
+
+  const parsed = PolicyExtractionSchema.safeParse({
+    ...raw,
+    extractedAt,
+  })
+
+  return parsed.success ? parsed.data : undefined
 }
 
 export async function listPolicyDocuments(
@@ -91,6 +120,7 @@ export async function listPolicyDocuments(
       fileName: String(data.fileName),
       storagePath: String(data.storagePath),
       fileSize: Number(data.fileSize ?? 0),
+      extraction: parseDocumentExtraction(data),
     }
   })
 }

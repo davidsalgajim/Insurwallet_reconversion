@@ -89,3 +89,15 @@ export function checkRateLimit(
 export function resetRateLimits(): void {
   rateLimitStore.clear()
 }
+
+export function isInsuranceScopedResponse(text: string): boolean {
+  const normalized = text.toLowerCase()
+  if (OFF_TOPIC_PATTERNS.some((pattern) => pattern.test(normalized))) {
+    return false
+  }
+
+  return (
+    INSURANCE_KEYWORDS.some((keyword) => normalized.includes(keyword)) ||
+    normalized.length < 500
+  )
+}

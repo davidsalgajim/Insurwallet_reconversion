@@ -35,9 +35,18 @@ export type RouteDecision = {
   }
 }
 
+export type MarianaCitation = {
+  policyId: string
+  documentId: string
+  page?: number
+  label: string
+}
+
 export type MarianaChatChunk = {
-  type: 'delta' | 'done' | 'error'
+  type: 'delta' | 'done' | 'error' | 'citation'
   content?: string
   agent?: MarianaAgentId
   tier0Intent?: Tier0Intent
+  citations?: MarianaCitation[]
+  citation?: MarianaCitation
 }

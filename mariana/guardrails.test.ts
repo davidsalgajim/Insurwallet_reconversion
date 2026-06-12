@@ -5,6 +5,7 @@ import {
   checkSessionTokenLimit,
   estimateTokens,
   isInsuranceScoped,
+  isInsuranceScopedResponse,
   resetRateLimits,
   validateMessageLength,
   wrapDocumentData,
@@ -68,5 +69,19 @@ describe('checkRateLimit', () => {
     const blocked = checkRateLimit(uid, 1_000)
     expect(blocked.allowed).toBe(false)
     expect(blocked.retryAfterMs).toBeGreaterThan(0)
+  })
+})
+
+describe('isInsuranceScopedResponse', () => {
+  it('accepts typical insurance answers', () => {
+    expect(isInsuranceScopedResponse('Tu póliza cubre hospitalización.')).toBe(
+      true
+    )
+  })
+
+  it('rejects clearly off-topic answers', () => {
+    expect(
+      isInsuranceScopedResponse('Aquí tienes una receta de pasta carbonara.')
+    ).toBe(false)
   })
 })

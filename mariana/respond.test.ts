@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildStubResponse, encodeSseChunk } from '@/mariana/respond'
+import { buildStubResponse, encodeSseChunk } from '@/mariana/stream'
 
 describe('buildStubResponse', () => {
   it('returns tier0 placeholder for expiry questions', () => {
     const { fullText, chunks } = buildStubResponse(
       '¿Cuándo vence mi póliza de auto?',
-      'es'
+      'es',
+      [
+        {
+          id: 'policy-auto',
+          policyNumber: 'AUTO-001',
+          insurerName: 'Seguros Bolívar',
+          policyType: 'auto',
+          endDate: '2026-06-01',
+        },
+      ]
     )
     expect(fullText).toContain('vencimiento')
     expect(chunks.at(-1)?.type).toBe('done')
@@ -18,7 +27,7 @@ describe('buildStubResponse', () => {
       '¿Estoy cubierto para un viaje?',
       'en'
     )
-    expect(fullText).toContain('coverage')
+    expect(fullText.toLowerCase()).toContain('coverage')
   })
 })
 
