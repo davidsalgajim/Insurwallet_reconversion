@@ -15,43 +15,24 @@ export function AppLogo({
   className,
   priority = false,
 }: AppLogoProps) {
-  const imageSize = framed ? Math.round(size * 0.82) : size
-
-  const image = (
-    <Image
-      src="/brand/insurwallet-logo.png"
-      alt="InsurWallet"
-      width={imageSize}
-      height={imageSize}
-      className="object-contain"
-      priority={priority}
-      sizes={`${size}px`}
-    />
-  )
-
-  if (!framed) {
-    return (
-      <span
-        className={cn(
-          'inline-flex shrink-0 items-center justify-center',
-          className
-        )}
-        style={{ width: size, height: size }}
-      >
-        {image}
-      </span>
-    )
-  }
-
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-soft)] ring-1 ring-border',
+        'relative inline-block shrink-0',
+        framed &&
+          'overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-soft)] ring-1 ring-border',
         className
       )}
       style={{ width: size, height: size }}
     >
-      {image}
+      <Image
+        src="/brand/insurwallet-logo.png"
+        alt="InsurWallet"
+        fill
+        className={cn('object-contain', framed && 'p-[9%]')}
+        priority={priority}
+        sizes={`${size}px`}
+      />
     </span>
   )
 }

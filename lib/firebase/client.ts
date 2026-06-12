@@ -26,7 +26,7 @@ function connectEmulators(
   firestore: Firestore,
   storage: FirebaseStorage
 ): void {
-  if (typeof window === 'undefined' || !useFirebaseEmulators) {
+  if (typeof window === 'undefined' || useFirebaseEmulators !== true) {
     return
   }
 

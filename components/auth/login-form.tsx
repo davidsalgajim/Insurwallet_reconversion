@@ -4,15 +4,15 @@ import { Loader2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
-import { AppLogo } from '@/components/brand/app-logo'
-import { Button } from '@/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  AuthDivider,
+  AuthFooterText,
+  AuthShell,
+  authInputClassName,
+  authLabelClassName,
+} from '@/components/auth/auth-shell'
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
+import { Button } from '@/components/ui/button'
 import { Link, useRouter } from '@/i18n/navigation'
 import {
   getAuthErrorMessage,
@@ -20,8 +20,6 @@ import {
   signInWithGoogle,
 } from '@/lib/firebase/auth'
 import { type PreferredLanguage } from '@/lib/schemas/user'
-
-import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 
 type LoginFormProps = {
   redirectTo?: string
@@ -71,23 +69,11 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
   }
 
   return (
-    <Card className="glass-surface-dark border-white/10 bg-card/60 text-white shadow-2xl">
-      <CardHeader className="text-center">
-        <AppLogo size={48} priority className="mx-auto mb-2 rounded-2xl" />
-        <CardTitle className="text-2xl text-white">
-          {t('welcomeBack')}
-        </CardTitle>
-        <CardDescription className="text-white/60">
-          {tc('tagline')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <AuthShell title={t('welcomeBack')} description={tc('tagline')}>
+      <div className="space-y-4">
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="text-sm font-medium text-white/80"
-            >
+            <label htmlFor="email" className={authLabelClassName}>
               {t('email')}
             </label>
             <input
@@ -98,20 +84,17 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="h-11 w-full rounded-[var(--radius-pill)] border border-white/15 bg-white/5 px-4 text-sm text-white outline-none ring-ring focus-visible:ring-2"
+              className={authInputClassName}
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-white/80"
-              >
+              <label htmlFor="password" className={authLabelClassName}>
                 {t('password')}
               </label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-accent hover:underline"
+                className="text-xs font-medium text-primary hover:underline"
               >
                 {t('forgotPassword')}
               </Link>
@@ -125,17 +108,17 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
               minLength={6}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="h-11 w-full rounded-[var(--radius-pill)] border border-white/15 bg-white/5 px-4 text-sm text-white outline-none ring-ring focus-visible:ring-2"
+              className={authInputClassName}
             />
           </div>
           {errorKey ? (
-            <p className="text-sm text-red-300" role="alert">
+            <p className="text-sm text-destructive" role="alert">
               {t(`errors.${errorKey}`)}
             </p>
           ) : null}
           <Button
             type="submit"
-            className="w-full"
+            className="w-full rounded-[var(--radius-pill)] shadow-md shadow-primary/20"
             size="lg"
             disabled={submitting}
           >
@@ -146,14 +129,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           </Button>
         </form>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center" aria-hidden>
-            <span className="w-full border-t border-white/10" />
-          </div>
-          <p className="relative mx-auto w-fit bg-transparent px-3 text-xs text-white/40">
-            {t('orContinueWith')}
-          </p>
-        </div>
+        <AuthDivider label={t('orContinueWith')} />
 
         <GoogleSignInButton
           onGoogleClick={handleGoogleSignIn}
@@ -161,16 +137,16 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           disabled={submitting}
         />
 
-        <p className="text-center text-sm text-white/50">
+        <AuthFooterText>
           {t('noAccount')}{' '}
           <Link
             href="/register"
-            className="font-medium text-accent hover:underline"
+            className="font-medium text-primary hover:underline"
           >
             {tc('register')}
           </Link>
-        </p>
-      </CardContent>
-    </Card>
+        </AuthFooterText>
+      </div>
+    </AuthShell>
   )
 }

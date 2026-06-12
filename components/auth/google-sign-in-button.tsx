@@ -22,7 +22,7 @@ export function GoogleSignInButton({
     <Button
       type="button"
       variant="secondary"
-      className="w-full border-white/15 bg-white/5 text-white hover:bg-white/10"
+      className="w-full rounded-[var(--radius-pill)] border border-border bg-white text-ink shadow-none hover:bg-muted/50"
       size="lg"
       onClick={onGoogleClick}
       disabled={disabled || googleLoading}

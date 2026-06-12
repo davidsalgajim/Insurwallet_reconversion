@@ -4,15 +4,13 @@ import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
-import { AppLogo } from '@/components/brand/app-logo'
-import { Button } from '@/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  AuthFooterText,
+  AuthShell,
+  authInputClassName,
+  authLabelClassName,
+} from '@/components/auth/auth-shell'
+import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { getAuthErrorMessage, resetPassword } from '@/lib/firebase/auth'
 
@@ -40,28 +38,19 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <Card className="glass-surface-dark border-white/10 bg-card/60 text-white shadow-2xl">
-      <CardHeader className="text-center">
-        <AppLogo size={48} priority className="mx-auto mb-2 rounded-2xl" />
-        <CardTitle className="text-2xl text-white">
-          {t('forgotPasswordTitle')}
-        </CardTitle>
-        <CardDescription className="text-white/60">
-          {t('forgotPasswordDesc')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <AuthShell
+      title={t('forgotPasswordTitle')}
+      description={t('forgotPasswordDesc')}
+    >
+      <div className="space-y-4">
         {sent ? (
-          <p className="rounded-[var(--radius-pill)] border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/80">
+          <p className="rounded-[var(--radius-pill)] border border-border bg-muted/40 px-4 py-3 text-sm text-ink">
             {t('resetPasswordSent')}
           </p>
         ) : (
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-white/80"
-              >
+              <label htmlFor="email" className={authLabelClassName}>
                 {t('email')}
               </label>
               <input
@@ -72,17 +61,17 @@ export function ForgotPasswordForm() {
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="h-11 w-full rounded-[var(--radius-pill)] border border-white/15 bg-white/5 px-4 text-sm text-white outline-none ring-ring focus-visible:ring-2"
+                className={authInputClassName}
               />
             </div>
             {errorKey ? (
-              <p className="text-sm text-red-300" role="alert">
+              <p className="text-sm text-destructive" role="alert">
                 {t(`errors.${errorKey}`)}
               </p>
             ) : null}
             <Button
               type="submit"
-              className="w-full"
+              className="w-full rounded-[var(--radius-pill)] shadow-md shadow-primary/20"
               size="lg"
               disabled={submitting}
             >
@@ -94,15 +83,15 @@ export function ForgotPasswordForm() {
           </form>
         )}
 
-        <p className="text-center text-sm text-white/50">
+        <AuthFooterText>
           <Link
             href="/login"
-            className="font-medium text-accent hover:underline"
+            className="font-medium text-primary hover:underline"
           >
             {t('backToLogin')}
           </Link>
-        </p>
-      </CardContent>
-    </Card>
+        </AuthFooterText>
+      </div>
+    </AuthShell>
   )
 }

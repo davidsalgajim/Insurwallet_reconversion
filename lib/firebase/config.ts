@@ -13,4 +13,4 @@ export const firebaseConfig = {
 } as const
 
 export const useFirebaseEmulators =
-  env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS ?? false
+  env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === true
