@@ -514,7 +514,7 @@
         "emailOnly": "Email only",
         "pushOnly": "Push only",
         "both": "Email and push",
-        "pushHint": "Push requires browser permission and a configured VAPID key (see documentation)."
+        "pushHint": "When you enable push, your browser will ask permission to show alerts on this device."
       },
       "eventsTitle": "Alert types",
       "description": "Turn each reminder type on or off. They are only sent through the channels selected above.",

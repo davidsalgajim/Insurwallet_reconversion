@@ -514,7 +514,7 @@
         "emailOnly": "Somente email",
         "pushOnly": "Somente push",
         "both": "Email e push",
-        "pushHint": "Push exige permissão do navegador e chave VAPID configurada (veja a documentação)."
+        "pushHint": "Ao ativar push, o navegador pedirá permissão para exibir alertas neste dispositivo."
       },
       "eventsTitle": "Tipos de aviso",
       "description": "Ative ou desative cada tipo de lembrete. Eles só são enviados pelos canais escolhidos acima.",
