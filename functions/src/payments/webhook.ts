@@ -4,6 +4,7 @@ import { logger } from 'firebase-functions/v2'
 
 import {
   getDefaultPaymentProvider,
+  mapWompiError,
   PaymentProviderError,
   type WebhookEvent,
 } from './payment-provider'
@@ -80,11 +81,16 @@ export const wompiPaymentWebhook = onRequest(
         req.headers as Record<string, string>
       )
     } catch (error) {
-      if (error instanceof PaymentProviderError) {
-        logger.warn('payment webhook rejected', { code: error.code })
-        res.status(error.code === 'invalid_signature' ? 401 : 400).json({
-          error: error.code,
-        })
+      const providerError =
+        error instanceof PaymentProviderError ? error : mapWompiError(error)
+
+      if (providerError instanceof PaymentProviderError) {
+        logger.warn('payment webhook rejected', { code: providerError.code })
+        res
+          .status(providerError.code === 'invalid_signature' ? 401 : 400)
+          .json({
+            error: providerError.code,
+          })
         return
       }
       throw error

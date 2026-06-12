@@ -13,15 +13,17 @@ import {
 } from '@/lib/schemas/extraction'
 import type { ProcessingState } from '@/lib/schemas/document'
 import type { Job } from '@/lib/schemas/job'
-import { invokeWorkerProcessJob } from '@/lib/server/worker-client'
-import { isDraftPolicy } from '@/lib/utils/draft-policy'
+import {
+  invokeWorkerWithRetries,
+  parseWorkerExtraction,
+  USER_FACING_JOB_ERRORS,
+} from '@/lib/server/worker-client'
+import { notifyDocumentJobReady } from '@/lib/server/push-notifications'
 
-function buildStubExtraction(
+function buildFallbackExtraction(
   policy: PolicyDocument,
   method: PolicyExtraction['method']
 ): PolicyExtraction {
-  const draft = isDraftPolicy(policy)
-
   return PolicyExtractionSchema.parse({
     fields: {
       insurerName: policy.insurerName,
@@ -33,11 +35,10 @@ function buildStubExtraction(
       endDate: policy.endDate,
     },
     confidence: {
-      insurerName:
-        draft || policy.insurerName === 'Por confirmar' ? 'low' : 'high',
-      policyNumber: draft ? 'medium' : 'high',
-      holderName: draft ? 'medium' : 'high',
-      premium: policy.premium > 0 ? 'medium' : 'low',
+      insurerName: 'low',
+      policyNumber: 'low',
+      holderName: 'low',
+      premium: 'low',
     },
     method,
     extractedAt: new Date(),
@@ -76,11 +77,30 @@ async function updateJobAndDocumentState(
         processing: {
           state: processingState,
           jobId: job.id,
+          ...(typeof extra.error === 'string' ? { error: extra.error } : {}),
         },
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     )
+}
+
+function mergeExtractionIntoPolicy(
+  policy: PolicyDocument,
+  extraction: PolicyExtraction
+) {
+  const { id, ...existingPolicy } = policy
+  void id
+
+  return mergePolicyUpdate(existingPolicy, {
+    insurerName: extraction.fields.insurerName ?? policy.insurerName,
+    policyNumber: extraction.fields.policyNumber ?? policy.policyNumber,
+    holderName: extraction.fields.holderName ?? policy.holderName,
+    premium: extraction.fields.premium ?? policy.premium,
+    currency: extraction.fields.currency ?? policy.currency,
+    startDate: extraction.fields.startDate ?? policy.startDate,
+    endDate: extraction.fields.endDate ?? policy.endDate,
+  })
 }
 
 export type ProcessDocumentJobResult = {
@@ -117,11 +137,21 @@ export async function processDocumentJob(
     .doc(job.docId)
 
   if (job.processingState === 'ready') {
-    const [docSnap, policySnap] = await Promise.all([
-      docRef.get(),
-      db.collection('policies').doc(job.policyId).get(),
-    ])
+    const docSnap = await docRef.get()
+    const stored = docSnap.data()?.extraction
 
+    if (stored) {
+      return {
+        jobId,
+        processingState: 'ready',
+        extraction: PolicyExtractionSchema.parse({
+          ...stored,
+          extractedAt: stored.extractedAt?.toDate?.() ?? stored.extractedAt,
+        }),
+      }
+    }
+
+    const policySnap = await db.collection('policies').doc(job.policyId).get()
     const policy = policySnap.exists
       ? parsePolicyDocument(
           policySnap.id,
@@ -129,61 +159,74 @@ export async function processDocumentJob(
         )
       : null
 
-    const extraction = PolicyExtractionSchema.parse(
-      docSnap.data()?.extraction ??
-        buildStubExtraction(
-          policy ?? {
-            id: job.policyId,
-            ownerUid: job.ownerUid,
-            insurerName: 'Por confirmar',
-            policyNumber: 'DRAFT-PENDING',
-            holderName: 'Por confirmar',
-            policyType: 'other',
-            startDate: new Date(),
-            endDate: new Date(),
-            premium: 0,
-            currency: 'COP',
-            paymentFrequency: 'annual',
-            agent: {
-              name: 'Por definir',
-              phone: '+570000000000',
-              email: 'pendiente@example.com',
-            },
-            coverageEntries: [],
-            deductibleEntries: [],
-            beneficiaryEntries: [],
-            sharedWith: [],
-            status: 'active',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+    return {
+      jobId,
+      processingState: 'ready',
+      extraction: buildFallbackExtraction(
+        policy ?? {
+          id: job.policyId,
+          ownerUid: job.ownerUid,
+          insurerName: 'Por confirmar',
+          policyNumber: 'DRAFT-PENDING',
+          holderName: 'Por confirmar',
+          policyType: 'other',
+          startDate: new Date(),
+          endDate: new Date(),
+          premium: 0,
+          currency: 'COP',
+          paymentFrequency: 'annual',
+          agent: {
+            name: 'Por definir',
+            phone: '+570000000000',
+            email: 'pendiente@example.com',
           },
-          'stub'
-        )
-    )
-
-    return { jobId, processingState: 'ready', extraction }
+          coverageEntries: [],
+          deductibleEntries: [],
+          beneficiaryEntries: [],
+          sharedWith: [],
+          status: 'active',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        'stub'
+      ),
+    }
   }
 
   if (job.processingState === 'failed') {
-    throw new Error(job.error ?? 'Job failed')
+    throw new Error(job.error ?? USER_FACING_JOB_ERRORS.generic)
   }
 
-  await updateJobAndDocumentState(job, 'extracting')
+  const attemptNumber = (job.attempts ?? 0) + 1
 
-  let pipelineMethod: PolicyExtraction['method'] = 'stub'
+  await updateJobAndDocumentState(job, 'extracting', {
+    attempts: attemptNumber,
+  })
+
+  let extraction: PolicyExtraction
+  let pipelineMethod: PolicyExtraction['method'] = 'odl'
+  let pipelineSteps: string[] = []
 
   try {
-    const workerResult = await invokeWorkerProcessJob({
+    const workerResult = await invokeWorkerWithRetries({
       jobId,
       storagePath: job.storagePath,
     })
 
-    if (workerResult) {
-      pipelineMethod =
-        workerResult.pipeline_method as PolicyExtraction['method']
-    }
-  } catch {
-    pipelineMethod = 'stub'
+    extraction = parseWorkerExtraction(workerResult.extraction!)
+    pipelineMethod = extraction.method
+    pipelineSteps = workerResult.pipeline_steps ?? [pipelineMethod]
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    const userMessage = message.includes('WORKER_URL')
+      ? USER_FACING_JOB_ERRORS.workerUnavailable
+      : USER_FACING_JOB_ERRORS.extractionFailed
+
+    await updateJobAndDocumentState(job, 'failed', {
+      attempts: attemptNumber,
+      error: userMessage,
+    })
+    throw new Error(userMessage)
   }
 
   await updateJobAndDocumentState(job, 'analyzing')
@@ -192,27 +235,16 @@ export async function processDocumentJob(
 
   if (!policySnap.exists) {
     await updateJobAndDocumentState(job, 'failed', {
-      error: 'Policy not found',
+      error: USER_FACING_JOB_ERRORS.policyNotFound,
     })
-    throw new Error('Policy not found')
+    throw new Error(USER_FACING_JOB_ERRORS.policyNotFound)
   }
 
   const policy = parsePolicyDocument(
     policySnap.id,
     policySnap.data() as Record<string, unknown>
   )
-  const extraction = buildStubExtraction(policy, pipelineMethod)
-  const { id, ...existingPolicy } = policy
-  void id
-  const updatedPolicy = mergePolicyUpdate(existingPolicy, {
-    insurerName: extraction.fields.insurerName,
-    policyNumber: extraction.fields.policyNumber,
-    holderName: extraction.fields.holderName,
-    premium: extraction.fields.premium,
-    currency: extraction.fields.currency,
-    startDate: extraction.fields.startDate,
-    endDate: extraction.fields.endDate,
-  })
+  const updatedPolicy = mergeExtractionIntoPolicy(policy, extraction)
 
   await db.runTransaction(async (transaction) => {
     transaction.update(db.collection('policies').doc(job.policyId), {
@@ -231,13 +263,15 @@ export async function processDocumentJob(
       docRef,
       {
         extraction: {
-          ...extraction,
+          fields: extraction.fields,
+          confidence: extraction.confidence,
+          method: pipelineMethod,
           extractedAt: Timestamp.fromDate(extraction.extractedAt),
         },
         processing: {
           state: 'ready',
           jobId,
-          method: pipelineMethod === 'stub' ? 'odl' : pipelineMethod,
+          method: pipelineMethod,
         },
         updatedAt: FieldValue.serverTimestamp(),
       },
@@ -247,10 +281,24 @@ export async function processDocumentJob(
     transaction.update(jobRef, {
       processingState: 'ready',
       state: 'completed',
-      pipeline: [pipelineMethod === 'stub' ? 'odl' : pipelineMethod],
+      pipeline: pipelineSteps.length > 0 ? pipelineSteps : [pipelineMethod],
+      error: FieldValue.delete(),
       updatedAt: Timestamp.now(),
     })
   })
+
+  const docSnap = await docRef.get()
+  const fileName =
+    typeof docSnap.data()?.fileName === 'string'
+      ? docSnap.data()?.fileName
+      : undefined
+
+  await notifyDocumentJobReady({
+    ownerUid: job.ownerUid,
+    policyId: job.policyId,
+    docId: job.docId,
+    fileName,
+  }).catch(() => undefined)
 
   return { jobId, processingState: 'ready', extraction }
 }

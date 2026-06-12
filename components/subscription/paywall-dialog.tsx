@@ -1,10 +1,13 @@
 'use client'
 
 import { Crown, Sparkles, X } from 'lucide-react'
-import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
+import { Link } from '@/i18n/navigation'
+import { getClientFeatureFlags } from '@/lib/feature-flags'
+import { startPremiumCheckout } from '@/lib/subscription/checkout'
 import { FREE_POLICY_LIMIT } from '@/lib/subscription/constants'
 import { cn } from '@/lib/utils/cn'
 
@@ -24,6 +27,8 @@ export function PaywallDialog({
   onUpgrade,
 }: PaywallDialogProps) {
   const t = useTranslations('subscription.paywall')
+  const flags = getClientFeatureFlags()
+  const [checkingOut, setCheckingOut] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -118,16 +123,36 @@ export function PaywallDialog({
         </ul>
 
         <div className="flex flex-col gap-3">
-          <Button
-            type="button"
-            className="w-full rounded-[var(--radius-pill)]"
-            onClick={() => {
-              onUpgrade?.()
-              onClose()
-            }}
-          >
-            {t('cta')}
-          </Button>
+          {flags.paymentsEnabled ? (
+            <Button
+              type="button"
+              className="w-full rounded-[var(--radius-pill)]"
+              disabled={checkingOut}
+              onClick={() => {
+                setCheckingOut(true)
+                void startPremiumCheckout('/settings/subscription')
+                  .catch(() => {
+                    onUpgrade?.()
+                  })
+                  .finally(() => {
+                    setCheckingOut(false)
+                    onClose()
+                  })
+              }}
+            >
+              {checkingOut ? t('redirecting') : t('cta')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="w-full rounded-[var(--radius-pill)]"
+              asChild
+            >
+              <Link href="/settings/subscription" onClick={onClose}>
+                {t('cta')}
+              </Link>
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"

@@ -8,6 +8,9 @@ import {
 import { notFound } from 'next/navigation'
 
 import { AuthProvider } from '@/components/auth/auth-provider'
+import { CookieConsentBanner } from '@/components/legal/consent'
+import { SentryClientInit } from '@/components/observability/sentry-client-init'
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import { routing } from '@/i18n/routing'
 import { dmSans } from '@/lib/fonts'
 import { cn } from '@/lib/utils/cn'
@@ -57,7 +60,12 @@ export default async function LocaleLayout({ children, params }: Props) {
     <html lang={locale} className={cn('h-full antialiased', dmSans.variable)}>
       <body className={cn('min-h-full font-sans', dmSans.className)}>
         <NextIntlClientProvider messages={messages}>
-          <AuthProvider>{children}</AuthProvider>
+          <SentryClientInit />
+          <ServiceWorkerRegister />
+          <AuthProvider>
+            {children}
+            <CookieConsentBanner />
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

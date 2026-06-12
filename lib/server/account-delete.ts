@@ -1,4 +1,5 @@
 import type { Firestore } from 'firebase-admin/firestore'
+import { FieldValue } from 'firebase-admin/firestore'
 
 import {
   getAdminAuth,
@@ -115,6 +116,15 @@ export async function deleteUserAccountData(uid: string): Promise<{
     .catch(() => undefined)
 
   storageObjectsDeleted += await deleteStoragePrefix(`users/${uid}/`)
+
+  await db.collection('accountAuditLogs').add({
+    action: 'account_deleted',
+    uid,
+    policiesDeleted: policiesSnap.size,
+    storageObjectsDeleted,
+    performedBy: uid,
+    createdAt: FieldValue.serverTimestamp(),
+  })
 
   await getAdminAuth().deleteUser(uid)
 

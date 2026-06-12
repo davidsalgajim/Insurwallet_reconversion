@@ -6,6 +6,8 @@ import { useRouter } from '@/i18n/navigation'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { AppTopbar } from '@/components/layout/app-topbar'
+import { CloudAIConsentModal } from '@/components/legal/cloud-ai-consent-modal'
+import { useCloudAIConsent } from '@/components/legal/consent'
 import { DocumentProcessingListener } from '@/components/policies/document-processing-listener'
 import { PdfUploadZone } from '@/components/policies/pdf-upload-zone'
 import { PolicyWizardProgress } from '@/components/policies/policy-wizard-progress'
@@ -23,6 +25,12 @@ export default function UploadPolicyPage() {
   const t = useTranslations('policies.upload')
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const {
+    hasConsent,
+    loading: consentLoading,
+    grantCloudAIConsent,
+  } = useCloudAIConsent()
+  const [consentOpen, setConsentOpen] = useState(false)
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [phase, setPhase] = useState<UploadPhase>('idle')
@@ -45,7 +53,7 @@ export default function UploadPolicyPage() {
     [phase]
   )
 
-  async function handleUpload() {
+  async function performUpload() {
     if (!selectedFile || !user) return
 
     setErrorMessage(null)
@@ -105,8 +113,30 @@ export default function UploadPolicyPage() {
     }
   }
 
+  function handleUpload() {
+    if (!selectedFile || !user) return
+
+    if (!consentLoading && !hasConsent) {
+      setConsentOpen(true)
+      return
+    }
+
+    void performUpload()
+  }
+
+  async function handleConsentAccept() {
+    await grantCloudAIConsent()
+    setConsentOpen(false)
+    await performUpload()
+  }
+
   return (
     <div className="animate-fade-up mx-auto max-w-2xl">
+      <CloudAIConsentModal
+        open={consentOpen}
+        onAccept={() => void handleConsentAccept()}
+        onCancel={() => setConsentOpen(false)}
+      />
       <AppTopbar title={t('title')} subtitle={t('subtitle')} />
       <PolicyWizardProgress currentStep={2} />
 

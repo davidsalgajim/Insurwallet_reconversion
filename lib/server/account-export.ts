@@ -1,6 +1,12 @@
 import { Timestamp } from 'firebase-admin/firestore'
 
-import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/admin'
+import {
+  getAdminAuth,
+  getAdminFirestore,
+  getAdminStorage,
+} from '@/lib/firebase/admin'
+
+const SIGNED_URL_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 function serializeValue(value: unknown): unknown {
   if (value instanceof Timestamp) {
@@ -41,6 +47,23 @@ function serializeRecord(value: unknown): Record<string, unknown> {
   return {}
 }
 
+async function signedUrlForPath(storagePath: string): Promise<string | null> {
+  if (!storagePath) {
+    return null
+  }
+
+  try {
+    const bucket = getAdminStorage().bucket()
+    const [url] = await bucket.file(storagePath).getSignedUrl({
+      action: 'read',
+      expires: Date.now() + SIGNED_URL_TTL_MS,
+    })
+    return url
+  } catch {
+    return null
+  }
+}
+
 export async function buildUserDataExport(uid: string) {
   const db = getAdminFirestore()
   const auth = getAdminAuth()
@@ -67,6 +90,20 @@ export async function buildUserDataExport(uid: string) {
         .collection('documents')
         .get()
 
+      const documents = await Promise.all(
+        documentsSnap.docs.map(async (docSnap) => {
+          const data = docSnap.data()
+          const storagePath =
+            typeof data.storagePath === 'string' ? data.storagePath : ''
+
+          return {
+            id: docSnap.id,
+            ...serializeRecord(data),
+            downloadUrl: await signedUrlForPath(storagePath),
+          }
+        })
+      )
+
       const auditSnap = await db
         .collection('policies')
         .doc(policyDoc.id)
@@ -76,10 +113,7 @@ export async function buildUserDataExport(uid: string) {
       return {
         id: policyDoc.id,
         ...serializeRecord(policyDoc.data()),
-        documents: documentsSnap.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...serializeRecord(docSnap.data()),
-        })),
+        documents,
         auditLogs: auditSnap.docs.map((logSnap) => ({
           id: logSnap.id,
           ...serializeRecord(logSnap.data()),
@@ -109,5 +143,6 @@ export async function buildUserDataExport(uid: string) {
         ...serializeRecord(docSnap.data()),
       })),
     },
+    signedUrlExpiresInDays: 7,
   }
 }

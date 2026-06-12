@@ -2,6 +2,7 @@
 
 import {
   ChevronRight,
+  Crown,
   Download,
   Globe,
   Shield,
@@ -115,6 +116,18 @@ export function SettingsView() {
           hint: t('items.deleteAccountHint'),
           destructive: true,
           action: 'delete' as const,
+        },
+      ],
+    },
+    {
+      id: 'subscription',
+      title: t('sections.subscription'),
+      items: [
+        {
+          icon: Crown,
+          label: t('items.subscription'),
+          hint: t('items.subscriptionHint'),
+          href: '/settings/subscription' as const,
         },
       ],
     },

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { getApiSession } from '@/lib/firebase/api-auth'
+import { getFeatureFlags } from '@/lib/feature-flags'
+import { loadMarianaPolicyContext } from '@/lib/server/mariana-context'
+import { getServerEnv } from '@/lib/server/env-server'
 import {
   checkRateLimit,
   checkSessionTokenLimit,
@@ -9,7 +12,7 @@ import {
   isInsuranceScoped,
   validateMessageLength,
 } from '@/mariana/guardrails'
-import { buildStubResponse, encodeSseChunk } from '@/mariana/respond'
+import { encodeSseChunk, streamMarianaResponse } from '@/mariana/stream'
 
 export const runtime = 'nodejs'
 
@@ -23,6 +26,10 @@ export async function POST(request: Request) {
   const session = await getApiSession()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (!getFeatureFlags().marianaEnabled) {
+    return NextResponse.json({ error: 'MarIAna is disabled' }, { status: 403 })
   }
 
   let body: unknown
@@ -65,15 +72,35 @@ export async function POST(request: Request) {
     )
   }
 
-  const { chunks } = buildStubResponse(message, locale)
+  const policyContext = await loadMarianaPolicyContext(session.uid)
+  const { ANTHROPIC_API_KEY } = getServerEnv()
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
-    start(controller) {
-      for (const chunk of chunks) {
-        controller.enqueue(encoder.encode(encodeSseChunk(chunk)))
+    async start(controller) {
+      try {
+        for await (const chunk of streamMarianaResponse({
+          message,
+          locale,
+          apiKey: ANTHROPIC_API_KEY,
+          policies: policyContext.allPolicies,
+          metadata: policyContext.metadata,
+          toolContext: policyContext.toolContext,
+        })) {
+          controller.enqueue(encoder.encode(encodeSseChunk(chunk)))
+        }
+      } catch {
+        controller.enqueue(
+          encoder.encode(
+            encodeSseChunk({
+              type: 'error',
+              content: 'Stream failed',
+            })
+          )
+        )
+      } finally {
+        controller.close()
       }
-      controller.close()
     },
   })
 

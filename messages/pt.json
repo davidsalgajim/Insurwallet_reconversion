@@ -351,16 +351,57 @@
     "share": {
       "action": "Compartilhar",
       "title": "Compartilhar apólice",
-      "description": "Gere um link somente leitura para outra pessoa. O link expira em 7 dias.",
+      "description": "Gere um link seguro para outra pessoa. O link expira em 7 dias e é enviado por e-mail se configurado.",
       "emailLabel": "E-mail do destinatário",
       "emailPlaceholder": "destinatario@exemplo.com",
+      "permissionLabel": "Permissão",
+      "permissionView": "Somente leitura",
+      "permissionViewDownload": "Ver e baixar documentos",
       "createLink": "Gerar link",
       "creating": "Gerando…",
       "linkLabel": "Link para compartilhar",
       "copyLink": "Copiar link",
       "copied": "Copiado",
       "close": "Fechar",
-      "createError": "Não foi possível criar o link. Tente novamente."
+      "createError": "Não foi possível criar o link. Tente novamente.",
+      "emailSent": "E-mail enviado ao destinatário.",
+      "emailNotSent": "Link criado. Configure RESEND_API_KEY para envio automático.",
+      "listTitle": "Acessos compartilhados",
+      "listLoading": "Carregando acessos…",
+      "listEmpty": "Nenhum acesso ativo para esta apólice.",
+      "listError": "Não foi possível carregar os acessos.",
+      "revoke": "Revogar",
+      "revoking": "Revogando…",
+      "revokeError": "Não foi possível revogar o acesso.",
+      "status": {
+        "pending": "Pendente",
+        "accepted": "Aceito",
+        "revoked": "Revogado",
+        "expired": "Expirado"
+      }
+    },
+    "beneficiaries": {
+      "title": "Beneficiários",
+      "add": "Adicionar",
+      "empty": "Nenhum beneficiário registrado.",
+      "loading": "Carregando beneficiários…",
+      "loadError": "Não foi possível carregar os beneficiários.",
+      "saveError": "Não foi possível salvar o beneficiário.",
+      "deleteError": "Não foi possível excluir o beneficiário.",
+      "delete": "Excluir",
+      "save": "Salvar",
+      "saving": "Salvando…",
+      "namePlaceholder": "Nome completo",
+      "idNumberPlaceholder": "Número do documento",
+      "relationshipPlaceholder": "Parentesco (ex. cônjuge)",
+      "pctPlaceholder": "Percentual (0-100)",
+      "idType": {
+        "cc": "Documento",
+        "ce": "Documento estrangeiro",
+        "passport": "Passaporte",
+        "nit": "NIT",
+        "other": "Outro"
+      }
     }
   },
   "dashboard": {
@@ -438,7 +479,8 @@
     "userLabel": "Sua mensagem",
     "assistantLabel": "Resposta da MarIAna",
     "errorGeneric": "Não foi possível processar sua pergunta. Tente novamente.",
-    "errorEmpty": "Nenhuma resposta recebida. Tente outra pergunta."
+    "errorEmpty": "Nenhuma resposta recebida. Tente outra pergunta.",
+    "citationLabel": "{label} (p. {page})"
   },
   "share": {
     "title": "Apólice compartilhada com você",
@@ -459,7 +501,10 @@
     "acceptError": "Não foi possível aceitar o acesso. Verifique seu e-mail e tente novamente.",
     "alreadyAccepted": "Este acesso já foi aceito. Veja sua lista de apólices.",
     "unavailable": "Este link não está mais disponível.",
-    "declineCta": "Recusar"
+    "declineCta": "Recusar",
+    "permissionLabel": "Permissão",
+    "permissionView": "Somente leitura",
+    "permissionViewDownload": "Ver e baixar documentos"
   },
   "alerts": {
     "title": "Alertas",
@@ -478,6 +523,7 @@
       "profile": "Perfil",
       "privacy": "Privacidade e dados",
       "preferences": "Preferências",
+      "subscription": "Assinatura",
       "notifications": "Notificações push"
     },
     "items": {
@@ -485,6 +531,8 @@
       "personalDataHint": "Nome, e-mail e foto",
       "privacy": "Privacidade",
       "privacyHint": "Consentimento e tratamento de dados",
+      "subscription": "Plano Premium",
+      "subscriptionHint": "Pagamento e benefícios",
       "export": "Exportar meus dados",
       "exportHint": "Download em formato portátil",
       "deleteAccount": "Excluir conta",
@@ -533,6 +581,7 @@
       "title": "Desbloqueie todo o InsurWallet",
       "close": "Fechar",
       "cta": "Ver planos Premium",
+      "redirecting": "Redirecionando para Wompi…",
       "dismiss": "Agora não",
       "reasons": {
         "policyLimit": "O plano gratuito inclui até {limit} apólices. Atualize para adicionar mais.",
@@ -545,9 +594,47 @@
         "cloudExtraction": "Extração automática de PDFs na nuvem",
         "prioritySupport": "Suporte prioritário"
       }
+    },
+    "page": {
+      "title": "Assinatura",
+      "subtitle": "Gerencie seu plano e pagamento com Wompi.",
+      "planBadge": "Premium",
+      "planName": "InsurWallet Premium",
+      "perMonth": "mês",
+      "features": {
+        "unlimitedPolicies": "Apólices ilimitadas",
+        "mariana": "MarIAna — assistente com IA",
+        "cloudExtraction": "Extração de PDFs na nuvem",
+        "prioritySupport": "Suporte prioritário"
+      },
+      "loading": "Carregando status da assinatura…",
+      "activeMessage": "Seu plano Premium está ativo.",
+      "freeMessage": "Você está no plano gratuito (até 3 apólices).",
+      "cta": "Pagar com Wompi",
+      "alreadyPremium": "Plano ativo",
+      "redirecting": "Redirecionando para Wompi…",
+      "backToSettings": "Voltar às configurações",
+      "returnMessage": "Se você concluiu o pagamento, o Premium será ativado em alguns minutos.",
+      "checkoutError": "Não foi possível iniciar o pagamento. Verifique a configuração do Wompi.",
+      "paymentsDisabled": "Pagamentos desativados neste ambiente.",
+      "sandboxNote": "Use chaves sandbox do Wompi para testes (cartão, Nequi, PSE)."
     }
   },
   "legal": {
+    "cookies": {
+      "title": "Usamos cookies essenciais",
+      "description": "Eles ajudam na sessão, preferências e segurança.",
+      "privacyLink": "Política de privacidade",
+      "accept": "Aceitar",
+      "dismiss": "Fechar"
+    },
+    "cloudAi": {
+      "title": "Processamento com IA na nuvem",
+      "description": "Para extrair dados do seu PDF, o documento será enviado com segurança aos nossos serviços de IA (Claude). Continue apenas se aceitar este tratamento.",
+      "privacyLink": "Saiba mais na privacidade",
+      "accept": "Aceito e continuar",
+      "cancel": "Cancelar"
+    },
     "back": "Voltar ao início",
     "backToSettings": "Voltar às configurações",
     "lastUpdatedLabel": "Última atualização",

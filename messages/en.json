@@ -351,16 +351,57 @@
     "share": {
       "action": "Share",
       "title": "Share policy",
-      "description": "Generate a read-only link for someone else. The link expires in 7 days.",
+      "description": "Generate a secure link for someone else. The link expires in 7 days and is emailed when configured.",
       "emailLabel": "Recipient email",
       "emailPlaceholder": "recipient@example.com",
+      "permissionLabel": "Permission",
+      "permissionView": "View only",
+      "permissionViewDownload": "View and download documents",
       "createLink": "Generate link",
       "creating": "Generating…",
       "linkLabel": "Share link",
       "copyLink": "Copy link",
       "copied": "Copied",
       "close": "Close",
-      "createError": "Could not create the link. Try again."
+      "createError": "Could not create the link. Try again.",
+      "emailSent": "Email sent to the recipient.",
+      "emailNotSent": "Link created. Set RESEND_API_KEY to send email automatically.",
+      "listTitle": "Shared access",
+      "listLoading": "Loading shares…",
+      "listEmpty": "No active shares for this policy.",
+      "listError": "Could not load shared access.",
+      "revoke": "Revoke",
+      "revoking": "Revoking…",
+      "revokeError": "Could not revoke access.",
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "revoked": "Revoked",
+        "expired": "Expired"
+      }
+    },
+    "beneficiaries": {
+      "title": "Beneficiaries",
+      "add": "Add",
+      "empty": "No beneficiaries on file.",
+      "loading": "Loading beneficiaries…",
+      "loadError": "Could not load beneficiaries.",
+      "saveError": "Could not save beneficiary.",
+      "deleteError": "Could not delete beneficiary.",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving…",
+      "namePlaceholder": "Full name",
+      "idNumberPlaceholder": "ID number",
+      "relationshipPlaceholder": "Relationship (e.g. spouse)",
+      "pctPlaceholder": "Percentage (0-100)",
+      "idType": {
+        "cc": "National ID",
+        "ce": "Foreign ID",
+        "passport": "Passport",
+        "nit": "Tax ID",
+        "other": "Other"
+      }
     }
   },
   "dashboard": {
@@ -438,7 +479,8 @@
     "userLabel": "Your message",
     "assistantLabel": "MarIAna reply",
     "errorGeneric": "We could not process your question. Please try again.",
-    "errorEmpty": "No response received. Try another question."
+    "errorEmpty": "No response received. Try another question.",
+    "citationLabel": "{label} (p. {page})"
   },
   "share": {
     "title": "Policy shared with you",
@@ -459,7 +501,10 @@
     "acceptError": "Could not accept access. Check your email and try again.",
     "alreadyAccepted": "This access was already accepted. Check your policy list.",
     "unavailable": "This link is no longer available.",
-    "declineCta": "Decline"
+    "declineCta": "Decline",
+    "permissionLabel": "Permission",
+    "permissionView": "View only",
+    "permissionViewDownload": "View and download documents"
   },
   "alerts": {
     "title": "Alerts",
@@ -478,6 +523,7 @@
       "profile": "Profile",
       "privacy": "Privacy & data",
       "preferences": "Preferences",
+      "subscription": "Subscription",
       "notifications": "Push notifications"
     },
     "items": {
@@ -485,6 +531,8 @@
       "personalDataHint": "Name, email, and photo",
       "privacy": "Privacy",
       "privacyHint": "Consent and data processing",
+      "subscription": "Premium plan",
+      "subscriptionHint": "Billing and benefits",
       "export": "Export my data",
       "exportHint": "Download in a portable format",
       "deleteAccount": "Delete account",
@@ -533,6 +581,7 @@
       "title": "Unlock all of InsurWallet",
       "close": "Close",
       "cta": "View Premium plans",
+      "redirecting": "Redirecting to Wompi…",
       "dismiss": "Not now",
       "reasons": {
         "policyLimit": "The free plan includes up to {limit} policies. Upgrade to add more.",
@@ -545,9 +594,47 @@
         "cloudExtraction": "Automatic cloud PDF extraction",
         "prioritySupport": "Priority support"
       }
+    },
+    "page": {
+      "title": "Subscription",
+      "subtitle": "Manage your plan and Wompi checkout.",
+      "planBadge": "Premium",
+      "planName": "InsurWallet Premium",
+      "perMonth": "month",
+      "features": {
+        "unlimitedPolicies": "Unlimited policies",
+        "mariana": "MarIAna — AI assistant",
+        "cloudExtraction": "Cloud PDF extraction",
+        "prioritySupport": "Priority support"
+      },
+      "loading": "Loading subscription status…",
+      "activeMessage": "Your Premium plan is active.",
+      "freeMessage": "You are on the free plan (up to 3 policies).",
+      "cta": "Pay with Wompi",
+      "alreadyPremium": "Active plan",
+      "redirecting": "Redirecting to Wompi…",
+      "backToSettings": "Back to settings",
+      "returnMessage": "If you completed payment, Premium will activate within a few minutes.",
+      "checkoutError": "Could not start checkout. Check Wompi configuration.",
+      "paymentsDisabled": "Payments are disabled in this environment.",
+      "sandboxNote": "Use Wompi sandbox keys for testing (card, Nequi, PSE)."
     }
   },
   "legal": {
+    "cookies": {
+      "title": "We use essential cookies",
+      "description": "They help with session, preferences, and security.",
+      "privacyLink": "Privacy policy",
+      "accept": "Accept",
+      "dismiss": "Close"
+    },
+    "cloudAi": {
+      "title": "Cloud AI processing",
+      "description": "To extract data from your PDF, the document will be sent securely to our AI services (Claude). Continue only if you accept this processing.",
+      "privacyLink": "Learn more in privacy",
+      "accept": "I agree and continue",
+      "cancel": "Cancel"
+    },
     "back": "Back to home",
     "backToSettings": "Back to settings",
     "lastUpdatedLabel": "Last updated",

@@ -3,6 +3,13 @@
  * Subscription writes go through Admin SDK (Firestore rules block client writes).
  */
 
+import {
+  createWompiPaymentLink,
+  getWompiConfigFromEnv,
+  parseWompiWebhookEvent,
+  WompiError,
+} from './wompi'
+
 export type CheckoutLineItem = {
   name: string
   amountInCents: number
@@ -23,6 +30,7 @@ export type CreateCheckoutResult = {
   checkoutId: string
   checkoutUrl: string
   provider: string
+  reference: string
   expiresAt: Date
 }
 
@@ -51,7 +59,6 @@ export interface PaymentProvider {
 
   createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult>
 
-  /** Parse and validate provider webhook payload; throws if signature invalid. */
   parseWebhook(
     rawBody: string,
     headers: Record<string, string | undefined>
@@ -62,24 +69,30 @@ export interface PaymentProvider {
   ): Promise<CancelSubscriptionResult>
 }
 
-/** Stub Wompi adapter — replace with real API calls + Secret Manager keys in 5.2. */
 export class WompiPaymentProvider implements PaymentProvider {
   readonly name = 'wompi'
 
   async createCheckout(
     input: CreateCheckoutInput
   ): Promise<CreateCheckoutResult> {
-    const checkoutId = `wompi_stub_${input.uid}_${Date.now()}`
     const total = input.lineItems.reduce(
       (sum, item) => sum + item.amountInCents * item.quantity,
       0
     )
 
+    const result = await createWompiPaymentLink(getWompiConfigFromEnv(), {
+      uid: input.uid,
+      email: input.email,
+      returnUrl: input.returnUrl,
+      amountInCents: total,
+    })
+
     return {
-      checkoutId,
-      checkoutUrl: `https://checkout.wompi.co/l/stub/${checkoutId}?amount=${total}`,
+      checkoutId: result.checkoutId,
+      checkoutUrl: result.checkoutUrl,
       provider: this.name,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      reference: result.reference,
+      expiresAt: result.expiresAt,
     }
   }
 
@@ -87,26 +100,12 @@ export class WompiPaymentProvider implements PaymentProvider {
     rawBody: string,
     headers: Record<string, string | undefined>
   ): Promise<WebhookEvent> {
-    verifyWompiSignatureSkeleton(rawBody, headers)
-
-    let payload: Record<string, unknown>
-    try {
-      payload = JSON.parse(rawBody) as Record<string, unknown>
-    } catch {
-      throw new PaymentProviderError(
-        'invalid_payload',
-        'Webhook body is not JSON'
-      )
-    }
-
-    const eventId =
-      typeof payload.id === 'string' ? payload.id : `wompi_evt_${Date.now()}`
+    const config = getWompiConfigFromEnv()
+    const event = parseWompiWebhookEvent(rawBody, headers, config.eventsSecret)
 
     return {
-      id: eventId,
-      type: typeof payload.event === 'string' ? payload.event : 'unknown',
+      ...event,
       provider: this.name,
-      raw: payload,
     }
   }
 
@@ -127,7 +126,8 @@ export class PaymentProviderError extends Error {
       | 'invalid_signature'
       | 'invalid_payload'
       | 'provider_unavailable'
-      | 'not_implemented',
+      | 'not_implemented'
+      | 'not_configured',
     message: string
   ) {
     super(message)
@@ -135,34 +135,16 @@ export class PaymentProviderError extends Error {
   }
 }
 
-/**
- * Skeleton for Wompi `X-Event-Checksum` verification (HMAC-SHA256).
- * Full implementation in 5.3 with Secret Manager `WOMPI_EVENTS_SECRET`.
- */
-export function verifyWompiSignatureSkeleton(
-  rawBody: string,
-  headers: Record<string, string | undefined>
-): void {
-  const signature =
-    headers['x-event-checksum'] ??
-    headers['X-Event-Checksum'] ??
-    headers['x-wompi-signature']
-
-  if (!signature) {
-    throw new PaymentProviderError(
-      'invalid_signature',
-      'Missing Wompi webhook signature header'
-    )
+export function mapWompiError(error: unknown): PaymentProviderError {
+  if (error instanceof WompiError) {
+    return new PaymentProviderError(error.code, error.message)
   }
 
-  if (signature === 'invalid' || signature.length < 8) {
-    throw new PaymentProviderError(
-      'invalid_signature',
-      'Wompi webhook signature verification failed'
-    )
+  if (error instanceof Error) {
+    return new PaymentProviderError('provider_unavailable', error.message)
   }
 
-  void rawBody
+  return new PaymentProviderError('provider_unavailable', 'Unknown Wompi error')
 }
 
 export function getDefaultPaymentProvider(): PaymentProvider {

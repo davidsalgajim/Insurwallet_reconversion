@@ -73,6 +73,12 @@ export async function ensureUserProfile(
       user.photoURL ?? undefined
     )
   )
+
+  void fetch('/api/notifications/welcome', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locale: preferredLanguage }),
+  }).catch(() => undefined)
 }
 
 async function persistSession(user: User, forceRefresh = false): Promise<User> {
