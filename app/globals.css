@@ -200,6 +200,84 @@
   box-shadow: var(--shadow-float);
 }
 
+/* Marketing landing — light editorial surfaces */
+.marketing-surface {
+  background: oklch(97% 0.006 250);
+}
+
+.marketing-hero-frame {
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-float);
+}
+
+.marketing-stat-bar {
+  background: #fff;
+  border: 1px solid rgba(16, 20, 26, 0.06);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-float);
+}
+
+.marketing-floating-card {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 20, 26, 0.06);
+  border-radius: var(--radius-inner);
+  box-shadow: var(--shadow-float);
+}
+
+.marketing-light-card {
+  background: #fff;
+  border: 1px solid rgba(16, 20, 26, 0.06);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.marketing-trust-chip {
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(16, 20, 26, 0.08);
+  background: #fff;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primitive-ink);
+  box-shadow: var(--shadow-soft);
+}
+
+.marketing-icon-ring-primary,
+.marketing-icon-ring-success,
+.marketing-icon-ring-accent {
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+}
+
+.marketing-icon-ring-primary {
+  background: rgba(64, 122, 255, 0.12);
+  color: var(--primitive-accent);
+  border-color: rgba(64, 122, 255, 0.18);
+}
+
+.marketing-icon-ring-success {
+  background: rgba(51, 199, 115, 0.12);
+  color: var(--primitive-success);
+  border-color: rgba(51, 199, 115, 0.18);
+}
+
+.marketing-icon-ring-accent {
+  background: rgba(0, 209, 199, 0.12);
+  color: var(--primitive-accent-cyan);
+  border-color: rgba(0, 209, 199, 0.18);
+}
+
+.marketing-glass-on-dark {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.marketing-product-visual {
+  box-shadow: var(--shadow-float);
+}
+
 .marketing-feature-card {
   background: linear-gradient(
     165deg,
