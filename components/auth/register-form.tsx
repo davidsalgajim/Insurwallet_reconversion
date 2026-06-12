@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import { AppLogo } from '@/components/brand/app-logo'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -20,7 +21,7 @@ import {
 } from '@/lib/firebase/auth'
 import { type PreferredLanguage } from '@/lib/schemas/user'
 
-import { SocialAuthButtons } from '@/components/auth/social-auth-buttons'
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 
 type RegisterFormProps = {
   redirectTo?: string
@@ -73,9 +74,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
   return (
     <Card className="glass-surface-dark border-white/10 bg-card/60 text-white shadow-2xl">
       <CardHeader className="text-center">
-        <div className="icon-circle mx-auto mb-2 size-12 border-0 bg-[var(--primitive-ink)] text-sm font-bold text-white shadow-lg">
-          IW
-        </div>
+        <AppLogo size={48} priority className="mx-auto mb-2 rounded-2xl" />
         <CardTitle className="text-2xl text-white">
           {t('createAccount')}
         </CardTitle>
@@ -158,7 +157,16 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
           </Button>
         </form>
 
-        <SocialAuthButtons
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center" aria-hidden>
+            <span className="w-full border-t border-white/10" />
+          </div>
+          <p className="relative mx-auto w-fit bg-transparent px-3 text-xs text-white/40">
+            {t('orContinueWith')}
+          </p>
+        </div>
+
+        <GoogleSignInButton
           onGoogleClick={handleGoogleSignIn}
           googleLoading={googleLoading}
           disabled={submitting}

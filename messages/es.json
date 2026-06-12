@@ -19,7 +19,10 @@
     "feature2Title": "Lectura inteligente",
     "feature2Desc": "Sube tu PDF y revisa los datos extraídos antes de guardar.",
     "feature3Title": "MarIAna te asiste",
-    "feature3Desc": "Pregunta sobre coberturas, vencimientos o a quién llamar en emergencias."
+    "feature3Desc": "Pregunta sobre coberturas, vencimientos o a quién llamar en emergencias.",
+    "platformLabel": "Plataforma",
+    "featuresTitle": "Todo lo que necesitas para entender tus seguros",
+    "featuresSubtitle": "Centraliza, extrae y consulta — sin perder el control de tus pólizas."
   },
   "auth": {
     "welcomeBack": "Bienvenido de nuevo",
@@ -28,8 +31,7 @@
     "password": "Contraseña",
     "displayName": "Nombre",
     "continueWithGoogle": "Continuar con Google",
-    "continueWithApple": "Continuar con Apple",
-    "appleSignInUnavailable": "Requiere configuración en Apple Developer",
+    "orContinueWith": "o continúa con",
     "forgotPassword": "¿Olvidaste tu contraseña?",
     "forgotPasswordTitle": "Recuperar contraseña",
     "forgotPasswordDesc": "Te enviaremos un enlace para restablecer tu contraseña.",

@@ -85,8 +85,8 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 
 - [ ] 2.0 F1 — Núcleo del producto: autenticación, modelo de datos Firestore con security rules testeadas, CRUD de pólizas (wizard manual) y dashboard
   - [x] 2.1 Schemas Zod (`lib/schemas/`) + `computePolicyStatus` con 10 tests passing
-  - [x] 2.2 Firebase Auth: email/password, Google, forgot-password, `users/{uid}` al registrarse, middleware + session cookie — pendiente: verificación email, Apple Sign-In (requiere Apple Developer)
-  - [x] 2.3 `firestore.rules` (owner, sharedWith read, subcolecciones documents/auditLogs) + 19 tests — ejecutar con emulador (requiere Java/JDK)
+  - [x] 2.2 Firebase Auth: email/password + Google; forgot-password; `users/{uid}` al registrarse; middleware + session cookie — pendiente: verificación email
+  - [x] 2.3 `firestore.rules` (owner, sharedWith read, subcolecciones documents/auditLogs) + 19 tests — ejecutar con emulador (requiere JDK 21+; `firebase-tools` ≥15)
   - [x] 2.4 `storage.rules` (mime PDF/imágenes, máx 20MB, owner) + 6 tests emulator-ready
   - [x] 2.5 `firestore.indexes.json` (ownerUid+status, ownerUid+endDate, sharedWith+endDate)
   - [x] 2.6 Wizard paso 1 + paso 2 manual (`/policies/new/manual`) funcional con Firestore — PDF upload y pasos 3-4 pendientes

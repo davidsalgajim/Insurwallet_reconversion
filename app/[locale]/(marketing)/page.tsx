@@ -1,5 +1,6 @@
 import { ArrowRight, FileSearch, MessageSquareText, Shield } from 'lucide-react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { AppLogo } from '@/components/brand/app-logo'
 import { DashboardPreview } from '@/components/marketing/dashboard-preview'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
@@ -16,18 +17,21 @@ export default async function LandingPage({ params }: Props) {
       icon: Shield,
       title: t('landing.feature1Title'),
       desc: t('landing.feature1Desc'),
+      iconClass: 'marketing-feature-icon-primary',
     },
     {
       icon: FileSearch,
       title: t('landing.feature2Title'),
       desc: t('landing.feature2Desc'),
+      iconClass: 'marketing-feature-icon-success',
     },
     {
       icon: MessageSquareText,
       title: t('landing.feature3Title'),
       desc: t('landing.feature3Desc'),
+      iconClass: 'marketing-feature-icon-accent',
     },
-  ]
+  ] as const
 
   return (
     <div className="dark-surface min-h-dvh overflow-hidden bg-navy">
@@ -41,9 +45,7 @@ export default async function LandingPage({ params }: Props) {
 
       <header className="relative z-10 mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 sm:py-6">
         <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-full bg-[var(--primitive-ink)] text-sm font-bold text-white shadow-lg">
-            IW
-          </span>
+          <AppLogo size={44} priority className="rounded-2xl" />
           <div>
             <p className="text-lg font-semibold tracking-tight text-white">
               {t('common.appName')}
@@ -122,29 +124,52 @@ export default async function LandingPage({ params }: Props) {
         </div>
       </section>
 
-      <section className="relative z-10 border-t border-white/5 bg-background px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-widest text-primary">
-              Plataforma
+      <section className="relative z-10 px-4 py-20 sm:px-6 sm:py-24 lg:py-28">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute left-[15%] top-[35%] size-96 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute right-[8%] top-[15%] size-72 rounded-full bg-accent/8 blur-3xl"
+          aria-hidden
+        />
+
+        <div className="relative mx-auto max-w-6xl">
+          <div className="mb-12 max-w-2xl md:mb-14">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">
+              {t('landing.platformLabel')}
             </p>
-            <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight text-foreground">
-              Todo lo que necesitas para entender tus seguros
+            <h2 className="mt-4 text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              {t('landing.featuresTitle')}
             </h2>
+            <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/60">
+              {t('landing.featuresSubtitle')}
+            </p>
           </div>
-          <div className="grid gap-5 md:grid-cols-3">
+
+          <div className="grid gap-4 sm:gap-5 md:grid-cols-3">
             {features.map((feature) => (
               <article
                 key={feature.title}
-                className="glass-panel group p-6 hover:-translate-y-0.5"
+                className="marketing-feature-card group relative overflow-hidden p-6 sm:p-7"
               >
-                <div className="icon-circle mb-4 size-12 stat-icon-primary border-0">
-                  <feature.icon className="size-5" strokeWidth={1.5} />
+                <div
+                  className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  aria-hidden
+                />
+                <div
+                  className={`mb-5 inline-flex size-14 items-center justify-center rounded-[18px] ${feature.iconClass}`}
+                >
+                  <feature.icon className="size-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg font-semibold tracking-tight">
+                <h3 className="text-lg font-semibold tracking-tight text-white">
                   {feature.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-2.5 text-sm leading-relaxed text-white/55">
                   {feature.desc}
                 </p>
               </article>

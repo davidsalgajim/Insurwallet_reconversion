@@ -8,6 +8,8 @@ import {
   Upload,
 } from 'lucide-react'
 
+import { AppLogo } from '@/components/brand/app-logo'
+
 export function DashboardPreview() {
   return (
     <div className="relative">
@@ -16,9 +18,7 @@ export function DashboardPreview() {
           {/* Slim rail mock */}
           <div className="mb-3 flex gap-3">
             <div className="glass-panel flex w-12 shrink-0 flex-col items-center gap-2 py-3">
-              <span className="flex size-8 items-center justify-center rounded-full bg-[#10141a] text-[9px] font-bold text-white">
-                IW
-              </span>
+              <AppLogo size={32} className="rounded-lg" />
               {[Shield, FileText, MessageSquareText].map((Icon, i) => (
                 <span
                   key={i}

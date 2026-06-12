@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import { AppLogo } from '@/components/brand/app-logo'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -41,9 +42,7 @@ export function ForgotPasswordForm() {
   return (
     <Card className="glass-surface-dark border-white/10 bg-card/60 text-white shadow-2xl">
       <CardHeader className="text-center">
-        <div className="icon-circle mx-auto mb-2 size-12 border-0 bg-[var(--primitive-ink)] text-sm font-bold text-white shadow-lg">
-          IW
-        </div>
+        <AppLogo size={48} priority className="mx-auto mb-2 rounded-2xl" />
         <CardTitle className="text-2xl text-white">
           {t('forgotPasswordTitle')}
         </CardTitle>

@@ -183,7 +183,7 @@ describe.runIf(RUN_RULES_TESTS)('firestore.rules', () => {
       await assertFails(
         setDoc(doc(sharedDb, 'policies', 'policy-2'), {
           ...policyFixture,
-          ownerUid: SHARED_UID,
+          ownerUid: OWNER_UID,
         })
       )
     })

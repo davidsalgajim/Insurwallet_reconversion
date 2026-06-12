@@ -19,7 +19,10 @@
     "feature2Title": "Smart reading",
     "feature2Desc": "Upload your PDF and review extracted data before saving.",
     "feature3Title": "MarIAna assists you",
-    "feature3Desc": "Ask about coverages, renewals, or who to call in emergencies."
+    "feature3Desc": "Ask about coverages, renewals, or who to call in emergencies.",
+    "platformLabel": "Platform",
+    "featuresTitle": "Everything you need to understand your insurance",
+    "featuresSubtitle": "Centralize, extract, and ask — without losing control of your policies."
   },
   "auth": {
     "welcomeBack": "Welcome back",
@@ -28,8 +31,7 @@
     "password": "Password",
     "displayName": "Name",
     "continueWithGoogle": "Continue with Google",
-    "continueWithApple": "Continue with Apple",
-    "appleSignInUnavailable": "Requires Apple Developer configuration",
+    "orContinueWith": "or continue with",
     "forgotPassword": "Forgot password?",
     "forgotPasswordTitle": "Reset password",
     "forgotPasswordDesc": "We will email you a link to reset your password.",

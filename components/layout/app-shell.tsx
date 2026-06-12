@@ -11,6 +11,7 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { AppLogo } from '@/components/brand/app-logo'
 import { cn } from '@/lib/utils/cn'
 
 const RAIL_NAV = [
@@ -72,9 +73,10 @@ export function AppShell({ locale, children }: AppShellProps) {
         >
           <Link
             href={`/${locale}/dashboard`}
-            className="mb-6 flex size-12 items-center justify-center rounded-full bg-[var(--primitive-ink)] text-xs font-bold text-white shadow-lg"
+            aria-label="InsurWallet — inicio"
+            className="mb-6 transition-[transform,box-shadow] duration-200 hover:scale-[1.02] hover:shadow-[var(--shadow-float)]"
           >
-            IW
+            <AppLogo size={48} priority className="rounded-[14px]" />
           </Link>
 
           <nav className="flex flex-col items-center gap-2">
