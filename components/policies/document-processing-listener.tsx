@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { DocumentProcessingStatus } from '@/components/policies/document-processing-status'
@@ -49,6 +49,7 @@ export function DocumentProcessingListener({
     loading: true,
     error: null,
   })
+  const processRequestedRef = useRef(false)
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
@@ -67,6 +68,24 @@ export function DocumentProcessingListener({
   }, [ownerUid, policyId, docId])
 
   const processingState = resolveProcessingState(snapshot)
+
+  useEffect(() => {
+    if (!snapshot.job || processRequestedRef.current) {
+      return
+    }
+
+    if (snapshot.job.processingState !== 'pending') {
+      return
+    }
+
+    processRequestedRef.current = true
+
+    void fetch(`/api/jobs/${snapshot.job.id}/process`, {
+      method: 'POST',
+    }).catch(() => {
+      processRequestedRef.current = false
+    })
+  }, [snapshot.job])
 
   useEffect(() => {
     if (!snapshot.job) {

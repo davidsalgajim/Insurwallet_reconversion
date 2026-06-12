@@ -108,5 +108,33 @@ export const onPolicyDocumentUpload = onObjectFinalized(async (event) => {
     ownerUid: parsed.ownerUid,
   })
 
-  // TODO 3.1: POST to Cloud Run worker with OIDC when WORKER_URL is configured.
+  const appUrl = process.env.APP_URL?.trim()
+  const internalSecret = process.env.INTERNAL_API_SECRET?.trim()
+
+  if (appUrl && internalSecret) {
+    const dispatchUrl = `${appUrl.replace(/\/$/, '')}/api/internal/jobs/${jobRef.id}/process`
+
+    try {
+      const response = await fetch(dispatchUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${internalSecret}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ownerUid: parsed.ownerUid }),
+      })
+
+      if (!response.ok) {
+        logger.warn('Internal job dispatch failed', {
+          jobId: jobRef.id,
+          status: response.status,
+        })
+      }
+    } catch (error) {
+      logger.warn('Internal job dispatch error', {
+        jobId: jobRef.id,
+        error,
+      })
+    }
+  }
 })

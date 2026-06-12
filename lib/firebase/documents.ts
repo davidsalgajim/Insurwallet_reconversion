@@ -1,4 +1,11 @@
-import { doc, setDoc, Timestamp, type Firestore } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  Timestamp,
+  type Firestore,
+} from 'firebase/firestore'
 
 import { PolicyDocumentSchema } from '@/lib/schemas/document'
 import { PDF_MIME_TYPE } from '@/lib/schemas/upload'
@@ -60,4 +67,30 @@ export async function registerUploadedDocument(
   const docRef = doc(db, 'policies', input.policyId, 'documents', input.docId)
 
   await setDoc(docRef, documentToFirestoreData(input))
+}
+
+export type PolicyFileDocument = {
+  id: string
+  fileName: string
+  storagePath: string
+  fileSize: number
+}
+
+export async function listPolicyDocuments(
+  db: Firestore,
+  policyId: string
+): Promise<PolicyFileDocument[]> {
+  const snapshot = await getDocs(
+    collection(db, 'policies', policyId, 'documents')
+  )
+
+  return snapshot.docs.map((docSnap) => {
+    const data = docSnap.data()
+    return {
+      id: docSnap.id,
+      fileName: String(data.fileName),
+      storagePath: String(data.storagePath),
+      fileSize: Number(data.fileSize ?? 0),
+    }
+  })
 }

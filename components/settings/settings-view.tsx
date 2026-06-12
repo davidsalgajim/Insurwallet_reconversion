@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  Bell,
   ChevronRight,
   Download,
   Globe,
@@ -16,8 +15,10 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { DeleteAccountDialog } from '@/components/settings/delete-account-dialog'
+import { NotificationPrefsPanel } from '@/components/settings/notification-prefs-panel'
+import { useFcmRegistration } from '@/hooks/useFcmRegistration'
 import { Button } from '@/components/ui/button'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 import {
   requestAccountDeletion,
   requestDataExport,
@@ -27,6 +28,8 @@ import { cn } from '@/lib/utils/cn'
 export function SettingsView() {
   const t = useTranslations('settings')
   const { user } = useAuth()
+  const router = useRouter()
+  useFcmRegistration({ uid: user?.uid })
   const [exporting, setExporting] = useState(false)
   const [exportMessage, setExportMessage] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -37,9 +40,8 @@ export function SettingsView() {
     setExporting(true)
     setExportMessage(null)
     try {
-      const result = await requestDataExport()
-      setExportMessage(t('exportStubSuccess'))
-      void result
+      await requestDataExport()
+      setExportMessage(t('exportSuccess'))
     } catch {
       setExportMessage(t('exportError'))
     } finally {
@@ -51,10 +53,9 @@ export function SettingsView() {
     setDeleting(true)
     setDeleteMessage(null)
     try {
-      const result = await requestAccountDeletion()
-      setDeleteMessage(t('deleteStubSuccess'))
-      void result
+      await requestAccountDeletion()
       setDeleteOpen(false)
+      router.push('/')
     } catch {
       setDeleteMessage(t('deleteError'))
       setDeleteOpen(false)
@@ -105,12 +106,6 @@ export function SettingsView() {
       id: 'preferences',
       title: t('sections.preferences'),
       items: [
-        {
-          icon: Bell,
-          label: t('items.notifications'),
-          hint: t('items.notificationsHint'),
-          href: '/alerts' as const,
-        },
         {
           icon: Globe,
           label: t('items.language'),
@@ -317,6 +312,25 @@ export function SettingsView() {
             </ul>
           </section>
         ))}
+
+        <section
+          aria-labelledby="settings-notifications-panel"
+          className="mt-6"
+        >
+          <h2
+            id="settings-notifications-panel"
+            className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {t('sections.notifications')}
+          </h2>
+          <NotificationPrefsPanel />
+          <Link
+            href="/alerts"
+            className="mt-3 inline-flex text-sm font-medium text-primary hover:underline"
+          >
+            {t('viewAlerts')}
+          </Link>
+        </section>
       </div>
 
       <DeleteAccountDialog

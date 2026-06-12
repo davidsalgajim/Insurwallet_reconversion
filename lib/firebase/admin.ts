@@ -8,6 +8,7 @@ import {
 } from 'firebase-admin/app'
 import { getAuth, type Auth } from 'firebase-admin/auth'
 import { getFirestore, type Firestore } from 'firebase-admin/firestore'
+import { getStorage, type Storage } from 'firebase-admin/storage'
 
 const AUTH_EMULATOR_HOST = '127.0.0.1:9099'
 
@@ -66,6 +67,7 @@ function resolveAdminApp(): App {
 
 let adminAuth: Auth | null = null
 let adminFirestore: Firestore | null = null
+let adminStorage: Storage | null = null
 
 export function getAdminAuth(): Auth {
   if (!adminAuth) {
@@ -81,4 +83,12 @@ export function getAdminFirestore(): Firestore {
   }
 
   return adminFirestore
+}
+
+export function getAdminStorage(): Storage {
+  if (!adminStorage) {
+    adminStorage = getStorage(resolveAdminApp())
+  }
+
+  return adminStorage
 }

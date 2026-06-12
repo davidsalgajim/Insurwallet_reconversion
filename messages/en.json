@@ -327,9 +327,10 @@
       "backToDetail": "Back to detail",
       "authRequired": "Sign in to review this policy.",
       "documentPanel": "Original document",
-      "documentPanelHint": "The PDF viewer with field highlights will be available when the pipeline is complete.",
-      "pdfPlaceholderTitle": "PDF viewer (coming soon)",
-      "pdfPlaceholderDesc": "You will see the PDF with highlighted regions that sourced each extracted field.",
+      "documentPanelHint": "Review the original document alongside extracted data.",
+      "pdfLoading": "Loading document…",
+      "pdfLoadError": "Could not load the PDF. Try again later.",
+      "noDocument": "No document is attached to this policy.",
       "fieldsPanel": "Extracted data",
       "fieldsPanelHint": "Edit any field before confirming. Badges show AI confidence.",
       "confidence": {
@@ -346,6 +347,20 @@
         "requiredFields": "Complete insurer, policy number, and policyholder.",
         "saveFailed": "We could not save the policy. Please try again."
       }
+    },
+    "share": {
+      "action": "Share",
+      "title": "Share policy",
+      "description": "Generate a read-only link for someone else. The link expires in 7 days.",
+      "emailLabel": "Recipient email",
+      "emailPlaceholder": "recipient@example.com",
+      "createLink": "Generate link",
+      "creating": "Generating…",
+      "linkLabel": "Share link",
+      "copyLink": "Copy link",
+      "copied": "Copied",
+      "close": "Close",
+      "createError": "Could not create the link. Try again."
     }
   },
   "dashboard": {
@@ -428,11 +443,22 @@
   "share": {
     "title": "Policy shared with you",
     "description": "Someone shared read-only access to a policy on InsurWallet.",
-    "tokenLabel": "Token",
+    "insurerLabel": "Insurer",
+    "policyNumberLabel": "Policy number",
     "statusLabel": "Status",
+    "recipientLabel": "Recipient",
     "statusPending": "Pending acceptance",
+    "statusAccepted": "Already accepted",
+    "statusExpired": "Link expired",
+    "statusRevoked": "Revoked",
     "loginHint": "Sign in with the recipient email to accept access.",
+    "emailMismatch": "You must sign in with {email} to accept this access.",
     "acceptCta": "Sign in and accept",
+    "acceptNow": "Accept access",
+    "accepting": "Accepting…",
+    "acceptError": "Could not accept access. Check your email and try again.",
+    "alreadyAccepted": "This access was already accepted. Check your policy list.",
+    "unavailable": "This link is no longer available.",
     "declineCta": "Decline"
   },
   "alerts": {
@@ -451,7 +477,8 @@
     "sections": {
       "profile": "Profile",
       "privacy": "Privacy & data",
-      "preferences": "Preferences"
+      "preferences": "Preferences",
+      "notifications": "Push notifications"
     },
     "items": {
       "personalData": "Personal details",
@@ -469,14 +496,26 @@
     },
     "exporting": "Exporting…",
     "exportError": "We could not start the export. Please try again.",
+    "exportSuccess": "Export downloaded successfully.",
     "exportStubSuccess": "Request recorded. You will receive a download link by email when available.",
     "deleteError": "We could not process the request. Please try again.",
     "deleteStubSuccess": "Request recorded. Full account deletion will be available soon.",
+    "viewAlerts": "View in-app alerts",
     "deleteAccount": {
       "title": "Delete your account?",
       "description": "This action is permanent. Your policies, documents, and profile data will be deleted.",
       "confirm": "Delete permanently",
       "deleting": "Processing…"
+    },
+    "notifications": {
+      "description": "Choose which reminders you want via push (browser permission required).",
+      "expiry30": "Expiry in 30 days",
+      "expiry60": "Expiry in 60 days",
+      "expiry90": "Expiry in 90 days",
+      "renewals": "Renewals",
+      "events": "Account activity",
+      "saved": "Preferences saved.",
+      "saveError": "Could not save preferences."
     }
   },
   "subscription": {

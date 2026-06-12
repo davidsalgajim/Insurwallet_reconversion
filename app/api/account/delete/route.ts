@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
+import { deleteUserAccountData } from '@/lib/server/account-delete'
 
 export const runtime = 'nodejs'
 
@@ -9,10 +10,6 @@ const deleteRequestSchema = z.object({
   confirm: z.literal(true),
 })
 
-/**
- * GDPR account deletion skeleton (5.10).
- * Mirrors `functions/src/account/delete-user-account.ts` — no data is deleted yet.
- */
 export async function POST(request: Request) {
   const session = await requireSession()
 
@@ -35,14 +32,27 @@ export async function POST(request: Request) {
     )
   }
 
-  return NextResponse.json(
-    {
-      status: 'stub',
-      message:
-        'La eliminación de cuenta estará disponible pronto. Ningún dato fue borrado.',
-      uid: session.uid,
-      requestedAt: new Date().toISOString(),
-    },
-    { status: 202 }
-  )
+  try {
+    const result = await deleteUserAccountData(session.uid)
+
+    const response = NextResponse.json({
+      status: 'deleted',
+      message: 'Account and associated data were deleted.',
+      ...result,
+    })
+
+    response.cookies.set('__session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    })
+
+    return response
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Account deletion failed'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }

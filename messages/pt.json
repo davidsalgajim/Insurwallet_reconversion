@@ -327,9 +327,10 @@
       "backToDetail": "Voltar ao detalhe",
       "authRequired": "Faça login para revisar esta apólice.",
       "documentPanel": "Documento original",
-      "documentPanelHint": "O visualizador PDF com destaque de campos estará disponível quando o pipeline estiver completo.",
-      "pdfPlaceholderTitle": "Visualizador PDF (em breve)",
-      "pdfPlaceholderDesc": "Você verá o PDF com regiões destacadas que originaram cada dado extraído.",
+      "documentPanelHint": "Revise o documento original junto com os dados extraídos.",
+      "pdfLoading": "Carregando documento…",
+      "pdfLoadError": "Não foi possível carregar o PDF. Tente novamente mais tarde.",
+      "noDocument": "Não há documento associado a esta apólice.",
       "fieldsPanel": "Dados extraídos",
       "fieldsPanelHint": "Edite qualquer campo antes de confirmar. Os badges indicam a confiança da IA.",
       "confidence": {
@@ -346,6 +347,20 @@
         "requiredFields": "Preencha seguradora, número da apólice e tomador.",
         "saveFailed": "Não foi possível salvar a apólice. Tente novamente."
       }
+    },
+    "share": {
+      "action": "Compartilhar",
+      "title": "Compartilhar apólice",
+      "description": "Gere um link somente leitura para outra pessoa. O link expira em 7 dias.",
+      "emailLabel": "E-mail do destinatário",
+      "emailPlaceholder": "destinatario@exemplo.com",
+      "createLink": "Gerar link",
+      "creating": "Gerando…",
+      "linkLabel": "Link para compartilhar",
+      "copyLink": "Copiar link",
+      "copied": "Copiado",
+      "close": "Fechar",
+      "createError": "Não foi possível criar o link. Tente novamente."
     }
   },
   "dashboard": {
@@ -428,11 +443,22 @@
   "share": {
     "title": "Apólice compartilhada com você",
     "description": "Alguém compartilhou acesso somente leitura a uma apólice no InsurWallet.",
-    "tokenLabel": "Token",
+    "insurerLabel": "Seguradora",
+    "policyNumberLabel": "Número da apólice",
     "statusLabel": "Status",
+    "recipientLabel": "Destinatário",
     "statusPending": "Aceitação pendente",
+    "statusAccepted": "Já aceita",
+    "statusExpired": "Link expirado",
+    "statusRevoked": "Revogada",
     "loginHint": "Entre com o e-mail do destinatário para aceitar o acesso.",
+    "emailMismatch": "Você deve entrar com {email} para aceitar este acesso.",
     "acceptCta": "Entrar e aceitar",
+    "acceptNow": "Aceitar acesso",
+    "accepting": "Aceitando…",
+    "acceptError": "Não foi possível aceitar o acesso. Verifique seu e-mail e tente novamente.",
+    "alreadyAccepted": "Este acesso já foi aceito. Veja sua lista de apólices.",
+    "unavailable": "Este link não está mais disponível.",
     "declineCta": "Recusar"
   },
   "alerts": {
@@ -451,7 +477,8 @@
     "sections": {
       "profile": "Perfil",
       "privacy": "Privacidade e dados",
-      "preferences": "Preferências"
+      "preferences": "Preferências",
+      "notifications": "Notificações push"
     },
     "items": {
       "personalData": "Dados pessoais",
@@ -469,14 +496,26 @@
     },
     "exporting": "Exportando…",
     "exportError": "Não foi possível iniciar a exportação. Tente novamente.",
+    "exportSuccess": "Exportação baixada com sucesso.",
     "exportStubSuccess": "Solicitação registrada. Você receberá um link de download por e-mail quando estiver disponível.",
     "deleteError": "Não foi possível processar a solicitação. Tente novamente.",
     "deleteStubSuccess": "Solicitação registrada. A exclusão completa estará disponível em breve.",
+    "viewAlerts": "Ver alertas no app",
     "deleteAccount": {
       "title": "Excluir sua conta?",
       "description": "Esta ação é permanente. Suas apólices, documentos e dados de perfil serão excluídos.",
       "confirm": "Excluir permanentemente",
       "deleting": "Processando…"
+    },
+    "notifications": {
+      "description": "Escolha quais lembretes deseja receber por push (requer permissão do navegador).",
+      "expiry30": "Vencimento em 30 dias",
+      "expiry60": "Vencimento em 60 dias",
+      "expiry90": "Vencimento em 90 dias",
+      "renewals": "Renovações",
+      "events": "Atividade da conta",
+      "saved": "Preferências salvas.",
+      "saveError": "Não foi possível salvar as preferências."
     }
   },
   "subscription": {

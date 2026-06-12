@@ -7,7 +7,9 @@ import { FormEvent, useMemo, useState } from 'react'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { AppTopbar } from '@/components/layout/app-topbar'
+import { PolicyPdfViewer } from '@/components/policies/policy-pdf-viewer'
 import { PolicyWizardProgress } from '@/components/policies/policy-wizard-progress'
+import { usePolicyDocuments } from '@/hooks/usePolicyDocuments'
 import { Button } from '@/components/ui/button'
 import { Link, useRouter } from '@/i18n/navigation'
 import { usePolicy } from '@/hooks/usePolicy'
@@ -105,9 +107,16 @@ function buildReviewFields(policy: PolicyDocument): ReviewFieldState[] {
 type ReviewPolicyFormProps = {
   policy: PolicyDocument
   userUid: string
+  storagePath?: string
+  fileName?: string
 }
 
-function ReviewPolicyForm({ policy, userUid }: ReviewPolicyFormProps) {
+function ReviewPolicyForm({
+  policy,
+  userUid,
+  storagePath,
+  fileName,
+}: ReviewPolicyFormProps) {
   const t = useTranslations('policies.review')
   const tFields = useTranslations('policies.fields')
   const ta = useTranslations('common.actions')
@@ -220,14 +229,17 @@ function ReviewPolicyForm({ policy, userUid }: ReviewPolicyFormProps) {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-1 items-center justify-center rounded-[var(--radius-inner)] border border-dashed border-border/70 bg-white/40 p-8 text-center">
-          <div className="space-y-2">
-            <p className="text-sm font-medium">{t('pdfPlaceholderTitle')}</p>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {t('pdfPlaceholderDesc')}
-            </p>
+        {storagePath && fileName ? (
+          <PolicyPdfViewer
+            storagePath={storagePath}
+            fileName={fileName}
+            className="mt-6 flex-1"
+          />
+        ) : (
+          <div className="mt-6 flex flex-1 items-center justify-center rounded-[var(--radius-inner)] border border-dashed border-border/70 bg-white/40 p-8 text-center">
+            <p className="text-sm text-muted-foreground">{t('noDocument')}</p>
           </div>
-        </div>
+        )}
       </section>
 
       <section
@@ -335,6 +347,8 @@ export function PolicyReviewView() {
   const policyId = params.id
   const { user, loading: authLoading } = useAuth()
   const { policy, loading, error } = usePolicy(policyId)
+  const { documents, loading: documentsLoading } = usePolicyDocuments(policyId)
+  const primaryDocument = documents[0]
 
   if (loading || authLoading) {
     return (
@@ -373,10 +387,18 @@ export function PolicyReviewView() {
         </Button>
       </div>
 
-      {!user || !policy ? (
-        <p className="text-sm text-muted-foreground">{t('authRequired')}</p>
+      {!user || !policy || documentsLoading ? (
+        <p className="text-sm text-muted-foreground">
+          {!user || !policy ? t('authRequired') : t('pdfLoading')}
+        </p>
       ) : (
-        <ReviewPolicyForm key={policy.id} policy={policy} userUid={user.uid} />
+        <ReviewPolicyForm
+          key={policy.id}
+          policy={policy}
+          userUid={user.uid}
+          storagePath={primaryDocument?.storagePath}
+          fileName={primaryDocument?.fileName}
+        />
       )}
     </div>
   )

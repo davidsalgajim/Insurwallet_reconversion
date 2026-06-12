@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server'
 
 import { requireSession } from '@/lib/api/require-session'
+import { buildUserDataExport } from '@/lib/server/account-export'
 
 export const runtime = 'nodejs'
 
-/**
- * GDPR data export skeleton (5.10).
- * Mirrors `functions/src/account/export-user-data.ts` — wire to Cloud Function when deployed.
- */
 export async function POST() {
   const session = await requireSession()
 
@@ -15,14 +12,19 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  return NextResponse.json(
-    {
-      status: 'stub',
-      message:
-        'La exportación completa estará disponible pronto. Recibirás un enlace de descarga por correo.',
-      uid: session.uid,
-      requestedAt: new Date().toISOString(),
-    },
-    { status: 202 }
-  )
+  try {
+    const payload = await buildUserDataExport(session.uid)
+    const body = JSON.stringify(payload, null, 2)
+    const filename = `insurwallet-export-${session.uid}-${Date.now()}.json`
+
+    return new NextResponse(body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Export failed' }, { status: 500 })
+  }
 }

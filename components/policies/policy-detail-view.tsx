@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   CalendarRange,
   Pencil,
+  Share2,
   Shield,
   Trash2,
   UserRound,
@@ -15,6 +16,7 @@ import { useParams } from 'next/navigation'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { DeletePolicyDialog } from '@/components/policies/delete-policy-dialog'
+import { SharePolicyDialog } from '@/components/policies/share-policy-dialog'
 import { PolicyStatusBadge } from '@/components/policies/policy-status-badge'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { Button } from '@/components/ui/button'
@@ -83,6 +85,7 @@ export function PolicyDetailView() {
   const { user } = useAuth()
   const { policy, loading, error, isOwner } = usePolicy(policyId)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -165,6 +168,16 @@ export function PolicyDetailView() {
               </div>
               {isOwner ? (
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-[var(--radius-pill)]"
+                    onClick={() => setShareOpen(true)}
+                  >
+                    <Share2 className="size-4" strokeWidth={1.5} />
+                    {t('share.action')}
+                  </Button>
                   <Button
                     asChild
                     variant="secondary"
@@ -308,6 +321,15 @@ export function PolicyDetailView() {
               }
             }}
           />
+
+          {user ? (
+            <SharePolicyDialog
+              open={shareOpen}
+              policyId={policy.id}
+              ownerUid={user.uid}
+              onClose={() => setShareOpen(false)}
+            />
+          ) : null}
         </>
       ) : null}
     </div>
