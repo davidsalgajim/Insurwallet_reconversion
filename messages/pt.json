@@ -26,7 +26,27 @@
     "createAccount": "Crie sua conta",
     "email": "E-mail",
     "password": "Senha",
-    "continueWithGoogle": "Continuar com Google"
+    "displayName": "Nome",
+    "continueWithGoogle": "Continuar com Google",
+    "continueWithApple": "Continuar com Apple",
+    "appleSignInUnavailable": "Requer configuração no Apple Developer",
+    "forgotPassword": "Esqueceu a senha?",
+    "forgotPasswordTitle": "Recuperar senha",
+    "forgotPasswordDesc": "Enviaremos um link para redefinir sua senha.",
+    "sendResetLink": "Enviar link",
+    "resetPasswordSent": "Verifique seu e-mail. Se existir uma conta, você receberá um link para redefinir a senha.",
+    "backToLogin": "Voltar para entrar",
+    "noAccount": "Não tem conta?",
+    "hasAccount": "Já tem conta?",
+    "errors": {
+      "emailInUse": "Este e-mail já está registrado.",
+      "invalidEmail": "Informe um e-mail válido.",
+      "weakPassword": "A senha deve ter pelo menos 6 caracteres.",
+      "invalidCredentials": "E-mail ou senha incorretos.",
+      "tooManyRequests": "Muitas tentativas. Tente mais tarde.",
+      "popupClosed": "Login cancelado.",
+      "genericError": "Não foi possível concluir a ação. Tente novamente."
+    }
   },
   "dashboard": {
     "greeting": "Olá",

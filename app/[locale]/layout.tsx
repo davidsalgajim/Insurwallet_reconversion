@@ -2,6 +2,8 @@ import type { Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
+
+import { AuthProvider } from '@/components/auth/auth-provider'
 import { routing } from '@/i18n/routing'
 import { dmSans } from '@/lib/fonts'
 import { cn } from '@/lib/utils/cn'
@@ -35,7 +37,7 @@ export default async function LocaleLayout({ children, params }: Props) {
     <html lang={locale} className={cn('h-full antialiased', dmSans.variable)}>
       <body className={cn('min-h-full font-sans', dmSans.className)}>
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

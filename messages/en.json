@@ -26,7 +26,27 @@
     "createAccount": "Create your account",
     "email": "Email",
     "password": "Password",
-    "continueWithGoogle": "Continue with Google"
+    "displayName": "Name",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple",
+    "appleSignInUnavailable": "Requires Apple Developer configuration",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Reset password",
+    "forgotPasswordDesc": "We will email you a link to reset your password.",
+    "sendResetLink": "Send reset link",
+    "resetPasswordSent": "Check your email. If an account exists, you will receive a password reset link.",
+    "backToLogin": "Back to log in",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "errors": {
+      "emailInUse": "This email is already registered.",
+      "invalidEmail": "Enter a valid email address.",
+      "weakPassword": "Password must be at least 6 characters.",
+      "invalidCredentials": "Incorrect email or password.",
+      "tooManyRequests": "Too many attempts. Try again later.",
+      "popupClosed": "Sign-in was cancelled.",
+      "genericError": "We could not complete the action. Try again."
+    }
   },
   "dashboard": {
     "greeting": "Hello",

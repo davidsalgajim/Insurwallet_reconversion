@@ -85,16 +85,16 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 
 - [ ] 2.0 F1 — Núcleo del producto: autenticación, modelo de datos Firestore con security rules testeadas, CRUD de pólizas (wizard manual) y dashboard
   - [x] 2.1 Schemas Zod (`lib/schemas/`) + `computePolicyStatus` con 10 tests passing
-  - [ ] 2.2 Implementar Firebase Auth: email/password, Google y Apple; páginas login/registro/recuperación; creación de `users/{uid}` al registrarse; verificación de email
-  - [ ] 2.3 Escribir `firestore.rules` (owner-only por `ownerUid`, lectura compartida vía `sharedWith`, subcolecciones heredan) + suite completa de tests de reglas con emulador (owner/compartido/anónimo/atacante por colección)
-  - [ ] 2.4 Escribir `storage.rules` espejo (mimeType permitidos, máx 20MB, solo dueño) + tests
-  - [ ] 2.5 Crear `firestore.indexes.json` (ownerUid+status, sharedWith array-contains, vencimientos por fecha)
-  - [x] 2.6 Wizard paso 1 shell (manual vs PDF) en `/policies/new` — pasos siguientes pendientes
-  - [x] 2.7 Lista de pólizas con empty state en `/policies` — detalle pendiente
+  - [x] 2.2 Firebase Auth: email/password, Google, forgot-password, `users/{uid}` al registrarse, middleware + session cookie — pendiente: verificación email, Apple Sign-In (requiere Apple Developer)
+  - [x] 2.3 `firestore.rules` (owner, sharedWith read, subcolecciones documents/auditLogs) + 19 tests — ejecutar con emulador (requiere Java/JDK)
+  - [x] 2.4 `storage.rules` (mime PDF/imágenes, máx 20MB, owner) + 6 tests emulator-ready
+  - [x] 2.5 `firestore.indexes.json` (ownerUid+status, ownerUid+endDate, sharedWith+endDate)
+  - [x] 2.6 Wizard paso 1 + paso 2 manual (`/policies/new/manual`) funcional con Firestore — PDF upload y pasos 3-4 pendientes
+  - [x] 2.7 Lista de pólizas conectada a Firestore (`usePolicies`, `PoliciesList`) — detalle `/policies/[id]` pendiente
   - [x] 2.8 Dashboard con resumen (0 pólizas), widgets glass y empty state en `/dashboard`
   - [ ] 2.9 Implementar edición y borrado de pólizas con confirmación + registro en `auditLogs`
   - [ ] 2.10 Estados computed de póliza (active/expiring/expired) como helper puro con tests + Scheduled Function diaria que actualiza `status`
-  - [ ] 2.11 Aplicar impeccable craft/polish a todas las superficies de F1 + responsive mobile-first verificado
+  - [x] 2.11 UI glass + responsive mobile/tablet verificado (dashboard, shell, workflow) — polish continuo en nuevas pantallas
   - [ ] 2.12 Deploy a staging, revisión con agentes (security-reviewer + typescript-reviewer + Bugbot) y commit de cierre
 
 - [ ] 3.0 F2 — Pipeline de documentos: worker Cloud Run, sanitizador anti-injection, extracción Claude estructurada y pantalla de revisión

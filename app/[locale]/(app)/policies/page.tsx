@@ -1,5 +1,5 @@
 import { AppTopbar } from '@/components/layout/app-topbar'
-import { PoliciesEmptyState } from '@/components/policies/empty-state'
+import { PoliciesList } from '@/components/policies/policies-list'
 
 type PoliciesPageProps = {
   params: Promise<{ locale: string }>
@@ -15,7 +15,7 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
         subtitle="Gestiona y revisa tus seguros en un solo lugar."
       />
       <section className="glass-panel" aria-label="Lista de pólizas">
-        <PoliciesEmptyState />
+        <PoliciesList />
       </section>
     </div>
   )
