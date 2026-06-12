@@ -508,7 +508,16 @@
       "deleting": "Processando…"
     },
     "notifications": {
-      "description": "Escolha quais lembretes deseja receber por push (requer permissão do navegador).",
+      "channels": {
+        "title": "Canal de entrega",
+        "description": "Escolha como deseja receber os lembretes habilitados abaixo.",
+        "emailOnly": "Somente email",
+        "pushOnly": "Somente push",
+        "both": "Email e push",
+        "pushHint": "Push exige permissão do navegador e chave VAPID configurada (veja a documentação)."
+      },
+      "eventsTitle": "Tipos de aviso",
+      "description": "Ative ou desative cada tipo de lembrete. Eles só são enviados pelos canais escolhidos acima.",
       "expiry30": "Vencimento em 30 dias",
       "expiry60": "Vencimento em 60 dias",
       "expiry90": "Vencimento em 90 dias",
@@ -540,6 +549,7 @@
   },
   "legal": {
     "back": "Voltar ao início",
+    "backToSettings": "Voltar às configurações",
     "lastUpdatedLabel": "Última atualização",
     "lastUpdatedDate": "12 de junho de 2026",
     "terms": {

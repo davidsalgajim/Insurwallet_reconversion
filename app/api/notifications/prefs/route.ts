@@ -3,12 +3,18 @@ import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
 import { getAdminFirestore } from '@/lib/firebase/admin'
-import { NotificationPrefsSchema } from '@/lib/schemas/user'
+import {
+  NotificationChannelsSchema,
+  NotificationPrefsSchema,
+  defaultNotificationChannels,
+  defaultNotificationPrefs,
+} from '@/lib/schemas/user'
 
 export const runtime = 'nodejs'
 
 const prefsSchema = z.object({
   notificationPrefs: NotificationPrefsSchema,
+  notificationChannels: NotificationChannelsSchema,
 })
 
 export async function GET() {
@@ -23,20 +29,17 @@ export async function GET() {
     .doc(session.uid)
     .get()
 
-  const prefs = NotificationPrefsSchema.safeParse(
-    userSnap.data()?.notificationPrefs
+  const userData = userSnap.data()
+  const prefs = NotificationPrefsSchema.safeParse(userData?.notificationPrefs)
+  const channels = NotificationChannelsSchema.safeParse(
+    userData?.notificationChannels
   )
 
   return NextResponse.json({
-    notificationPrefs: prefs.success
-      ? prefs.data
-      : {
-          expiry30: true,
-          expiry60: true,
-          expiry90: false,
-          renewals: true,
-          events: false,
-        },
+    notificationPrefs: prefs.success ? prefs.data : defaultNotificationPrefs(),
+    notificationChannels: channels.success
+      ? channels.data
+      : defaultNotificationChannels(),
   })
 }
 
@@ -63,10 +66,14 @@ export async function PUT(request: Request) {
   await getAdminFirestore().collection('users').doc(session.uid).set(
     {
       notificationPrefs: parsed.data.notificationPrefs,
+      notificationChannels: parsed.data.notificationChannels,
       updatedAt: new Date(),
     },
     { merge: true }
   )
 
-  return NextResponse.json({ notificationPrefs: parsed.data.notificationPrefs })
+  return NextResponse.json({
+    notificationPrefs: parsed.data.notificationPrefs,
+    notificationChannels: parsed.data.notificationChannels,
+  })
 }

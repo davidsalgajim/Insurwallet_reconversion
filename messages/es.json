@@ -508,7 +508,16 @@
       "deleting": "Procesando…"
     },
     "notifications": {
-      "description": "Elige qué recordatorios quieres recibir por push (requiere permiso del navegador).",
+      "channels": {
+        "title": "Canal de entrega",
+        "description": "Elige cómo quieres recibir los recordatorios habilitados abajo.",
+        "emailOnly": "Solo email",
+        "pushOnly": "Solo push",
+        "both": "Email y push",
+        "pushHint": "Push requiere permiso del navegador y la clave VAPID configurada (ver documentación)."
+      },
+      "eventsTitle": "Tipos de aviso",
+      "description": "Activa o desactiva cada tipo de recordatorio. Solo se envían por los canales que hayas elegido arriba.",
       "expiry30": "Vencimiento en 30 días",
       "expiry60": "Vencimiento en 60 días",
       "expiry90": "Vencimiento en 90 días",
@@ -540,6 +549,7 @@
   },
   "legal": {
     "back": "Volver al inicio",
+    "backToSettings": "Volver a configuración",
     "lastUpdatedLabel": "Última actualización",
     "lastUpdatedDate": "12 de junio de 2026",
     "terms": {

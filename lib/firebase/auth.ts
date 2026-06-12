@@ -3,23 +3,18 @@
 import type { User } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
-import { type PreferredLanguage, UserProfileSchema } from '@/lib/schemas/user'
+import {
+  type PreferredLanguage,
+  UserProfileSchema,
+  defaultNotificationChannels,
+  defaultNotificationPrefs,
+} from '@/lib/schemas/user'
 
 import {
   clearServerSession,
   createServerSession,
 } from '@/lib/firebase/session-cookie'
 import { userNeedsEmailVerification } from '@/lib/firebase/session-claims'
-
-function defaultNotificationPrefs() {
-  return {
-    expiry30: true,
-    expiry60: true,
-    expiry90: true,
-    renewals: true,
-    events: true,
-  }
-}
 
 function buildDefaultProfile(
   email: string,
@@ -37,6 +32,7 @@ function buildDefaultProfile(
       status: 'active',
     },
     notificationPrefs: defaultNotificationPrefs(),
+    notificationChannels: defaultNotificationChannels(),
   })
 }
 

@@ -8,7 +8,7 @@ function encodePayload(payload: Record<string, unknown>): string {
 
 function buildToken(payload: Record<string, unknown>): string {
   const exp = Math.floor(Date.now() / 1000) + 3600
-  return `header.${encodePayload({ exp, ...payload })}.signature`
+  return `header.${encodePayload({ exp, sub: 'test-user', ...payload })}.signature`
 }
 
 describe('verifySessionCookieEdge', () => {

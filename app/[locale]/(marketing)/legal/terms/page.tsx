@@ -2,18 +2,24 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { LegalDocumentLayout } from '@/components/legal/legal-document-layout'
 
-type Props = { params: Promise<{ locale: string }> }
+type Props = {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<{ from?: string }>
+}
 
-export default async function TermsPage({ params }: Props) {
+export default async function TermsPage({ params, searchParams }: Props) {
   const { locale } = await params
+  const { from } = await searchParams
   setRequestLocale(locale)
   const t = await getTranslations('legal')
+  const fromSettings = from === 'settings'
 
   return (
     <LegalDocumentLayout
       title={t('terms.title')}
       lastUpdated={t('lastUpdatedDate')}
-      backLabel={t('back')}
+      backHref={fromSettings ? '/settings' : '/'}
+      backLabel={fromSettings ? t('backToSettings') : t('back')}
       updatedLabel={t('lastUpdatedLabel')}
     >
       <p>{t('terms.intro')}</p>

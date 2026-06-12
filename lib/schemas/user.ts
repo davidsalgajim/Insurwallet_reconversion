@@ -31,6 +31,33 @@ export const NotificationPrefsSchema = z.object({
 })
 export type NotificationPrefs = z.infer<typeof NotificationPrefsSchema>
 
+export const NotificationChannelsSchema = z
+  .object({
+    email: z.boolean(),
+    push: z.boolean(),
+  })
+  .refine((channels) => channels.email || channels.push, {
+    message: 'At least one notification channel must be enabled',
+  })
+export type NotificationChannels = z.infer<typeof NotificationChannelsSchema>
+
+export function defaultNotificationPrefs(): NotificationPrefs {
+  return {
+    expiry30: true,
+    expiry60: true,
+    expiry90: false,
+    renewals: true,
+    events: false,
+  }
+}
+
+export function defaultNotificationChannels(): NotificationChannels {
+  return {
+    email: true,
+    push: false,
+  }
+}
+
 export const UserProfileSchema = z.object({
   email: z.string().email(),
   displayName: z.string().min(1),
@@ -38,5 +65,6 @@ export const UserProfileSchema = z.object({
   preferredLanguage: PreferredLanguageSchema,
   subscription: SubscriptionSchema,
   notificationPrefs: NotificationPrefsSchema,
+  notificationChannels: NotificationChannelsSchema,
 })
 export type UserProfile = z.infer<typeof UserProfileSchema>

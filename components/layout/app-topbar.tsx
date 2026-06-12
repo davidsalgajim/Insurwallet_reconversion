@@ -27,20 +27,20 @@ export function AppTopbar({ title, subtitle, className }: AppTopbarProps) {
   const avatarInitials = getUserDisplayInitials(user)
 
   return (
-    <header className={cn('mb-4 sm:mb-6 md:mb-8', className)}>
-      <div className="flex flex-col gap-4 md:gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 flex-1">
+    <header className={cn('@container mb-4 sm:mb-6 md:mb-8', className)}>
+      <div className="flex flex-col gap-4 md:gap-5 @[56rem]:flex-row @[56rem]:flex-wrap @[56rem]:items-start @[56rem]:justify-between">
+        <div className="w-full min-w-[min(100%,12rem)] @[56rem]:max-w-[min(100%,calc(100%-20rem))] @[56rem]:flex-1">
           <h1 className="font-display text-balance text-xl font-bold tracking-tight text-ink sm:text-2xl md:text-[1.75rem]">
             {title}
           </h1>
           {subtitle ? (
-            <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground sm:mt-1.5">
+            <p className="mt-1 w-full max-w-2xl text-sm leading-relaxed text-pretty text-muted-foreground sm:mt-1.5">
               {subtitle}
             </p>
           ) : null}
         </div>
 
-        <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:max-w-none">
+        <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center @[56rem]:ms-auto @[56rem]:w-auto @[56rem]:shrink-0">
           <Suspense
             fallback={
               <div

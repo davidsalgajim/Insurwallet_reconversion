@@ -71,10 +71,29 @@ function payloadToSessionClaims(payload: JWTPayload): SessionTokenClaims {
   }
 }
 
+export type VerifiedFirebaseToken = SessionTokenClaims & {
+  uid: string
+  email?: string
+}
+
+function payloadToVerifiedToken(
+  payload: JWTPayload
+): VerifiedFirebaseToken | null {
+  if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
+    return null
+  }
+
+  return {
+    ...payloadToSessionClaims(payload),
+    uid: payload.sub,
+    email: typeof payload.email === 'string' ? payload.email : undefined,
+  }
+}
+
 async function verifyWithGoogleJwks(
   token: string,
   projectId: string
-): Promise<SessionTokenClaims | null> {
+): Promise<VerifiedFirebaseToken | null> {
   const keySet = getGoogleJwks()
   const sessionIssuer = `https://session.firebase.google.com/${projectId}`
   const idTokenIssuer = `https://securetoken.google.com/${projectId}`
@@ -90,7 +109,7 @@ async function verifyWithGoogleJwks(
         return null
       }
 
-      return payloadToSessionClaims(payload)
+      return payloadToVerifiedToken(payload)
     } catch {
       continue
     }
@@ -99,27 +118,35 @@ async function verifyWithGoogleJwks(
   return null
 }
 
-function verifyEmulatorSession(token: string): SessionTokenClaims | null {
+function verifyEmulatorSession(token: string): VerifiedFirebaseToken | null {
   const payload = decodeJwtPayload(token)
   if (!payload || isJwtExpired(payload)) {
     return null
   }
 
-  return payloadToSessionClaims(payload)
+  return payloadToVerifiedToken(payload)
+}
+
+/** Verifies Firebase ID tokens and session cookies via JWKS (Edge-safe, no Admin SDK). */
+export async function verifyFirebaseToken(
+  token: string
+): Promise<VerifiedFirebaseToken | null> {
+  const normalized = decodeURIComponent(token)
+
+  if (!normalized) {
+    return null
+  }
+
+  if (isAuthEmulatorEnabled()) {
+    return verifyEmulatorSession(normalized)
+  }
+
+  return verifyWithGoogleJwks(normalized, resolveProjectId())
 }
 
 export async function verifySessionCookieEdge(
   sessionCookie: string
 ): Promise<SessionTokenClaims | null> {
-  const token = decodeURIComponent(sessionCookie)
-
-  if (!token) {
-    return null
-  }
-
-  if (isAuthEmulatorEnabled()) {
-    return verifyEmulatorSession(token)
-  }
-
-  return verifyWithGoogleJwks(token, resolveProjectId())
+  const verified = await verifyFirebaseToken(sessionCookie)
+  return verified ? payloadToSessionClaims(verified) : null
 }

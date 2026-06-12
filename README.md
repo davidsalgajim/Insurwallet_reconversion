@@ -42,6 +42,7 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **Shell:** icon rail desktop + nav inferior móvil, topbar, dot-grid background
 - **Firebase:** `firestore.rules` + `storage.rules` con tests; emuladores configurados; proyecto staging `insurwallet-staging`
 - **CI:** lint, typecheck, unit tests, build (`.github/workflows/ci.yml`)
+- **Notificaciones (prefs):** canal email/push/ambos + tipos de aviso en Configuración; API `GET/PUT /api/notifications/prefs`; registro FCM si push activo — envío real email/push en F4 (ver [`docs/notifications.md`](docs/notifications.md))
 
 ## Pendiente (próximos hitos)
 
@@ -160,6 +161,13 @@ App Check se omite automáticamente con emuladores. Sin emuladores, el cliente i
 
 - Staging/prod: `NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION=true` — middleware bloquea rutas `(app)/*` hasta verificar.
 - Local/dev: `false` — banner dismissible en layout de app; flujo verify-email disponible.
+
+### Notificaciones (email / push)
+
+- **Configuración:** App → Configuración → Notificaciones — canal (solo email, solo push, ambos) y tipos de aviso.
+- **Push:** opcional; requiere `NEXT_PUBLIC_FIREBASE_VAPID_KEY` en `.env.local` (Firebase Console → Cloud Messaging → Web Push).
+- **Persistencia:** `users/{uid}.notificationChannels` + `notificationPrefs` en Firestore.
+- **Envío real:** programado para F4 (Resend + FCM Admin en `sendExpiryReminders`). Detalle en [`docs/notifications.md`](docs/notifications.md).
 
 ### Scripts
 

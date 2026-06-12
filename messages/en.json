@@ -508,7 +508,16 @@
       "deleting": "Processing…"
     },
     "notifications": {
-      "description": "Choose which reminders you want via push (browser permission required).",
+      "channels": {
+        "title": "Delivery channel",
+        "description": "Choose how you want to receive the reminders enabled below.",
+        "emailOnly": "Email only",
+        "pushOnly": "Push only",
+        "both": "Email and push",
+        "pushHint": "Push requires browser permission and a configured VAPID key (see documentation)."
+      },
+      "eventsTitle": "Alert types",
+      "description": "Turn each reminder type on or off. They are only sent through the channels selected above.",
       "expiry30": "Expiry in 30 days",
       "expiry60": "Expiry in 60 days",
       "expiry90": "Expiry in 90 days",
@@ -540,6 +549,7 @@
   },
   "legal": {
     "back": "Back to home",
+    "backToSettings": "Back to settings",
     "lastUpdatedLabel": "Last updated",
     "lastUpdatedDate": "June 12, 2026",
     "terms": {

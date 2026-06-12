@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import {
   applicationDefault,
   cert,
@@ -32,6 +35,43 @@ function resolveProjectId(): string {
   )
 }
 
+function loadServiceAccountFromEnv():
+  | (ServiceAccount & {
+      project_id?: string
+    })
+  | null {
+  const inline = process.env.FIREBASE_SERVICE_ACCOUNT?.trim()
+  if (inline) {
+    return JSON.parse(inline) as ServiceAccount & { project_id?: string }
+  }
+
+  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim()
+  if (!credPath) {
+    return null
+  }
+
+  const content = readFileSync(resolve(credPath), 'utf8')
+  return JSON.parse(content) as ServiceAccount & { project_id?: string }
+}
+
+export function hasFirebaseAdminCredentials(): boolean {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT?.trim()) {
+    return true
+  }
+
+  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim()
+  if (!credPath) {
+    return false
+  }
+
+  try {
+    readFileSync(resolve(credPath))
+    return true
+  } catch {
+    return false
+  }
+}
+
 function resolveAdminApp(): App {
   const existing = getApps()[0]
   if (existing) {
@@ -41,13 +81,9 @@ function resolveAdminApp(): App {
   configureAuthEmulator()
 
   const projectId = resolveProjectId()
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT
+  const serviceAccount = loadServiceAccountFromEnv()
 
-  if (serviceAccountJson) {
-    const serviceAccount = JSON.parse(serviceAccountJson) as ServiceAccount & {
-      project_id?: string
-    }
-
+  if (serviceAccount) {
     return initializeApp({
       credential: cert(serviceAccount),
       projectId:
@@ -56,6 +92,10 @@ function resolveAdminApp(): App {
   }
 
   if (isAuthEmulatorEnabled()) {
+    return initializeApp({ projectId })
+  }
+
+  if (process.env.NODE_ENV === 'development') {
     return initializeApp({ projectId })
   }
 

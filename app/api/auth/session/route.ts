@@ -38,7 +38,11 @@ export async function POST(request: Request) {
     )
 
     return response
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[session] Failed to create session cookie:', error)
+    }
+
     return NextResponse.json({ error: 'Invalid ID token' }, { status: 401 })
   }
 }
