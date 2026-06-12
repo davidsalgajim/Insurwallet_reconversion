@@ -1,4 +1,8 @@
+'use client'
+
 import { FileText, Plus } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/cn'
@@ -8,6 +12,8 @@ type PoliciesEmptyStateProps = {
 }
 
 export function PoliciesEmptyState({ className }: PoliciesEmptyStateProps) {
+  const t = useTranslations('policies.empty')
+
   return (
     <div
       className={cn(
@@ -19,11 +25,10 @@ export function PoliciesEmptyState({ className }: PoliciesEmptyStateProps) {
         <FileText className="size-7" strokeWidth={1.5} />
       </div>
       <h2 className="max-w-sm text-balance text-xl font-semibold tracking-tight">
-        Aún no tienes pólizas
+        {t('title')}
       </h2>
       <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-        Centraliza tus seguros en un solo lugar. Sube un PDF o ingresa los datos
-        manualmente.
+        {t('description')}
       </p>
       <Button
         asChild
@@ -33,7 +38,7 @@ export function PoliciesEmptyState({ className }: PoliciesEmptyStateProps) {
       >
         <Link href="/policies/new">
           <Plus className="size-4" strokeWidth={1.5} />
-          Sube tu primera póliza
+          {t('cta')}
         </Link>
       </Button>
     </div>

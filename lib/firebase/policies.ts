@@ -179,7 +179,8 @@ export function policyToFirestoreData(policy: Policy): Record<string, unknown> {
 
 export function parsePolicyDocument(
   id: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
+  now: Date = new Date()
 ): PolicyDocument {
   const normalized = {
     ...data,
@@ -189,9 +190,12 @@ export function parsePolicyDocument(
     updatedAt: firestoreDateToDate(data.updatedAt),
   }
 
+  const parsed = PolicySchema.parse(normalized)
+
   return {
     id,
-    ...PolicySchema.parse(normalized),
+    ...parsed,
+    status: computePolicyStatus(parsed.startDate, parsed.endDate, now),
   }
 }
 

@@ -1,11 +1,12 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { useRouter } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 
+import { useAuth } from '@/components/auth/auth-provider'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/components/auth/auth-provider'
+import { useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/cn'
 
 const fieldClassName =
@@ -13,6 +14,9 @@ const fieldClassName =
 
 export default function ManualPolicyPage() {
   const router = useRouter()
+  const t = useTranslations('policies')
+  const tf = useTranslations('policies.fields')
+  const ta = useTranslations('common.actions')
   const { user, loading: authLoading } = useAuth()
   const [insurerName, setInsurerName] = useState('')
   const [policyNumber, setPolicyNumber] = useState('')
@@ -26,7 +30,7 @@ export default function ManualPolicyPage() {
     setError(null)
 
     if (!user) {
-      setError('Debes iniciar sesión para guardar una póliza.')
+      setError(t('errors.signInToSave'))
       return
     }
 
@@ -46,10 +50,8 @@ export default function ManualPolicyPage() {
         endDate: new Date(endDate),
       })
       router.push('/policies')
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'No se pudo guardar la póliza'
-      )
+    } catch {
+      setError(t('errors.saveFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -58,8 +60,8 @@ export default function ManualPolicyPage() {
   return (
     <div className="animate-fade-up mx-auto max-w-2xl">
       <AppTopbar
-        title="Nueva póliza"
-        subtitle="Paso 2 de 4 — datos básicos del seguro"
+        title={t('manual.title')}
+        subtitle={t('manual.stepSubtitle')}
       />
 
       <div className="mb-6 flex gap-2">
@@ -81,7 +83,7 @@ export default function ManualPolicyPage() {
       <form onSubmit={handleSubmit} className="glass-panel space-y-6 p-6">
         <div className="space-y-2">
           <label htmlFor="insurerName" className="text-sm font-medium">
-            Aseguradora
+            {tf('insurerName')}
           </label>
           <input
             id="insurerName"
@@ -91,14 +93,14 @@ export default function ManualPolicyPage() {
             autoComplete="organization"
             value={insurerName}
             onChange={(event) => setInsurerName(event.target.value)}
-            placeholder="Ej. Seguros Bolívar"
+            placeholder={tf('insurerPlaceholder')}
             className={fieldClassName}
           />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="policyNumber" className="text-sm font-medium">
-            Número de póliza
+            {tf('policyNumber')}
           </label>
           <input
             id="policyNumber"
@@ -107,7 +109,7 @@ export default function ManualPolicyPage() {
             required
             value={policyNumber}
             onChange={(event) => setPolicyNumber(event.target.value)}
-            placeholder="Ej. POL-2025-001"
+            placeholder={tf('policyNumberPlaceholder')}
             className={cn(fieldClassName, 'font-mono')}
           />
         </div>
@@ -115,7 +117,7 @@ export default function ManualPolicyPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label htmlFor="startDate" className="text-sm font-medium">
-              Inicio de vigencia
+              {tf('startDate')}
             </label>
             <input
               id="startDate"
@@ -129,7 +131,7 @@ export default function ManualPolicyPage() {
           </div>
           <div className="space-y-2">
             <label htmlFor="endDate" className="text-sm font-medium">
-              Fin de vigencia
+              {tf('endDate')}
             </label>
             <input
               id="endDate"
@@ -149,7 +151,7 @@ export default function ManualPolicyPage() {
 
         {!authLoading && !user ? (
           <p className="text-sm text-muted-foreground">
-            Inicia sesión para guardar esta póliza en tu cartera.
+            {t('manual.signInHint')}
           </p>
         ) : null}
 
@@ -161,7 +163,7 @@ export default function ManualPolicyPage() {
             onClick={() => router.push('/policies/new')}
             disabled={submitting}
           >
-            Volver
+            {ta('back')}
           </Button>
           <Button
             type="submit"
@@ -169,7 +171,7 @@ export default function ManualPolicyPage() {
             className="rounded-[var(--radius-pill)]"
             disabled={submitting || authLoading || !user}
           >
-            {submitting ? 'Guardando…' : 'Guardar y continuar'}
+            {submitting ? ta('saving') : ta('saveAndContinue')}
           </Button>
         </div>
       </form>

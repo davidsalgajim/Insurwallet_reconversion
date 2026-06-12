@@ -40,10 +40,10 @@ alwaysApply: false
 
 ## Internacionalización
 
-- **next-intl** — mensajes en `messages/es.json`, `en.json`, `pt.json`
-- ES base; diseñar UI con expansión de texto (alemán/portugués +30%)
-- Language switcher en settings; locale en middleware
-- Emails y plantillas Tier 0 localizados
+- **next-intl** — config en `i18n/`; mensajes en `messages/es.json`, `en.json`, `pt.json`
+- ES base; rutas con prefijo `/[locale]/`; middleware en `middleware.ts`
+- **Parcial F1:** landing y auth traducidos; muchas pantallas de app aún en español hardcoded
+- Language switcher en settings (pendiente); emails y Tier 0 localizados (F4)
 
 ## Calidad de código
 

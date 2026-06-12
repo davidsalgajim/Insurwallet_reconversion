@@ -9,7 +9,46 @@
     "mariana": "MarIAna",
     "alerts": "Alerts",
     "settings": "Profile",
-    "getStarted": "Get started free"
+    "signOut": "Sign out",
+    "getStarted": "Get started free",
+    "localeSwitcherAria": "Select language",
+    "localeNames": {
+      "es": "Spanish",
+      "en": "English",
+      "pt": "Portuguese"
+    },
+    "nav": {
+      "mainAria": "Main navigation",
+      "sectionsAria": "App sections",
+      "homeAria": "InsurWallet — home",
+      "newPolicy": "New policy",
+      "newShort": "New",
+      "summary": "Summary"
+    },
+    "topbar": {
+      "searchPlaceholder": "Search policies…",
+      "searchAria": "Search policies",
+      "actionsAria": "Page actions",
+      "uploadDocument": "Upload document",
+      "calendar": "Calendar",
+      "notifications": "Notifications",
+      "comingSoon": "Coming soon"
+    },
+    "actions": {
+      "back": "Back",
+      "cancel": "Cancel",
+      "continue": "Continue",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saveAndContinue": "Save and continue",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleting": "Deleting…"
+    },
+    "meta": {
+      "title": "InsurWallet — All your policies in one place",
+      "description": "Centralize your insurance, upload documents with AI, and ask MarIAna."
+    }
   },
   "landing": {
     "navAria": "Main navigation",
@@ -83,7 +122,18 @@
     "footerNavAria": "Footer links",
     "footerCopyright": "© {year} InsurWallet. All rights reserved.",
     "footerTerms": "Terms of service",
-    "footerPrivacy": "Privacy policy"
+    "footerPrivacy": "Privacy policy",
+    "previewPortfolio": "Your portfolio",
+    "previewSearch": "Search…",
+    "previewStatActive": "Active",
+    "previewStatExpiring": "Expiring",
+    "previewStatPremium": "Premium",
+    "previewColUpload": "Upload",
+    "previewColReview": "Review",
+    "previewColMariana": "MarIAna",
+    "previewActionUpload": "Upload PDF",
+    "previewActionReview": "Review data",
+    "previewActionAsk": "Ask"
   },
   "auth": {
     "welcomeBack": "Welcome back",
@@ -101,6 +151,20 @@
     "backToLogin": "Back to log in",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
+    "verifyEmailTitle": "Confirm your email",
+    "verifyEmailDesc": "We sent you a verification link. Open it to activate your account.",
+    "verifyEmailSent": "Check your inbox and spam folder.",
+    "verifyEmailSentTo": "We sent the link to",
+    "verifyEmailResent": "A new verification link has been sent.",
+    "verifyEmailResend": "Resend email",
+    "verifyEmailResendCooldown": "Resend in {seconds}s",
+    "verifyEmailCheck": "I've verified my email",
+    "verifyEmailContinueWithout": "Continue without verifying",
+    "verifyEmailSignOut": "Sign out",
+    "verifyEmailBannerTitle": "Your email is not verified yet",
+    "verifyEmailBannerDesc": "Verify your email to secure your account and receive important alerts.",
+    "verifyEmailBannerAction": "Go to verification",
+    "verifyEmailBannerDismiss": "Dismiss notice",
     "errors": {
       "emailInUse": "This email is already registered.",
       "invalidEmail": "Enter a valid email address.",
@@ -108,7 +172,149 @@
       "invalidCredentials": "Incorrect email or password.",
       "tooManyRequests": "Too many attempts. Try again later.",
       "popupClosed": "Sign-in was cancelled.",
-      "genericError": "We could not complete the action. Try again."
+      "genericError": "We could not complete the action. Try again.",
+      "emailNotVerifiedYet": "We still don't see verification. Wait a moment and try again."
+    }
+  },
+  "policies": {
+    "title": "Policies",
+    "subtitle": "Manage and review your insurance in one place.",
+    "listAria": "Policy list",
+    "policyNumberPrefix": "Policy {number}",
+    "errors": {
+      "loadFailed": "Could not load policies",
+      "retryHint": "Check your connection or try again later.",
+      "notFound": "We could not find this policy.",
+      "forbidden": "You do not have permission to view this policy.",
+      "signInRequired": "You must sign in.",
+      "signInToSave": "Sign in to save a policy.",
+      "signInToEdit": "Sign in to edit this policy.",
+      "signInToSaveChanges": "Sign in to save your changes.",
+      "deleteFailed": "Could not delete the policy",
+      "saveFailed": "Could not save the policy",
+      "updateFailed": "Could not update the policy"
+    },
+    "empty": {
+      "title": "No policies yet",
+      "description": "Centralize your insurance in one place. Upload a PDF or enter the details manually.",
+      "cta": "Add your first policy"
+    },
+    "new": {
+      "title": "New policy",
+      "stepSubtitle": "Step 1 of 4 — choose how to add your insurance",
+      "uploadTitle": "Upload PDF",
+      "uploadDescription": "We extract the data automatically. You review and confirm before saving.",
+      "manualTitle": "Manual entry",
+      "manualDescription": "Complete the fields step by step if you do not have the document handy."
+    },
+    "manual": {
+      "title": "New policy",
+      "stepSubtitle": "Step 2 of 4 — basic insurance details",
+      "signInHint": "Sign in to save this policy to your portfolio."
+    },
+    "detail": {
+      "title": "Policy details",
+      "subtitle": "Review your insurance information",
+      "backToList": "Back to policies",
+      "goToList": "Go to my policies",
+      "validity": "Coverage period",
+      "contractDetails": "Contract details",
+      "noExtraDetails": "No coverages or notes recorded for this policy yet.",
+      "statusLabel": "Status",
+      "updatedLabel": "Updated",
+      "currencyLabel": "Currency"
+    },
+    "edit": {
+      "title": "Edit policy",
+      "subtitleFallback": "Update your insurance details",
+      "backToDetail": "Back to details"
+    },
+    "delete": {
+      "title": "Delete policy",
+      "description": "This action cannot be undone. It will be logged in the audit trail and removed from your portfolio.",
+      "confirm": "Delete policy"
+    },
+    "wizard": {
+      "progressAria": "Wizard progress"
+    },
+    "fields": {
+      "insurerName": "Insurer",
+      "insurerPlaceholder": "e.g. Seguros Bolívar",
+      "policyNumber": "Policy number",
+      "policyNumberPlaceholder": "e.g. POL-2025-001",
+      "policyType": "Insurance type",
+      "holderName": "Policyholder",
+      "holderPlaceholder": "Policyholder name",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "premium": "Premium",
+      "currency": "Currency",
+      "paymentFrequency": "Payment frequency",
+      "coverages": "Coverages",
+      "coveragesPlaceholder": "Summary of main coverages",
+      "exclusions": "Exclusions",
+      "exclusionsPlaceholder": "Relevant exclusions",
+      "waitingPeriods": "Waiting periods",
+      "waitingPeriodsPlaceholder": "Applicable waiting periods",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional notes"
+    },
+    "types": {
+      "life": "Life",
+      "health": "Health",
+      "auto": "Auto",
+      "home": "Home",
+      "travel": "Travel",
+      "other": "Other"
+    },
+    "paymentFrequency": {
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "semi_annual": "Semi-annual",
+      "annual": "Annual",
+      "single": "Single payment"
+    },
+    "status": {
+      "active": "Active",
+      "expiring": "Expiring soon",
+      "expired": "Expired"
+    },
+    "upload": {
+      "title": "New policy",
+      "subtitle": "Step 2 of 4 — upload your PDF document",
+      "sectionTitle": "Policy document",
+      "sectionDesc": "Upload your policy PDF. We will extract data with AI; you review and confirm before saving.",
+      "dropzoneTitle": "Drop your PDF here",
+      "dropzoneHint": "PDF only, up to {maxSize} MB. You can also click to choose a file.",
+      "dropzoneAria": "Policy PDF upload area",
+      "browseFiles": "Choose file",
+      "removeFile": "Remove file",
+      "startUpload": "Upload and process",
+      "validating": "Validating…",
+      "uploading": "Uploading…",
+      "back": "Back",
+      "authRequired": "Sign in to upload documents to your portfolio.",
+      "confirmNote": "Your PDF is stored securely. AI extraction will be available on the review screen — no data is saved without your confirmation.",
+      "viewDraft": "View draft",
+      "errors": {
+        "emptyFile": "The file is empty.",
+        "tooLarge": "The file exceeds the 20 MB limit.",
+        "invalidType": "Only PDF files are allowed.",
+        "invalidPdf": "The file does not appear to be a valid PDF.",
+        "uploadFailed": "Could not upload the document. Try again."
+      },
+      "processing": {
+        "title": "Processing status",
+        "pendingNote": "Your document is queued. We will notify you when extraction is ready to review.",
+        "ready": "Extraction ready — you can review and confirm the data.",
+        "failed": "We could not process the document. Try uploading again.",
+        "steps": {
+          "pending": "Document received",
+          "extracting": "Extracting text from PDF",
+          "analyzing": "Analyzing with AI",
+          "ready": "Ready for review"
+        }
+      }
     }
   },
   "dashboard": {
@@ -123,11 +329,88 @@
     "addPolicy": "Add policy",
     "journeyTitle": "Your insurance journey",
     "journeyDesc": "Four steps to stay in control.",
+    "portfolioBadge": "Insurance portfolio",
+    "marianaQueries": "MarIAna queries",
+    "marianaStatHint": "This month",
+    "premiumHint": "COP / month",
+    "expiringHint": "{days} days",
+    "renewalWindow": "30 · 60 · 90 days",
+    "daysRemaining": "{count} days",
+    "daysBucket": "{count} days",
+    "noUpcomingRenewals": "No upcoming renewals",
+    "noUpcomingRenewalsDesc": "Your active policies do not expire in the next 90 days.",
+    "viewAllPolicies": "View all policies",
+    "marianaPanelSubtitle": "Insurance assistant with citations to your documents",
+    "marianaQuestion1": "Am I covered for a trip?",
+    "marianaQuestion2": "When does my auto policy expire?",
+    "marianaQuestion3": "Who do I call in an emergency?",
+    "coverageVisualTitle": "Active coverage",
+    "coverageVisualSubtitle": "See your portfolio status once you add policies",
+    "filterAria": "Filter journey",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterPending": "Pending",
+    "journeyColumns": {
+      "upload": "Upload",
+      "review": "Review",
+      "track": "Tracking",
+      "ask": "MarIAna"
+    },
+    "journeyMeta": {
+      "upload": "PDF · image",
+      "review": "Extracted data",
+      "track": "Renewals",
+      "ask": "AI queries"
+    },
     "journey": {
       "upload": "Upload your policy PDF",
       "review": "Review extracted data",
       "track": "Track renewals",
       "ask": "Ask MarIAna"
+    }
+  },
+  "mariana": {
+    "title": "MarIAna",
+    "subtitle": "Insurance assistant — read-only, with citations to your documents.",
+    "badge": "Assistant with document citations",
+    "emptyTitle": "How can I help you today?",
+    "emptyDescription": "Ask about coverages, renewals, or procedures. Answers are based on your saved policies.",
+    "inputLabel": "Type your question",
+    "inputPlaceholder": "Ask about your policies…",
+    "sendAria": "Send message",
+    "disclaimer": "MarIAna does not replace legal advice or your original policy.",
+    "suggested1": "What does my health policy cover?",
+    "suggested2": "When does my auto insurance expire?",
+    "suggested3": "How do I report a claim?",
+    "suggested4": "Which beneficiaries do I have on file?"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "subtitle": "Renewals and relevant activity in your portfolio.",
+    "emptyTitle": "No alerts for now",
+    "emptyDescription": "We will notify you when a policy is about to expire or there is important activity."
+  },
+  "settings": {
+    "title": "Profile",
+    "subtitle": "Manage your account, privacy, and preferences.",
+    "sections": {
+      "profile": "Profile",
+      "privacy": "Privacy & data",
+      "preferences": "Preferences"
+    },
+    "items": {
+      "personalData": "Personal details",
+      "personalDataHint": "Name, email, and photo",
+      "privacy": "Privacy",
+      "privacyHint": "Consent and data processing",
+      "export": "Export my data",
+      "exportHint": "Download in a portable format",
+      "deleteAccount": "Delete account",
+      "deleteAccountHint": "Permanent deletion",
+      "notifications": "Notifications",
+      "notificationsHint": "Renewals and alerts",
+      "language": "Language",
+      "languageHint": "Choose the interface language"
     }
   }
 }

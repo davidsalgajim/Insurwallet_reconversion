@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { AppTopbar } from '@/components/layout/app-topbar'
@@ -20,6 +21,8 @@ type PolicyEditFormProps = {
 
 function PolicyEditForm({ policy }: PolicyEditFormProps) {
   const router = useRouter()
+  const t = useTranslations('policies')
+  const ta = useTranslations('common.actions')
   const { user, loading: authLoading } = useAuth()
   const [values, setValues] = useState<PolicyBasicFieldsValues>(() =>
     policyDocumentToFormValues(policy)
@@ -39,7 +42,7 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
     setSubmitError(null)
 
     if (!user) {
-      setSubmitError('Debes iniciar sesión para editar esta póliza.')
+      setSubmitError(t('errors.signInToEdit'))
       return
     }
 
@@ -73,10 +76,8 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
       )
 
       router.push(`/policies/${policy.id}`)
-    } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : 'No se pudo actualizar la póliza'
-      )
+    } catch {
+      setSubmitError(t('errors.updateFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -96,7 +97,7 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
 
       {!authLoading && !user ? (
         <p className="text-sm text-muted-foreground">
-          Inicia sesión para guardar los cambios.
+          {t('errors.signInToSaveChanges')}
         </p>
       ) : null}
 
@@ -108,7 +109,7 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
           onClick={() => router.push(`/policies/${policy.id}`)}
           disabled={submitting}
         >
-          Cancelar
+          {ta('cancel')}
         </Button>
         <Button
           type="submit"
@@ -116,7 +117,7 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
           className="rounded-[var(--radius-pill)]"
           disabled={submitting || authLoading || !user}
         >
-          {submitting ? 'Guardando…' : 'Guardar cambios'}
+          {submitting ? ta('saving') : ta('save')}
         </Button>
       </div>
     </form>
@@ -134,6 +135,8 @@ export function PolicyEditView({
   loading,
   error,
 }: PolicyEditViewProps) {
+  const t = useTranslations('policies')
+
   return (
     <div className="animate-fade-up mx-auto max-w-2xl">
       <div className="mb-4">
@@ -142,16 +145,16 @@ export function PolicyEditView({
           className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" strokeWidth={1.5} />
-          Volver al detalle
+          {t('edit.backToDetail')}
         </Link>
       </div>
 
       <AppTopbar
-        title="Editar póliza"
+        title={t('edit.title')}
         subtitle={
           policy
             ? `${policy.insurerName} · ${policy.policyNumber}`
-            : 'Actualiza los datos de tu seguro'
+            : t('edit.subtitleFallback')
         }
       />
 
@@ -169,7 +172,7 @@ export function PolicyEditView({
             variant="secondary"
             className="mt-4 rounded-[var(--radius-pill)]"
           >
-            <Link href="/policies">Ir a mis pólizas</Link>
+            <Link href="/policies">{t('detail.goToList')}</Link>
           </Button>
         </div>
       ) : null}

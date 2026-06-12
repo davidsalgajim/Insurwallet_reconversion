@@ -13,6 +13,12 @@ alwaysApply: false
 
 # Firebase & Backend
 
+## Estado actual (F1)
+
+- **Implementado:** reglas Firestore/Storage + tests con emulador; cliente en `lib/firebase/`; CRUD pólizas + audit logs; session cookie para middleware
+- **Scaffold:** `functions/src/index.ts` (hello HTTP); sin triggers Storage ni scheduled aún
+- **Pendiente F0–F2:** App Check, Secret Manager, `jobs/`, worker Cloud Run, colecciones RAG
+
 ## Firestore (equivalente a RLS de Supabase)
 
 - Security Rules: owner-only por `ownerUid`; lectura compartida vía `sharedWith`

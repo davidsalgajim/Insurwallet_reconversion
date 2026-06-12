@@ -13,6 +13,7 @@ import {
   type FirebaseStorage,
 } from 'firebase/storage'
 
+import { initAppCheck } from '@/lib/firebase/app-check'
 import { firebaseConfig, useFirebaseEmulators } from '@/lib/firebase/config'
 
 const EMULATOR_HOST = '127.0.0.1'
@@ -47,6 +48,9 @@ function connectEmulators(
 }
 
 const app = getFirebaseApp()
+
+// App Check must initialize before Firestore/Storage so tokens attach to requests.
+initAppCheck(app)
 
 export const auth = getAuth(app)
 export const db = getFirestore(app)

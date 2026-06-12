@@ -47,19 +47,20 @@ InsurWallet centraliza pólizas de seguro en un solo lugar seguro para usuarios 
 
 1. **La IA propone, el usuario dispone** — nada se guarda sin revisión humana en extracción de documentos
 2. **Estados siempre visibles** — procesamiento, confianza, errores y permisos compartidos
-3. **Continuidad con iOS** — misma paleta azul/cyan; light mode en la app, navy en marketing/auth
+3. **Continuidad con iOS** — misma paleta azul/cyan; light mode en la app; marketing con registro editorial claro (body blanco) y hero navy enmarcado; auth mantiene navy + glass card
 4. **Liquid glass con criterio** — solo en superficies flotantes (nav, paneles, chat, overlays), no en tablas ni formularios densos
 5. **Accesibilidad WCAG AA mínimo** — contraste 4.5:1 en texto de cuerpo; `prefers-reduced-motion` respetado
 
 ## Accessibility
 
-- Español como idioma base; EN/PT en roadmap
+- Español como idioma base; EN/PT con next-intl (mensajes en `messages/`; cobertura parcial en app)
 - Targets táctiles ≥ 44px
 - Navegación por teclado completa en web
 - No depender solo del color para estados (icono + texto)
 
 ## Tech Stack (UI)
 
-- Next.js 15 App Router, TypeScript, Tailwind CSS, shadcn/ui
-- Tokens en CSS variables (OKLCH donde sea posible)
+- Next.js 16 App Router, React 19, TypeScript, Tailwind CSS v4, shadcn/ui (base)
+- Tokens en CSS variables (`app/globals.css`, OKLCH donde aplique)
 - Lucide para iconografía (no emojis como iconos)
+- i18n: next-intl (ES/EN/PT) — shell configurado; cobertura de traducción en progreso (F1)

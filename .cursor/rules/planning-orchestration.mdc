@@ -28,12 +28,12 @@ Complementa `design-orchestration.mdc`. Task list: `tasks/tasks-plan-reconversio
 
 ## Fases del proyecto
 
-- **F0:** Scaffold, Firebase, CI/CD, design system, POC OpenDataLoader
-- **F1:** Auth, Firestore rules, CRUD pólizas, dashboard
-- **F2:** Pipeline documentos + revisión IA
-- **F3:** MarIAna multi-agente + compartir
-- **F4:** Pagos, notificaciones, legal
-- **F5:** Hardening, E2E, a11y, PWA, beta
+- **F0:** Scaffold, Firebase, CI/CD, design system, POC OpenDataLoader — **~85%**
+- **F1:** Auth, Firestore rules, CRUD pólizas, dashboard — **~75%**
+- **F2:** Pipeline documentos + revisión IA — no iniciado
+- **F3:** MarIAna multi-agente + compartir — stub UI
+- **F4:** Pagos, notificaciones, legal — no iniciado
+- **F5:** Hardening, E2E, a11y, PWA, beta — no iniciado
 
 ## Hard gates
 

@@ -10,18 +10,21 @@ import {
   Shield,
   Wallet,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
 import { StatCard } from '@/components/dashboard/stat-card'
 import { Button } from '@/components/ui/button'
 import { usePolicies } from '@/hooks/usePolicies'
 import { Link } from '@/i18n/navigation'
+import { formatPolicyDate } from '@/lib/i18n/format'
 import type { PolicyDocument } from '@/lib/firebase/policies'
-import { computePolicyStatus } from '@/lib/utils/policy-status'
+import {
+  EXPIRING_THRESHOLD_DAYS,
+  computePolicyStatus,
+  daysUntilPolicyEnd,
+} from '@/lib/utils/policy-status'
 import { cn } from '@/lib/utils/cn'
-
-const MS_PER_DAY = 1000 * 60 * 60 * 24
 
 type RenewalBucket = 30 | 60 | 90
 
@@ -46,10 +49,6 @@ function useDashboardPolicies() {
   return context
 }
 
-function daysUntilEnd(endDate: Date, now: Date): number {
-  return Math.ceil((endDate.getTime() - now.getTime()) / MS_PER_DAY)
-}
-
 function getRenewalBucket(daysRemaining: number): RenewalBucket {
   if (daysRemaining <= 30) {
     return 30
@@ -58,14 +57,6 @@ function getRenewalBucket(daysRemaining: number): RenewalBucket {
     return 60
   }
   return 90
-}
-
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date)
 }
 
 function usePolicyMetrics(policies: PolicyDocument[], now: Date) {
@@ -81,7 +72,7 @@ function usePolicyMetrics(policies: PolicyDocument[], now: Date) {
         activeCount += 1
       } else if (status === 'expiring') {
         expiringCount += 1
-        const daysRemaining = daysUntilEnd(policy.endDate, now)
+        const daysRemaining = daysUntilPolicyEnd(policy.endDate, now)
         upcomingRenewals.push({
           policy,
           daysRemaining,
@@ -176,21 +167,21 @@ export function DashboardSummary() {
         value={String(expiringCount)}
         icon={CalendarClock}
         tone="warning"
-        hint="90 días"
+        hint={t('expiringHint', { days: EXPIRING_THRESHOLD_DAYS })}
       />
       <StatCard
         label={t('totalPremium')}
         value="—"
         icon={Wallet}
         tone="primary"
-        hint="COP / mes"
+        hint={t('premiumHint')}
       />
       <StatCard
-        label="Consultas MarIAna"
+        label={t('marianaQueries')}
         value="0"
         icon={MessageSquareText}
         tone="accent"
-        hint="Este mes"
+        hint={t('marianaStatHint')}
       />
     </>
   )
@@ -202,6 +193,8 @@ type RenewalRowProps = {
 
 function RenewalRow({ renewal }: RenewalRowProps) {
   const { policy, daysRemaining } = renewal
+  const locale = useLocale()
+  const t = useTranslations('dashboard')
 
   return (
     <Link
@@ -219,10 +212,10 @@ function RenewalRow({ renewal }: RenewalRowProps) {
       </div>
       <div className="shrink-0 text-right">
         <p className="text-sm font-semibold text-foreground">
-          {daysRemaining} días
+          {t('daysRemaining', { count: daysRemaining })}
         </p>
         <p className="text-xs text-muted-foreground">
-          {formatDate(policy.endDate)}
+          {formatPolicyDate(policy.endDate, locale)}
         </p>
       </div>
       <ChevronRight
@@ -265,7 +258,7 @@ export function DashboardUpcomingRenewals() {
           {t('upcoming')}
         </h2>
         <span className="pill-badge bg-[var(--primitive-accent-soft)]/20 text-primary">
-          30 · 60 · 90 días
+          {t('renewalWindow')}
         </span>
       </div>
 
@@ -286,12 +279,12 @@ export function DashboardUpcomingRenewals() {
             <p className="text-lg font-semibold">
               {policies.length === 0
                 ? t('emptyTitle')
-                : 'Sin vencimientos próximos'}
+                : t('noUpcomingRenewals')}
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
               {policies.length === 0
                 ? t('emptyDesc')
-                : 'Tus pólizas activas no vencen en los próximos 90 días.'}
+                : t('noUpcomingRenewalsDesc')}
             </p>
           </div>
           {policies.length === 0 ? (
@@ -314,7 +307,7 @@ export function DashboardUpcomingRenewals() {
               className="rounded-[var(--radius-pill)]"
             >
               <Link href="/policies">
-                Ver todas las pólizas
+                {t('viewAllPolicies')}
                 <ArrowRight className="size-4" strokeWidth={1.5} />
               </Link>
             </Button>
@@ -332,7 +325,7 @@ export function DashboardUpcomingRenewals() {
               <div key={bucket}>
                 <div className="flex items-center justify-between bg-white/30 px-4 py-2.5 sm:px-6">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {bucket} días
+                    {t('daysBucket', { count: bucket })}
                   </p>
                   <span className="pill-badge bg-white/60 text-muted-foreground">
                     {items.length}

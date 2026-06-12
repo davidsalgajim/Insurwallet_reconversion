@@ -2,6 +2,7 @@ import { ArrowRight, Check } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 
 import { AppLogo } from '@/components/brand/app-logo'
+import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 
@@ -97,7 +98,8 @@ export async function LandingFooter() {
           <p>
             {t('landing.footerCopyright', { year: new Date().getFullYear() })}
           </p>
-          <div className="flex gap-6">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <LocaleSwitcher variant="inverse" />
             <a href="#" className="transition-colors hover:text-white/70">
               {t('landing.footerTerms')}
             </a>

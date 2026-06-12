@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import { PoliciesEmptyState } from '@/components/policies/empty-state'
 import { PolicyCard } from '@/components/policies/policy-card'
 import { usePolicies } from '@/hooks/usePolicies'
@@ -23,6 +25,7 @@ function PoliciesListSkeleton() {
 }
 
 export function PoliciesList({ className }: PoliciesListProps) {
+  const t = useTranslations('policies.errors')
   const { policies, loading, error, isAuthenticated } = usePolicies()
 
   if (loading) {
@@ -35,9 +38,7 @@ export function PoliciesList({ className }: PoliciesListProps) {
         <p className="text-sm font-medium text-[var(--primitive-danger)]">
           {error}
         </p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Verifica tu conexión o intenta de nuevo más tarde.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t('retryHint')}</p>
       </div>
     )
   }

@@ -9,6 +9,7 @@ import {
   clearSessionCookie,
   setSessionCookie,
 } from '@/lib/firebase/session-cookie'
+import { userNeedsEmailVerification } from '@/lib/firebase/session-claims'
 
 function defaultNotificationPrefs() {
   return {
@@ -78,11 +79,56 @@ export async function ensureUserProfile(
   )
 }
 
-async function persistSession(user: User): Promise<User> {
-  const token = await user.getIdToken()
+async function persistSession(user: User, forceRefresh = false): Promise<User> {
+  const token = await user.getIdToken(forceRefresh)
   setSessionCookie(token)
   return user
 }
+
+function getVerificationContinueUrl(locale: PreferredLanguage): string {
+  if (typeof window === 'undefined') {
+    return `/${locale}/verify-email`
+  }
+
+  return `${window.location.origin}/${locale}/verify-email`
+}
+
+export async function sendUserVerificationEmail(
+  user: User,
+  locale: PreferredLanguage
+): Promise<void> {
+  const { firebaseAuth } = await getAuthModule()
+  await firebaseAuth.sendEmailVerification(user, {
+    url: getVerificationContinueUrl(locale),
+  })
+}
+
+export async function resendVerificationEmail(
+  locale: PreferredLanguage
+): Promise<void> {
+  const { auth } = await getAuthModule()
+  const user = auth.currentUser
+
+  if (!user) {
+    throw new Error('No authenticated user')
+  }
+
+  await sendUserVerificationEmail(user, locale)
+}
+
+export async function reloadCurrentUser(): Promise<User | null> {
+  const { auth, firebaseAuth } = await getAuthModule()
+  const user = auth.currentUser
+
+  if (!user) {
+    return null
+  }
+
+  await firebaseAuth.reload(user)
+  return persistSession(user, true)
+}
+
+export { userNeedsEmailVerification }
 
 export async function signUpWithEmail(
   email: string,
@@ -102,6 +148,7 @@ export async function signUpWithEmail(
     displayName: trimmedName,
   })
   await ensureUserProfile(credential.user, preferredLanguage)
+  await sendUserVerificationEmail(credential.user, preferredLanguage)
 
   return persistSession(credential.user)
 }

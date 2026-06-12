@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import type { PolicyDocument } from '@/lib/firebase/policies'
@@ -14,6 +15,7 @@ async function loadPoliciesForUid(uid: string): Promise<PolicyDocument[]> {
 }
 
 export function usePolicies() {
+  const t = useTranslations('policies.errors')
   const { user, loading: authLoading } = useAuth()
   const [policies, setPolicies] = useState<PolicyDocument[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,15 +35,13 @@ export function usePolicies() {
     try {
       const nextPolicies = await loadPoliciesForUid(user.uid)
       setPolicies(nextPolicies)
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'No se pudieron cargar las pólizas'
-      )
+    } catch {
+      setError(t('loadFailed'))
       setPolicies([])
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [t, user])
 
   useEffect(() => {
     if (authLoading) {
@@ -72,13 +72,9 @@ export function usePolicies() {
           setPolicies(nextPolicies)
         }
       })
-      .catch((err: unknown) => {
+      .catch(() => {
         if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'No se pudieron cargar las pólizas'
-          )
+          setError(t('loadFailed'))
           setPolicies([])
         }
       })
@@ -91,7 +87,7 @@ export function usePolicies() {
     return () => {
       cancelled = true
     }
-  }, [authLoading, user])
+  }, [authLoading, t, user])
 
   return {
     policies,

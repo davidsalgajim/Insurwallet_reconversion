@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 
 import { AppLogo } from '@/components/brand/app-logo'
+import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 
@@ -47,6 +48,7 @@ export async function LandingNav() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <LocaleSwitcher />
           <Button variant="ghost" asChild className="text-muted-foreground">
             <Link href="/login">{t('common.login')}</Link>
           </Button>

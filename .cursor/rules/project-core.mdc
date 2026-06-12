@@ -11,9 +11,9 @@ Lee `PRODUCT.md`, `DESIGN.md` y `tasks/tasks-plan-reconversion-insurwallet.md` a
 
 | Capa | Tecnología |
 |------|------------|
-| Frontend | Next.js 15 App Router, TypeScript strict, Tailwind, shadcn/ui |
-| Auth/DB/Storage | **Firebase** (Auth, Firestore, Storage, Functions, FCM, App Check) |
-| Data fetching | TanStack Query + listeners Firestore donde aplique tiempo real |
+| Frontend | Next.js 16 App Router, React 19, TypeScript strict, Tailwind v4, shadcn/ui (base) |
+| Auth/DB/Storage | **Firebase** (Auth, Firestore, Storage, Functions, FCM; App Check pendiente F0) |
+| Data fetching | Hooks custom (`hooks/`, `lib/firebase/`) hoy; **TanStack Query** + listeners Firestore al escalar pantallas |
 | Validación | Zod en cliente y servidor |
 | i18n | **next-intl** (ES base, EN/PT) — no next-i18next |
 | Tests TS | **Vitest** + Testing Library — no Jest |
@@ -26,17 +26,21 @@ Lee `PRODUCT.md`, `DESIGN.md` y `tasks/tasks-plan-reconversion-insurwallet.md` a
 ## Estructura de carpetas
 
 ```
-app/           # Rutas App Router (marketing, auth, app, share)
-components/    # UI reutilizable (ui/, policies/, mariana/, layout/)
-hooks/         # Custom hooks
-lib/           # firebase/, schemas/, i18n/, utils/, types/
-functions/     # Cloud Functions
-worker/        # Pipeline documentos (Python)
-mariana/       # Orquestador multi-agente
-e2e/           # Playwright
-docs/          # Plan, PRODUCT, DESIGN
+app/[locale]/  # Rutas App Router: (marketing), (auth), (app); share/[token] (F3)
+components/    # ui/, auth/, policies/, marketing/, layout/, brand/
+hooks/         # Custom hooks de datos
+i18n/          # next-intl: routing, navigation, request
+messages/      # es.json, en.json, pt.json
+lib/           # firebase/, schemas/, env.ts, utils/, types/
+functions/     # Cloud Functions (scaffold; triggers F2+)
+worker/        # Pipeline documentos Python (F2)
+mariana/       # Orquestador multi-agente (F3)
+e2e/           # Playwright (F5)
+docs/          # Plan maestro
 tasks/         # Task list de implementación
 ```
+
+**Estado jun 2026:** F0 ~85%, F1 ~75% — auth, CRUD manual, dashboard, rules testeadas; upload PDF, worker, MarIAna backend y pagos pendientes.
 
 - Separar concerns: componentes presentacionales vs hooks de datos vs lógica en `lib/`
 - **Máximo ~400 líneas por archivo** — refactorizar en submódulos/hooks/componentes

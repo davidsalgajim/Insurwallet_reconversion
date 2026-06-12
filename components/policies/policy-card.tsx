@@ -1,8 +1,12 @@
+'use client'
+
 import { CalendarRange, ChevronRight } from 'lucide-react'
+import { useLocale } from 'next-intl'
 
 import { PolicyStatusBadge } from '@/components/policies/policy-status-badge'
 import { Link } from '@/i18n/navigation'
 import type { PolicyDocument } from '@/lib/firebase/policies'
+import { formatPolicyDate } from '@/lib/i18n/format'
 import { cn } from '@/lib/utils/cn'
 
 type PolicyCardProps = {
@@ -10,15 +14,9 @@ type PolicyCardProps = {
   className?: string
 }
 
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date)
-}
-
 export function PolicyCard({ policy, className }: PolicyCardProps) {
+  const locale = useLocale()
+
   return (
     <Link
       href={`/policies/${policy.id}`}
@@ -39,7 +37,8 @@ export function PolicyCard({ policy, className }: PolicyCardProps) {
         </p>
         <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <CalendarRange className="size-3.5 shrink-0" strokeWidth={1.5} />
-          {formatDate(policy.startDate)} — {formatDate(policy.endDate)}
+          {formatPolicyDate(policy.startDate, locale)} —{' '}
+          {formatPolicyDate(policy.endDate, locale)}
         </p>
       </div>
       <ChevronRight

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+
 import {
   WorkflowBoard,
   type WorkflowStep,
@@ -14,15 +16,20 @@ type JourneyWorkflowSectionProps = {
   defaultActiveIndex?: number
 }
 
-const FILTER_TABS = ['Todas', 'Activas', 'Pendientes'] as const
-
 export function JourneyWorkflowSection({
   title,
   description,
   steps,
   defaultActiveIndex = 1,
 }: JourneyWorkflowSectionProps) {
+  const t = useTranslations('dashboard')
   const [activeTab, setActiveTab] = useState(0)
+
+  const filterTabs = [
+    t('filterAll'),
+    t('filterActive'),
+    t('filterPending'),
+  ] as const
 
   return (
     <section
@@ -42,9 +49,9 @@ export function JourneyWorkflowSection({
         <div
           className="flex max-w-full gap-1 overflow-x-auto rounded-[var(--radius-pill)] bg-white/50 p-1 ring-1 ring-border [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="tablist"
-          aria-label="Filtrar recorrido"
+          aria-label={t('filterAria')}
         >
-          {FILTER_TABS.map((tab, i) => (
+          {filterTabs.map((tab, i) => (
             <button
               key={tab}
               type="button"

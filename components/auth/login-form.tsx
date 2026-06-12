@@ -18,7 +18,9 @@ import {
   getAuthErrorMessage,
   signInWithEmail,
   signInWithGoogle,
+  userNeedsEmailVerification,
 } from '@/lib/firebase/auth'
+import { isEmailVerificationRequired } from '@/lib/firebase/email-verification-policy'
 import { type PreferredLanguage } from '@/lib/schemas/user'
 
 type LoginFormProps = {
@@ -45,7 +47,17 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
     setSubmitting(true)
 
     try {
-      await signInWithEmail(email, password)
+      const user = await signInWithEmail(email, password)
+
+      if (userNeedsEmailVerification(user) && isEmailVerificationRequired()) {
+        router.replace(
+          destination === '/dashboard'
+            ? '/verify-email'
+            : `/verify-email?redirect=${encodeURIComponent(destination)}`
+        )
+        return
+      }
+
       router.replace(destination)
     } catch (error) {
       setErrorKey(getAuthErrorMessage(error))

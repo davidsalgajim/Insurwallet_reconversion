@@ -80,6 +80,23 @@ describe('policies helpers', () => {
     expect(updated.policyNumber).toBe('POL-001')
   })
 
+  it('parsePolicyDocument recomputes stale stored status on read', () => {
+    const policy = buildPolicyFromInput(baseInput, new Date('2025-06-01'))
+    const firestoreData = {
+      ...policyToFirestoreData(policy),
+      endDate: Timestamp.fromDate(new Date('2025-07-01')),
+      status: 'active',
+    }
+
+    const parsed = parsePolicyDocument(
+      'policy-abc',
+      firestoreData,
+      new Date('2025-06-01')
+    )
+
+    expect(parsed.status).toBe('expiring')
+  })
+
   it('auditLogToFirestoreData converts createdAt to Timestamp', () => {
     const createdAt = new Date('2025-06-01T12:00:00.000Z')
     const data = auditLogToFirestoreData({

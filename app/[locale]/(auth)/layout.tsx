@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { getTranslations } from 'next-intl/server'
 
 import { AppLogo } from '@/components/brand/app-logo'
+import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
 import { Link } from '@/i18n/navigation'
 
 export default async function AuthLayout({
@@ -14,7 +15,7 @@ export default async function AuthLayout({
   return (
     <div className="marketing-surface flex min-h-dvh flex-col">
       <header className="sticky top-0 z-[var(--z-nav)] border-b border-border/60 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link
             href="/"
             className="flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -29,6 +30,7 @@ export default async function AuthLayout({
               </p>
             </div>
           </Link>
+          <LocaleSwitcher />
         </div>
       </header>
 

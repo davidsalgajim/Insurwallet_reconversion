@@ -1,29 +1,16 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
+import {
+  PAYMENT_FREQUENCY_VALUES,
+  POLICY_TYPE_VALUES,
+  usePolicyLabels,
+} from '@/hooks/use-policy-labels'
 import type { PaymentFrequency, PolicyType } from '@/lib/schemas/policy'
 import { cn } from '@/lib/utils/cn'
 
 import { policyFieldClassName, toDateInputValue } from './policy-form-styles'
-
-export const POLICY_TYPE_OPTIONS: { value: PolicyType; label: string }[] = [
-  { value: 'life', label: 'Vida' },
-  { value: 'health', label: 'Salud' },
-  { value: 'auto', label: 'Auto' },
-  { value: 'home', label: 'Hogar' },
-  { value: 'travel', label: 'Viaje' },
-  { value: 'other', label: 'Otro' },
-]
-
-export const PAYMENT_FREQUENCY_OPTIONS: {
-  value: PaymentFrequency
-  label: string
-}[] = [
-  { value: 'monthly', label: 'Mensual' },
-  { value: 'quarterly', label: 'Trimestral' },
-  { value: 'semi_annual', label: 'Semestral' },
-  { value: 'annual', label: 'Anual' },
-  { value: 'single', label: 'Pago único' },
-]
 
 export type PolicyBasicFieldsValues = {
   insurerName: string
@@ -55,11 +42,14 @@ export function PolicyBasicFields({
   onChange,
   showExtendedFields = false,
 }: PolicyBasicFieldsProps) {
+  const t = useTranslations('policies.fields')
+  const { policyType, paymentFrequency } = usePolicyLabels()
+
   return (
     <>
       <div className="space-y-2">
         <label htmlFor="insurerName" className="text-sm font-medium">
-          Aseguradora
+          {t('insurerName')}
         </label>
         <input
           id="insurerName"
@@ -69,14 +59,14 @@ export function PolicyBasicFields({
           autoComplete="organization"
           value={values.insurerName}
           onChange={(event) => onChange('insurerName', event.target.value)}
-          placeholder="Ej. Seguros Bolívar"
+          placeholder={t('insurerPlaceholder')}
           className={policyFieldClassName}
         />
       </div>
 
       <div className="space-y-2">
         <label htmlFor="policyNumber" className="text-sm font-medium">
-          Número de póliza
+          {t('policyNumber')}
         </label>
         <input
           id="policyNumber"
@@ -85,7 +75,7 @@ export function PolicyBasicFields({
           required
           value={values.policyNumber}
           onChange={(event) => onChange('policyNumber', event.target.value)}
-          placeholder="Ej. POL-2025-001"
+          placeholder={t('policyNumberPlaceholder')}
           className={cn(policyFieldClassName, 'font-mono')}
         />
       </div>
@@ -93,7 +83,7 @@ export function PolicyBasicFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor="policyType" className="text-sm font-medium">
-            Tipo de seguro
+            {t('policyType')}
           </label>
           <select
             id="policyType"
@@ -104,16 +94,16 @@ export function PolicyBasicFields({
             }
             className={policyFieldClassName}
           >
-            {POLICY_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+            {POLICY_TYPE_VALUES.map((value) => (
+              <option key={value} value={value}>
+                {policyType(value)}
               </option>
             ))}
           </select>
         </div>
         <div className="space-y-2">
           <label htmlFor="holderName" className="text-sm font-medium">
-            Tomador
+            {t('holderName')}
           </label>
           <input
             id="holderName"
@@ -122,7 +112,7 @@ export function PolicyBasicFields({
             required
             value={values.holderName}
             onChange={(event) => onChange('holderName', event.target.value)}
-            placeholder="Nombre del tomador"
+            placeholder={t('holderPlaceholder')}
             className={policyFieldClassName}
           />
         </div>
@@ -131,7 +121,7 @@ export function PolicyBasicFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor="startDate" className="text-sm font-medium">
-            Inicio de vigencia
+            {t('startDate')}
           </label>
           <input
             id="startDate"
@@ -145,7 +135,7 @@ export function PolicyBasicFields({
         </div>
         <div className="space-y-2">
           <label htmlFor="endDate" className="text-sm font-medium">
-            Fin de vigencia
+            {t('endDate')}
           </label>
           <input
             id="endDate"
@@ -164,7 +154,7 @@ export function PolicyBasicFields({
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2 sm:col-span-2">
               <label htmlFor="premium" className="text-sm font-medium">
-                Prima
+                {t('premium')}
               </label>
               <input
                 id="premium"
@@ -180,7 +170,7 @@ export function PolicyBasicFields({
             </div>
             <div className="space-y-2">
               <label htmlFor="currency" className="text-sm font-medium">
-                Moneda
+                {t('currency')}
               </label>
               <input
                 id="currency"
@@ -199,7 +189,7 @@ export function PolicyBasicFields({
 
           <div className="space-y-2">
             <label htmlFor="paymentFrequency" className="text-sm font-medium">
-              Frecuencia de pago
+              {t('paymentFrequency')}
             </label>
             <select
               id="paymentFrequency"
@@ -213,9 +203,9 @@ export function PolicyBasicFields({
               }
               className={policyFieldClassName}
             >
-              {PAYMENT_FREQUENCY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              {PAYMENT_FREQUENCY_VALUES.map((value) => (
+                <option key={value} value={value}>
+                  {paymentFrequency(value)}
                 </option>
               ))}
             </select>
@@ -223,7 +213,7 @@ export function PolicyBasicFields({
 
           <div className="space-y-2">
             <label htmlFor="coverages" className="text-sm font-medium">
-              Coberturas
+              {t('coverages')}
             </label>
             <textarea
               id="coverages"
@@ -231,14 +221,14 @@ export function PolicyBasicFields({
               rows={3}
               value={values.coverages}
               onChange={(event) => onChange('coverages', event.target.value)}
-              placeholder="Resumen de coberturas principales"
+              placeholder={t('coveragesPlaceholder')}
               className={cn(policyFieldClassName, 'min-h-[88px] resize-y py-3')}
             />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="exclusions" className="text-sm font-medium">
-              Exclusiones
+              {t('exclusions')}
             </label>
             <textarea
               id="exclusions"
@@ -246,14 +236,14 @@ export function PolicyBasicFields({
               rows={3}
               value={values.exclusions}
               onChange={(event) => onChange('exclusions', event.target.value)}
-              placeholder="Exclusiones relevantes"
+              placeholder={t('exclusionsPlaceholder')}
               className={cn(policyFieldClassName, 'min-h-[88px] resize-y py-3')}
             />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="waitingPeriods" className="text-sm font-medium">
-              Periodos de carencia
+              {t('waitingPeriods')}
             </label>
             <textarea
               id="waitingPeriods"
@@ -263,14 +253,14 @@ export function PolicyBasicFields({
               onChange={(event) =>
                 onChange('waitingPeriods', event.target.value)
               }
-              placeholder="Carencias aplicables"
+              placeholder={t('waitingPeriodsPlaceholder')}
               className={cn(policyFieldClassName, 'min-h-[72px] resize-y py-3')}
             />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="notes" className="text-sm font-medium">
-              Notas
+              {t('notes')}
             </label>
             <textarea
               id="notes"
@@ -278,7 +268,7 @@ export function PolicyBasicFields({
               rows={3}
               value={values.notes}
               onChange={(event) => onChange('notes', event.target.value)}
-              placeholder="Observaciones adicionales"
+              placeholder={t('notesPlaceholder')}
               className={cn(policyFieldClassName, 'min-h-[88px] resize-y py-3')}
             />
           </div>

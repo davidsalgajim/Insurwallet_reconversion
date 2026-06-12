@@ -47,7 +47,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
 
     try {
       await signUpWithEmail(email, password, displayName, locale)
-      router.replace(destination)
+      router.replace('/verify-email')
     } catch (error) {
       setErrorKey(getAuthErrorMessage(error))
     } finally {

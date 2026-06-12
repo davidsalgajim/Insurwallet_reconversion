@@ -25,26 +25,28 @@ alwaysApply: false
 | Formularios | react-hook-form + Zod resolver |
 | Global ligero | React Context (auth, locale, theme) |
 | Global complejo | Zustand (wizard, chat MarIAna, upload pipeline) |
-| Server/async | TanStack Query |
+| Server/async | TanStack Query (objetivo); hoy hooks en `hooks/` + `lib/firebase/` |
 
 - Estado inmutable; no mutar objetos/arrays directamente
 - Evitar prop drilling >2 niveles — context o Zustand
 
 ## Data Fetching (Firebase)
 
+**Hoy (F1):** hooks custom (`usePolicies`, `usePolicy`) y funciones en `lib/firebase/policies.ts` con fetch al montar.
+
+**Objetivo:** TanStack Query para cache + `useMutation`; listeners `onSnapshot` en jobs/upload (F2).
+
 ```typescript
-// TanStack Query para lecturas con cache
+// Patrón objetivo al integrar TanStack Query
 const { data, isLoading, error } = useQuery({
   queryKey: ["policies", uid],
   queryFn: () => fetchPolicies(uid),
   staleTime: 60_000,
 });
-
-// Tiempo real: onSnapshot en hook dedicado, invalidar query al desmontar
 ```
 
 - Siempre: loading skeleton (no spinner en contenido), error state, empty state
-- Mutaciones: `useMutation` + invalidación de queries relacionadas
+- Mutaciones: invalidar datos relacionados tras create/update/delete
 - No exponer `uid` ni IDs sensibles en URLs públicas sin token
 
 ## Performance
@@ -64,7 +66,11 @@ const { data, isLoading, error } = useQuery({
 
 ## Rutas
 
-- `(marketing)` — landing brand
-- `(auth)` — login/register
-- `(app)` — producto autenticado (middleware protege)
-- `share/[token]` — compartir pólizas
+Todas bajo `app/[locale]/` con `localePrefix: 'always'` (es, en, pt).
+
+- `(marketing)/` — landing brand (`/es`, `/en`, …)
+- `(auth)/` — login, register, forgot-password
+- `(app)/` — producto autenticado (middleware + session cookie)
+- `share/[token]` — compartir pólizas (F3, no implementado)
+
+Implementado: dashboard, policies (list/detail/edit/new/manual). Stubs: mariana, alerts, settings. Falta: `policies/new/upload`, `policies/[id]/review`.

@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'InsurWallet — Todas tus pólizas en un solo lugar',
-  description:
-    'Centraliza tus seguros, sube documentos con IA y consulta a MarIAna.',
+  title: 'InsurWallet',
+  description: 'Insurance portfolio management',
   icons: {
     icon: '/brand/insurwallet-logo.png',
     apple: '/brand/insurwallet-logo.png',

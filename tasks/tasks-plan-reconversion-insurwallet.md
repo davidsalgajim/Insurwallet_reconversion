@@ -75,31 +75,31 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - [ ] 1.0 F0 — Fundación técnica: scaffold Next.js + Firebase + CI/CD completo + design system + POC OpenDataLoader
   - [x] 1.1 Scaffold Next.js 16 (App Router, TS strict, Tailwind v4, ESLint, Prettier, husky + lint-staged)
   - [x] 1.2 Firebase scaffold: `firebase.json`, rules skeleton, emuladores, `lib/firebase/`, `functions/`, `.env.example`
-  - [ ] 1.3 Configurar App Check (reCAPTCHA v3) en modo monitor y Google Secret Manager para todas las claves
+  - [x] 1.3 Configurar App Check (reCAPTCHA v3) en modo monitor y Google Secret Manager para todas las claves
   - [x] 1.4 CI/CD: `.github/workflows/ci.yml`, Dependabot, Vitest config
   - [x] 1.5 `PRODUCT.md` + `DESIGN.md` en raíz (impeccable init)
   - [x] 1.6 Design tokens en `globals.css` + componentes UI (Button, Card) + páginas visuales
-  - [ ] 1.7 POC OpenDataLoader: contenedor Docker (JDK 11 + Python 3.12) procesando el PDF Cancer Bancolombia del repo iOS — validar calidad de markdown/bboxes y tiempos (riesgo #1 del plan)
+  - [ ] 1.7 POC OpenDataLoader: contenedor Docker (JDK 11 + Python 3.12) procesando el PDF Cancer Bancolombia del repo iOS — validar calidad de markdown/bboxes y tiempos (riesgo #1 del plan). **Stub:** carpeta `worker/` aún no creada; diferir a inicio F2 (3.1–3.3) — no bloquea F1 staging.
   - [x] 1.8 next-intl ES/EN/PT + middleware + `messages/*.json`
   - [ ] 1.9 Revisión de código con agentes (security-reviewer + typescript-reviewer) y commit de cierre de fase
 
 - [ ] 2.0 F1 — Núcleo del producto: autenticación, modelo de datos Firestore con security rules testeadas, CRUD de pólizas (wizard manual) y dashboard
   - [x] 2.1 Schemas Zod (`lib/schemas/`) + `computePolicyStatus` con 10 tests passing
-  - [x] 2.2 Firebase Auth: email/password + Google; forgot-password; `users/{uid}` al registrarse; middleware + session cookie — pendiente: verificación email
+  - [x] 2.2 Firebase Auth: email/password + Google; forgot-password; verificación email (enviar, reenviar, bloqueo staging); `users/{uid}` al registrarse; middleware + session cookie
   - [x] 2.3 `firestore.rules` (owner, sharedWith read, subcolecciones documents/auditLogs) + 19 tests — ejecutar con emulador (requiere JDK 21+; `firebase-tools` ≥15)
   - [x] 2.4 `storage.rules` (mime PDF/imágenes, máx 20MB, owner) + 6 tests emulator-ready
   - [x] 2.5 `firestore.indexes.json` (ownerUid+status, ownerUid+endDate, sharedWith+endDate)
-  - [x] 2.6 Wizard paso 1 + paso 2 manual (`/policies/new/manual`) funcional con Firestore — PDF upload y pasos 3-4 pendientes
-  - [x] 2.7 Lista de pólizas conectada a Firestore (`usePolicies`, `PoliciesList`) — detalle `/policies/[id]` pendiente
+  - [x] 2.6 Wizard paso 1 + paso 2 manual + upload PDF (`/policies/new/upload`, Storage, validación Zod, estados) — revisión IA (pasos 3-4) pendientes F2
+  - [x] 2.7 Lista de pólizas conectada a Firestore (`usePolicies`, `PoliciesList`) + detalle `/policies/[id]` (`PolicyDetailView`, edit/delete)
   - [x] 2.8 Dashboard con KPIs y vencimientos reales desde Firestore (`dashboard-summary.tsx`)
   - [x] 2.9 Edición y borrado de pólizas con confirmación + `auditLogs` — detalle `/policies/[id]`, edit `/policies/[id]/edit`
-  - [ ] 2.10 Estados computed de póliza (active/expiring/expired) como helper puro con tests + Scheduled Function diaria que actualiza `status`
+  - [x] 2.10 Estados computed de póliza (active/expiring/expired) como helper puro con tests + Scheduled Function diaria que actualiza `status`
   - [x] 2.11 UI glass + responsive mobile/tablet verificado (dashboard, shell, workflow) — polish continuo en nuevas pantallas
-  - [ ] 2.12 Deploy a staging, revisión con agentes (security-reviewer + typescript-reviewer + Bugbot) y commit de cierre
+  - [ ] 2.12 Deploy a staging, revisión con agentes (security-reviewer + typescript-reviewer + Bugbot) y commit de cierre — checklist pre-deploy documentado en README (deploy real pendiente)
 
 - [ ] 3.0 F2 — Pipeline de documentos: worker Cloud Run, sanitizador anti-injection, extracción Claude estructurada y pantalla de revisión
   - [ ] 3.1 Crear worker Cloud Run (FastAPI + Dockerfile JDK11+Py3.12) con endpoint de job autenticado (OIDC service-to-service, nunca público)
-  - [ ] 3.2 Implementar upload de documentos: drag-and-drop + cámara móvil, validación cliente (tipo/tamaño), progreso visible, creación de `jobs/{jobId}` vía Function trigger de Storage
+  - [ ] 3.2 Implementar upload de documentos: drag-and-drop + cámara móvil, validación cliente (tipo/tamaño), progreso visible, creación de `jobs/{jobId}` vía Function trigger de Storage — **UI upload + Storage cliente listos (F1); jobs trigger pendiente**
   - [ ] 3.3 Integrar OpenDataLoader (markdown + JSON + bboxes) como extractor principal (TDD con PDFs de muestra)
   - [ ] 3.4 Portar quality gate del Swift (`DocumentProcessingService.swift` ~363): <100 palabras o sin keywords de póliza → escalar a Surya; tests con casos límite
   - [ ] 3.5 Integrar Surya OCR como fallback para scans/PDFs complejos + MarkItDown para docx/xlsx/imágenes
@@ -154,6 +154,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [ ] 6.10 `/impeccable audit` + polish final sobre toda la app + sesión de feedback de 5 usuarios reales (test de usabilidad moderado)
   - [ ] 6.11 Beta cerrada: invitar usuarios iOS existentes, importar sus datos, monitorear errores/costos 2 semanas, iterar
   - [ ] 6.12 Revisión final con agentes (security-review completo del repo + Bugbot) y go/no-go de lanzamiento
+  - [ ] 6.13 Producción App Check: registrar dominio custom (p. ej. `app.insurwallet.com`) en [Google reCAPTCHA Admin](https://www.google.com/recaptcha/admin) → **Allowed domains** (reCAPTCHA v3). Staging: `localhost` + dominio preview Vercel; prod: dominio custom antes de pasar App Check a **Enforce**.
 
 - [ ] 7.0 Transversal — Observabilidad, analytics y calidad de código continua (durante todas las fases)
   - [ ] 7.1 Sentry en frontend, Functions y worker (source maps, release tracking, alertas a email/Slack) — desde F1

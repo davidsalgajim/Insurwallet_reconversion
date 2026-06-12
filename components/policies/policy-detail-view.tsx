@@ -10,23 +10,18 @@ import {
   UserRound,
   Wallet,
 } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { DeletePolicyDialog } from '@/components/policies/delete-policy-dialog'
-import {
-  PAYMENT_FREQUENCY_OPTIONS,
-  POLICY_TYPE_OPTIONS,
-} from '@/components/policies/policy-basic-fields'
-import {
-  formatPolicyCurrency,
-  formatPolicyDate,
-} from '@/components/policies/policy-form-styles'
 import { PolicyStatusBadge } from '@/components/policies/policy-status-badge'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { Button } from '@/components/ui/button'
+import { usePolicyLabels } from '@/hooks/use-policy-labels'
 import { usePolicy } from '@/hooks/usePolicy'
 import { Link, useRouter } from '@/i18n/navigation'
+import { formatPolicyCurrency, formatPolicyDate } from '@/lib/i18n/format'
 import { cn } from '@/lib/utils/cn'
 
 function DetailSkeleton() {
@@ -75,21 +70,21 @@ function DetailTextBlock({ label, value }: { label: string; value: string }) {
 export function PolicyDetailView() {
   const params = useParams<{ id: string }>()
   const policyId = params?.id
+  const locale = useLocale()
   const router = useRouter()
+  const t = useTranslations('policies')
+  const tf = useTranslations('policies.fields')
+  const ta = useTranslations('common.actions')
+  const {
+    policyType,
+    paymentFrequency,
+    status: statusLabel,
+  } = usePolicyLabels()
   const { user } = useAuth()
   const { policy, loading, error, isOwner } = usePolicy(policyId)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-
-  const policyTypeLabel =
-    POLICY_TYPE_OPTIONS.find((option) => option.value === policy?.policyType)
-      ?.label ?? policy?.policyType
-
-  const paymentFrequencyLabel =
-    PAYMENT_FREQUENCY_OPTIONS.find(
-      (option) => option.value === policy?.paymentFrequency
-    )?.label ?? policy?.paymentFrequency
 
   async function handleDelete() {
     if (!policy || !user) {
@@ -108,10 +103,8 @@ export function PolicyDetailView() {
       await deletePolicy(db, policy.id, user.uid)
       setDeleteOpen(false)
       router.push('/policies')
-    } catch (err) {
-      setDeleteError(
-        err instanceof Error ? err.message : 'No se pudo eliminar la póliza'
-      )
+    } catch {
+      setDeleteError(t('errors.deleteFailed'))
     } finally {
       setDeleting(false)
     }
@@ -125,23 +118,23 @@ export function PolicyDetailView() {
           className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" strokeWidth={1.5} />
-          Volver a pólizas
+          {t('detail.backToList')}
         </Link>
       </div>
 
       <AppTopbar
-        title={policy?.insurerName ?? 'Detalle de póliza'}
+        title={policy?.insurerName ?? t('detail.title')}
         subtitle={
           policy
-            ? `Póliza ${policy.policyNumber}`
-            : 'Consulta la información de tu seguro'
+            ? t('policyNumberPrefix', { number: policy.policyNumber })
+            : t('detail.subtitle')
         }
       />
 
       {loading ? <DetailSkeleton /> : null}
 
       {!loading && error ? (
-        <div className="glass-panel px-6 py-12 text-center">
+        <div className="elevated-card px-6 py-12 text-center">
           <p className="text-sm font-medium text-[var(--primitive-danger)]">
             {error}
           </p>
@@ -150,20 +143,20 @@ export function PolicyDetailView() {
             variant="secondary"
             className="mt-4 rounded-[var(--radius-pill)]"
           >
-            <Link href="/policies">Ir a mis pólizas</Link>
+            <Link href="/policies">{t('detail.goToList')}</Link>
           </Button>
         </div>
       ) : null}
 
       {!loading && policy ? (
         <>
-          <div className="glass-panel mb-4 space-y-5 p-6">
+          <div className="elevated-card mb-4 space-y-5 p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <PolicyStatusBadge status={policy.status} />
                   <span className="pill-badge bg-primary/10 text-primary">
-                    {policyTypeLabel}
+                    {policyType(policy.policyType)}
                   </span>
                 </div>
                 <p className="font-mono text-sm text-muted-foreground">
@@ -180,7 +173,7 @@ export function PolicyDetailView() {
                   >
                     <Link href={`/policies/${policy.id}/edit`}>
                       <Pencil className="size-4" strokeWidth={1.5} />
-                      Editar
+                      {ta('edit')}
                     </Link>
                   </Button>
                   <Button
@@ -191,58 +184,64 @@ export function PolicyDetailView() {
                     onClick={() => setDeleteOpen(true)}
                   >
                     <Trash2 className="size-4" strokeWidth={1.5} />
-                    Eliminar
+                    {ta('delete')}
                   </Button>
                 </div>
               ) : null}
             </div>
 
             <dl className="grid gap-4 sm:grid-cols-2">
-              <DetailField label="Tomador" value={policy.holderName} />
+              <DetailField label={tf('holderName')} value={policy.holderName} />
               <DetailField
-                label="Prima"
-                value={formatPolicyCurrency(policy.premium, policy.currency)}
+                label={tf('premium')}
+                value={formatPolicyCurrency(
+                  policy.premium,
+                  policy.currency,
+                  locale
+                )}
               />
               <DetailField
-                label="Frecuencia de pago"
-                value={paymentFrequencyLabel ?? '—'}
+                label={tf('paymentFrequency')}
+                value={paymentFrequency(policy.paymentFrequency)}
               />
               <DetailField
-                label="Vigencia"
-                value={`${formatPolicyDate(policy.startDate)} — ${formatPolicyDate(policy.endDate)}`}
+                label={t('detail.validity')}
+                value={`${formatPolicyDate(policy.startDate, locale)} — ${formatPolicyDate(policy.endDate, locale)}`}
               />
             </dl>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="glass-panel flex items-center gap-3 p-4">
+              <div className="rounded-[var(--radius-inner)] border border-border/60 bg-muted/40 flex items-center gap-3 p-4">
                 <Shield className="size-5 text-primary" strokeWidth={1.5} />
                 <div>
-                  <p className="text-xs text-muted-foreground">Estado</p>
-                  <p className="text-sm font-semibold capitalize">
-                    {policy.status === 'active'
-                      ? 'Activa'
-                      : policy.status === 'expiring'
-                        ? 'Por vencer'
-                        : 'Vencida'}
+                  <p className="text-xs text-muted-foreground">
+                    {t('detail.statusLabel')}
+                  </p>
+                  <p className="text-sm font-semibold">
+                    {statusLabel(policy.status)}
                   </p>
                 </div>
               </div>
-              <div className="glass-panel flex items-center gap-3 p-4">
+              <div className="rounded-[var(--radius-inner)] border border-border/60 bg-muted/40 flex items-center gap-3 p-4">
                 <CalendarRange
                   className="size-5 text-primary"
                   strokeWidth={1.5}
                 />
                 <div>
-                  <p className="text-xs text-muted-foreground">Actualizada</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('detail.updatedLabel')}
+                  </p>
                   <p className="text-sm font-semibold">
-                    {formatPolicyDate(policy.updatedAt)}
+                    {formatPolicyDate(policy.updatedAt, locale)}
                   </p>
                 </div>
               </div>
-              <div className="glass-panel flex items-center gap-3 p-4">
+              <div className="rounded-[var(--radius-inner)] border border-border/60 bg-muted/40 flex items-center gap-3 p-4">
                 <Wallet className="size-5 text-primary" strokeWidth={1.5} />
                 <div>
-                  <p className="text-xs text-muted-foreground">Moneda</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('detail.currencyLabel')}
+                  </p>
                   <p className="font-mono text-sm font-semibold">
                     {policy.currency}
                   </p>
@@ -251,36 +250,42 @@ export function PolicyDetailView() {
             </div>
           </div>
 
-          <div className="glass-panel space-y-4 p-6">
+          <div className="elevated-card space-y-4 p-6">
             <div className="flex items-center gap-2 border-b border-border/60 pb-3">
               <UserRound
                 className="size-4 text-muted-foreground"
                 strokeWidth={1.5}
               />
-              <h2 className="font-semibold">Detalles del contrato</h2>
+              <h2 className="font-semibold">{t('detail.contractDetails')}</h2>
             </div>
 
             {policy.coverages ? (
-              <DetailTextBlock label="Coberturas" value={policy.coverages} />
+              <DetailTextBlock
+                label={tf('coverages')}
+                value={policy.coverages}
+              />
             ) : null}
             {policy.exclusions ? (
-              <DetailTextBlock label="Exclusiones" value={policy.exclusions} />
+              <DetailTextBlock
+                label={tf('exclusions')}
+                value={policy.exclusions}
+              />
             ) : null}
             {policy.waitingPeriods ? (
               <DetailTextBlock
-                label="Periodos de carencia"
+                label={tf('waitingPeriods')}
                 value={policy.waitingPeriods}
               />
             ) : null}
             {policy.notes ? (
-              <DetailTextBlock label="Notas" value={policy.notes} />
+              <DetailTextBlock label={tf('notes')} value={policy.notes} />
             ) : null}
             {!policy.coverages &&
             !policy.exclusions &&
             !policy.waitingPeriods &&
             !policy.notes ? (
               <p className="text-sm text-muted-foreground">
-                Aún no hay coberturas ni notas registradas para esta póliza.
+                {t('detail.noExtraDetails')}
               </p>
             ) : null}
           </div>

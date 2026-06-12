@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import type { PolicyDocument } from '@/lib/firebase/policies'
@@ -16,6 +17,7 @@ async function loadPolicyById(
 }
 
 export function usePolicy(policyId: string | undefined) {
+  const t = useTranslations('policies.errors')
   const { user, loading: authLoading } = useAuth()
   const [policy, setPolicy] = useState<PolicyDocument | null>(null)
   const [loading, setLoading] = useState(true)
@@ -37,26 +39,24 @@ export function usePolicy(policyId: string | undefined) {
 
       if (!nextPolicy) {
         setPolicy(null)
-        setError('No encontramos esta póliza.')
+        setError(t('notFound'))
         return
       }
 
       if (nextPolicy.ownerUid !== user.uid) {
         setPolicy(null)
-        setError('No tienes permiso para ver esta póliza.')
+        setError(t('forbidden'))
         return
       }
 
       setPolicy(nextPolicy)
-    } catch (err) {
+    } catch {
       setPolicy(null)
-      setError(
-        err instanceof Error ? err.message : 'No se pudo cargar la póliza'
-      )
+      setError(t('loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [policyId, user])
+  }, [policyId, t, user])
 
   useEffect(() => {
     if (authLoading) {
@@ -67,7 +67,7 @@ export function usePolicy(policyId: string | undefined) {
       queueMicrotask(() => {
         setPolicy(null)
         setLoading(false)
-        setError(policyId && !user ? 'Debes iniciar sesión.' : null)
+        setError(policyId && !user ? t('signInRequired') : null)
       })
       return
     }
@@ -89,24 +89,22 @@ export function usePolicy(policyId: string | undefined) {
 
         if (!nextPolicy) {
           setPolicy(null)
-          setError('No encontramos esta póliza.')
+          setError(t('notFound'))
           return
         }
 
         if (nextPolicy.ownerUid !== user.uid) {
           setPolicy(null)
-          setError('No tienes permiso para ver esta póliza.')
+          setError(t('forbidden'))
           return
         }
 
         setPolicy(nextPolicy)
       })
-      .catch((err: unknown) => {
+      .catch(() => {
         if (!cancelled) {
           setPolicy(null)
-          setError(
-            err instanceof Error ? err.message : 'No se pudo cargar la póliza'
-          )
+          setError(t('loadFailed'))
         }
       })
       .finally(() => {
@@ -118,7 +116,7 @@ export function usePolicy(policyId: string | undefined) {
     return () => {
       cancelled = true
     }
-  }, [authLoading, policyId, user])
+  }, [authLoading, policyId, t, user])
 
   return {
     policy,

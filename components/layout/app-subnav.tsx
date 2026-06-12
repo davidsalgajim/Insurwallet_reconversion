@@ -1,32 +1,37 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
 
 type NavItem = {
   href: string
-  label: string
+  labelKey: 'nav.summary' | 'policies' | 'mariana' | 'alerts'
   match: (path: string) => boolean
 }
 
 const APP_NAV: NavItem[] = [
   {
     href: '/dashboard',
-    label: 'Resumen',
+    labelKey: 'nav.summary',
     match: (p) => p === '/dashboard' || p === '',
   },
   {
     href: '/policies',
-    label: 'Pólizas',
+    labelKey: 'policies',
     match: (p) => p.startsWith('/policies'),
   },
   {
     href: '/mariana',
-    label: 'MarIAna',
+    labelKey: 'mariana',
     match: (p) => p.startsWith('/mariana'),
   },
-  { href: '/alerts', label: 'Alertas', match: (p) => p.startsWith('/alerts') },
+  {
+    href: '/alerts',
+    labelKey: 'alerts',
+    match: (p) => p.startsWith('/alerts'),
+  },
 ]
 
 type AppSubnavProps = {
@@ -44,10 +49,11 @@ function stripLocalePrefix(pathname: string, locale: string) {
 export function AppSubnav({ locale, className }: AppSubnavProps) {
   const pathname = usePathname()
   const relativePath = stripLocalePrefix(pathname, locale)
+  const t = useTranslations('common')
 
   return (
     <nav
-      aria-label="Secciones de la aplicación"
+      aria-label={t('nav.sectionsAria')}
       className={cn(
         'mb-4 hidden w-full overflow-x-auto md:block sm:mb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         className
@@ -56,6 +62,10 @@ export function AppSubnav({ locale, className }: AppSubnavProps) {
       <div className="inline-flex min-w-min gap-1 rounded-[var(--radius-pill)] bg-white/45 p-1 ring-1 ring-border backdrop-blur-sm">
         {APP_NAV.map((item) => {
           const active = item.match(relativePath)
+          const label =
+            item.labelKey === 'nav.summary'
+              ? t('nav.summary')
+              : t(item.labelKey)
           return (
             <Link
               key={item.href}
@@ -68,7 +78,7 @@ export function AppSubnav({ locale, className }: AppSubnavProps) {
                   : 'text-muted-foreground hover:bg-white/70 hover:text-foreground'
               )}
             >
-              {item.label}
+              {label}
             </Link>
           )
         })}

@@ -13,7 +13,7 @@ Lee `DESIGN.md` antes de estilizar. Orquestación UI: `design-orchestration.mdc`
 
 ## Reglas
 
-- **Tailwind utility-first**; tokens en CSS variables (`globals.css`) → `tailwind.config`
+- **Tailwind utility-first** (v4); tokens en `app/globals.css` — no hay `tailwind.config.ts`
 - Tres capas: primitive → semantic → component
 - **No inline styles** salvo valores dinámicos imposibles en Tailwind
 - Responsive: mobile-first (`sm:`, `md:`, `lg:`)

@@ -9,7 +9,46 @@
     "mariana": "MarIAna",
     "alerts": "Alertas",
     "settings": "Perfil",
-    "getStarted": "Comenzar gratis"
+    "signOut": "Cerrar sesión",
+    "getStarted": "Comenzar gratis",
+    "localeSwitcherAria": "Seleccionar idioma",
+    "localeNames": {
+      "es": "Español",
+      "en": "English",
+      "pt": "Português"
+    },
+    "nav": {
+      "mainAria": "Navegación principal",
+      "sectionsAria": "Secciones de la aplicación",
+      "homeAria": "InsurWallet — inicio",
+      "newPolicy": "Nueva póliza",
+      "newShort": "Nueva",
+      "summary": "Resumen"
+    },
+    "topbar": {
+      "searchPlaceholder": "Buscar pólizas…",
+      "searchAria": "Buscar pólizas",
+      "actionsAria": "Acciones de la página",
+      "uploadDocument": "Subir documento",
+      "calendar": "Calendario",
+      "notifications": "Notificaciones",
+      "comingSoon": "Próximamente"
+    },
+    "actions": {
+      "back": "Volver",
+      "cancel": "Cancelar",
+      "continue": "Continuar",
+      "save": "Guardar cambios",
+      "saving": "Guardando…",
+      "saveAndContinue": "Guardar y continuar",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "deleting": "Eliminando…"
+    },
+    "meta": {
+      "title": "InsurWallet — Todas tus pólizas en un solo lugar",
+      "description": "Centraliza tus seguros, sube documentos con IA y consulta a MarIAna."
+    }
   },
   "landing": {
     "navAria": "Navegación principal",
@@ -83,7 +122,18 @@
     "footerNavAria": "Enlaces del pie de página",
     "footerCopyright": "© {year} InsurWallet. Todos los derechos reservados.",
     "footerTerms": "Términos de servicio",
-    "footerPrivacy": "Política de privacidad"
+    "footerPrivacy": "Política de privacidad",
+    "previewPortfolio": "Tu cartera",
+    "previewSearch": "Buscar…",
+    "previewStatActive": "Activas",
+    "previewStatExpiring": "Por vencer",
+    "previewStatPremium": "Prima",
+    "previewColUpload": "Carga",
+    "previewColReview": "Revisión",
+    "previewColMariana": "MarIAna",
+    "previewActionUpload": "Subir PDF",
+    "previewActionReview": "Revisar datos",
+    "previewActionAsk": "Consultar"
   },
   "auth": {
     "welcomeBack": "Bienvenido de nuevo",
@@ -101,6 +151,20 @@
     "backToLogin": "Volver a iniciar sesión",
     "noAccount": "¿No tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
+    "verifyEmailTitle": "Confirma tu correo",
+    "verifyEmailDesc": "Te enviamos un enlace de verificación. Ábrelo para activar tu cuenta.",
+    "verifyEmailSent": "Revisa tu bandeja de entrada y la carpeta de spam.",
+    "verifyEmailSentTo": "Enviamos el enlace a",
+    "verifyEmailResent": "Enviamos un nuevo enlace de verificación.",
+    "verifyEmailResend": "Reenviar correo",
+    "verifyEmailResendCooldown": "Reenviar en {seconds}s",
+    "verifyEmailCheck": "Ya verifiqué mi correo",
+    "verifyEmailContinueWithout": "Continuar sin verificar",
+    "verifyEmailSignOut": "Cerrar sesión",
+    "verifyEmailBannerTitle": "Tu correo aún no está verificado",
+    "verifyEmailBannerDesc": "Verifica tu correo para proteger tu cuenta y recibir alertas importantes.",
+    "verifyEmailBannerAction": "Ir a verificación",
+    "verifyEmailBannerDismiss": "Ocultar aviso",
     "errors": {
       "emailInUse": "Este correo ya está registrado.",
       "invalidEmail": "Ingresa un correo válido.",
@@ -108,7 +172,149 @@
       "invalidCredentials": "Correo o contraseña incorrectos.",
       "tooManyRequests": "Demasiados intentos. Intenta más tarde.",
       "popupClosed": "Inicio de sesión cancelado.",
-      "genericError": "No pudimos completar la acción. Intenta de nuevo."
+      "genericError": "No pudimos completar la acción. Intenta de nuevo.",
+      "emailNotVerifiedYet": "Aún no detectamos la verificación. Espera un momento y vuelve a intentar."
+    }
+  },
+  "policies": {
+    "title": "Pólizas",
+    "subtitle": "Gestiona y revisa tus seguros en un solo lugar.",
+    "listAria": "Lista de pólizas",
+    "policyNumberPrefix": "Póliza {number}",
+    "errors": {
+      "loadFailed": "No se pudieron cargar las pólizas",
+      "retryHint": "Verifica tu conexión o intenta de nuevo más tarde.",
+      "notFound": "No encontramos esta póliza.",
+      "forbidden": "No tienes permiso para ver esta póliza.",
+      "signInRequired": "Debes iniciar sesión.",
+      "signInToSave": "Debes iniciar sesión para guardar una póliza.",
+      "signInToEdit": "Debes iniciar sesión para editar esta póliza.",
+      "signInToSaveChanges": "Inicia sesión para guardar los cambios.",
+      "deleteFailed": "No se pudo eliminar la póliza",
+      "saveFailed": "No se pudo guardar la póliza",
+      "updateFailed": "No se pudo actualizar la póliza"
+    },
+    "empty": {
+      "title": "Aún no tienes pólizas",
+      "description": "Centraliza tus seguros en un solo lugar. Sube un PDF o ingresa los datos manualmente.",
+      "cta": "Sube tu primera póliza"
+    },
+    "new": {
+      "title": "Nueva póliza",
+      "stepSubtitle": "Paso 1 de 4 — elige cómo agregar tu seguro",
+      "uploadTitle": "Subir PDF",
+      "uploadDescription": "Extraemos los datos automáticamente. Tú revisas y confirmas antes de guardar.",
+      "manualTitle": "Ingreso manual",
+      "manualDescription": "Completa los campos paso a paso si no tienes el documento a mano."
+    },
+    "manual": {
+      "title": "Nueva póliza",
+      "stepSubtitle": "Paso 2 de 4 — datos básicos del seguro",
+      "signInHint": "Inicia sesión para guardar esta póliza en tu cartera."
+    },
+    "detail": {
+      "title": "Detalle de póliza",
+      "subtitle": "Consulta la información de tu seguro",
+      "backToList": "Volver a pólizas",
+      "goToList": "Ir a mis pólizas",
+      "validity": "Vigencia",
+      "contractDetails": "Detalles del contrato",
+      "noExtraDetails": "Aún no hay coberturas ni notas registradas para esta póliza.",
+      "statusLabel": "Estado",
+      "updatedLabel": "Actualizada",
+      "currencyLabel": "Moneda"
+    },
+    "edit": {
+      "title": "Editar póliza",
+      "subtitleFallback": "Actualiza los datos de tu seguro",
+      "backToDetail": "Volver al detalle"
+    },
+    "delete": {
+      "title": "Eliminar póliza",
+      "description": "Esta acción no se puede deshacer. Se registrará en el historial de auditoría y se eliminará la póliza de tu cartera.",
+      "confirm": "Eliminar póliza"
+    },
+    "wizard": {
+      "progressAria": "Progreso del asistente"
+    },
+    "fields": {
+      "insurerName": "Aseguradora",
+      "insurerPlaceholder": "Ej. Seguros Bolívar",
+      "policyNumber": "Número de póliza",
+      "policyNumberPlaceholder": "Ej. POL-2025-001",
+      "policyType": "Tipo de seguro",
+      "holderName": "Tomador",
+      "holderPlaceholder": "Nombre del tomador",
+      "startDate": "Inicio de vigencia",
+      "endDate": "Fin de vigencia",
+      "premium": "Prima",
+      "currency": "Moneda",
+      "paymentFrequency": "Frecuencia de pago",
+      "coverages": "Coberturas",
+      "coveragesPlaceholder": "Resumen de coberturas principales",
+      "exclusions": "Exclusiones",
+      "exclusionsPlaceholder": "Exclusiones relevantes",
+      "waitingPeriods": "Periodos de carencia",
+      "waitingPeriodsPlaceholder": "Carencias aplicables",
+      "notes": "Notas",
+      "notesPlaceholder": "Observaciones adicionales"
+    },
+    "types": {
+      "life": "Vida",
+      "health": "Salud",
+      "auto": "Auto",
+      "home": "Hogar",
+      "travel": "Viaje",
+      "other": "Otro"
+    },
+    "paymentFrequency": {
+      "monthly": "Mensual",
+      "quarterly": "Trimestral",
+      "semi_annual": "Semestral",
+      "annual": "Anual",
+      "single": "Pago único"
+    },
+    "status": {
+      "active": "Activa",
+      "expiring": "Por vencer",
+      "expired": "Vencida"
+    },
+    "upload": {
+      "title": "Nueva póliza",
+      "subtitle": "Paso 2 de 4 — sube tu documento PDF",
+      "sectionTitle": "Documento de la póliza",
+      "sectionDesc": "Sube el PDF de tu póliza. Extraeremos los datos con IA; tú revisarás y confirmarás antes de guardar.",
+      "dropzoneTitle": "Arrastra tu PDF aquí",
+      "dropzoneHint": "Solo PDF, máximo {maxSize} MB. También puedes hacer clic para elegir un archivo.",
+      "dropzoneAria": "Zona para subir PDF de póliza",
+      "browseFiles": "Elegir archivo",
+      "removeFile": "Quitar archivo",
+      "startUpload": "Subir y procesar",
+      "validating": "Validando…",
+      "uploading": "Subiendo…",
+      "back": "Volver",
+      "authRequired": "Inicia sesión para subir documentos a tu cartera.",
+      "confirmNote": "Tu PDF está guardado de forma segura. La extracción con IA estará disponible en la pantalla de revisión — ningún dato se guardará sin tu confirmación.",
+      "viewDraft": "Ver borrador",
+      "errors": {
+        "emptyFile": "El archivo está vacío.",
+        "tooLarge": "El archivo supera el límite de 20 MB.",
+        "invalidType": "Solo se permiten archivos PDF.",
+        "invalidPdf": "El archivo no parece ser un PDF válido.",
+        "uploadFailed": "No se pudo subir el documento. Intenta de nuevo."
+      },
+      "processing": {
+        "title": "Estado del procesamiento",
+        "pendingNote": "Tu documento está en cola. Te avisaremos cuando la extracción esté lista para revisar.",
+        "ready": "Extracción lista — puedes revisar y confirmar los datos.",
+        "failed": "No pudimos procesar el documento. Intenta subirlo de nuevo.",
+        "steps": {
+          "pending": "Documento recibido",
+          "extracting": "Extrayendo texto del PDF",
+          "analyzing": "Analizando con IA",
+          "ready": "Listo para revisión"
+        }
+      }
     }
   },
   "dashboard": {
@@ -123,11 +329,88 @@
     "addPolicy": "Agregar póliza",
     "journeyTitle": "Tu recorrido de seguros",
     "journeyDesc": "Cuatro pasos para tener todo bajo control.",
+    "portfolioBadge": "Cartera de seguros",
+    "marianaQueries": "Consultas MarIAna",
+    "marianaStatHint": "Este mes",
+    "premiumHint": "COP / mes",
+    "expiringHint": "{days} días",
+    "renewalWindow": "30 · 60 · 90 días",
+    "daysRemaining": "{count} días",
+    "daysBucket": "{count} días",
+    "noUpcomingRenewals": "Sin vencimientos próximos",
+    "noUpcomingRenewalsDesc": "Tus pólizas activas no vencen en los próximos 90 días.",
+    "viewAllPolicies": "Ver todas las pólizas",
+    "marianaPanelSubtitle": "Asistente de seguros con citas a tus documentos",
+    "marianaQuestion1": "¿Estoy cubierto para un viaje?",
+    "marianaQuestion2": "¿Cuándo vence mi póliza de auto?",
+    "marianaQuestion3": "¿A quién llamo en emergencia?",
+    "coverageVisualTitle": "Cobertura activa",
+    "coverageVisualSubtitle": "Visualiza el estado de tu cartera cuando agregues pólizas",
+    "filterAria": "Filtrar recorrido",
+    "filterAll": "Todas",
+    "filterActive": "Activas",
+    "filterPending": "Pendientes",
+    "journeyColumns": {
+      "upload": "Carga",
+      "review": "Revisión",
+      "track": "Seguimiento",
+      "ask": "MarIAna"
+    },
+    "journeyMeta": {
+      "upload": "PDF · imagen",
+      "review": "Datos extraídos",
+      "track": "Vencimientos",
+      "ask": "Consultas IA"
+    },
     "journey": {
       "upload": "Sube tu póliza en PDF",
       "review": "Revisa los datos extraídos",
       "track": "Monitorea vencimientos",
       "ask": "Consulta con MarIAna"
+    }
+  },
+  "mariana": {
+    "title": "MarIAna",
+    "subtitle": "Asistente de seguros — solo lectura, con citas a tus documentos.",
+    "badge": "Asistente con citas documentales",
+    "emptyTitle": "¿En qué puedo ayudarte hoy?",
+    "emptyDescription": "Pregunta sobre coberturas, vencimientos o trámites. Las respuestas se basan en tus pólizas guardadas.",
+    "inputLabel": "Escribe tu pregunta",
+    "inputPlaceholder": "Pregunta sobre tus pólizas…",
+    "sendAria": "Enviar mensaje",
+    "disclaimer": "MarIAna no reemplaza asesoría legal ni la póliza original.",
+    "suggested1": "¿Qué cubre mi póliza de salud?",
+    "suggested2": "¿Cuándo vence mi seguro de auto?",
+    "suggested3": "¿Cómo reporto un siniestro?",
+    "suggested4": "¿Qué beneficiarios tengo registrados?"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "subtitle": "Vencimientos, renovaciones y actividad relevante de tu cartera.",
+    "emptyTitle": "Sin alertas por ahora",
+    "emptyDescription": "Te avisaremos cuando una póliza esté por vencer o haya actividad importante."
+  },
+  "settings": {
+    "title": "Perfil",
+    "subtitle": "Administra tu cuenta, privacidad y preferencias.",
+    "sections": {
+      "profile": "Perfil",
+      "privacy": "Privacidad y datos",
+      "preferences": "Preferencias"
+    },
+    "items": {
+      "personalData": "Datos personales",
+      "personalDataHint": "Nombre, correo y foto",
+      "privacy": "Privacidad",
+      "privacyHint": "Consentimiento y tratamiento de datos",
+      "export": "Exportar mis datos",
+      "exportHint": "Descarga en formato portable",
+      "deleteAccount": "Eliminar cuenta",
+      "deleteAccountHint": "Borrado permanente",
+      "notifications": "Notificaciones",
+      "notificationsHint": "Vencimientos y alertas",
+      "language": "Idioma",
+      "languageHint": "Elige el idioma de la interfaz"
     }
   }
 }

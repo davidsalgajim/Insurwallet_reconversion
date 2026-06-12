@@ -1,4 +1,6 @@
 import { setRequestLocale } from 'next-intl/server'
+
+import { EmailVerificationBanner } from '@/components/auth/email-verification-banner'
 import { AppShell } from '@/components/layout/app-shell'
 import { AppSubnav } from '@/components/layout/app-subnav'
 
@@ -14,6 +16,7 @@ export default async function AppLayout({ children, params }: Props) {
   return (
     <AppShell locale={locale}>
       <AppSubnav locale={locale} />
+      <EmailVerificationBanner />
       {children}
     </AppShell>
   )

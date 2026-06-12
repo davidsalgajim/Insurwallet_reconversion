@@ -1,5 +1,6 @@
 import { ArrowRight, MessageSquareText } from 'lucide-react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
+
 import {
   DashboardPolicyProvider,
   DashboardSummary,
@@ -34,7 +35,7 @@ export default async function DashboardPage({ params }: Props) {
             </span>
           ))}
           <span className="ml-2 pr-2 text-xs font-medium text-muted-foreground">
-            Cartera de seguros
+            {t('portfolioBadge')}
           </span>
         </div>
 
@@ -55,27 +56,27 @@ export default async function DashboardPage({ params }: Props) {
           steps={[
             {
               id: 'upload',
-              columnTitle: 'Carga',
+              columnTitle: t('journeyColumns.upload'),
               title: t('journey.upload'),
-              meta: 'PDF · imagen',
+              meta: t('journeyMeta.upload'),
             },
             {
               id: 'review',
-              columnTitle: 'Revisión',
+              columnTitle: t('journeyColumns.review'),
               title: t('journey.review'),
-              meta: 'Datos extraídos',
+              meta: t('journeyMeta.review'),
             },
             {
               id: 'track',
-              columnTitle: 'Seguimiento',
+              columnTitle: t('journeyColumns.track'),
               title: t('journey.track'),
-              meta: 'Vencimientos',
+              meta: t('journeyMeta.track'),
             },
             {
               id: 'ask',
-              columnTitle: 'MarIAna',
+              columnTitle: t('journeyColumns.ask'),
               title: t('journey.ask'),
-              meta: 'Consultas IA',
+              meta: t('journeyMeta.ask'),
             },
           ]}
         />
@@ -90,17 +91,17 @@ export default async function DashboardPage({ params }: Props) {
                   <span className="icon-circle size-9 stat-icon-accent border-0">
                     <MessageSquareText className="size-4" strokeWidth={1.5} />
                   </span>
-                  <h2 className="font-semibold">MarIAna</h2>
+                  <h2 className="font-semibold">{tc('mariana')}</h2>
                 </div>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  Asistente de seguros con citas a tus documentos
+                  {t('marianaPanelSubtitle')}
                 </p>
               </div>
               <div className="space-y-2.5 px-3 py-4 sm:px-5 sm:py-5">
                 {[
-                  '¿Estoy cubierto para un viaje?',
-                  '¿Cuándo vence mi póliza de auto?',
-                  '¿A quién llamo en emergencia?',
+                  t('marianaQuestion1'),
+                  t('marianaQuestion2'),
+                  t('marianaQuestion3'),
                 ].map((q) => (
                   <Link
                     key={q}
@@ -118,8 +119,8 @@ export default async function DashboardPage({ params }: Props) {
             </div>
 
             <JourneyVisual
-              title="Cobertura activa"
-              subtitle="Visualiza el estado de tu cartera cuando agregues pólizas"
+              title={t('coverageVisualTitle')}
+              subtitle={t('coverageVisualSubtitle')}
             />
           </aside>
         </div>

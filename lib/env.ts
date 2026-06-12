@@ -9,6 +9,9 @@ const FIREBASE_ENV_KEYS = [
   'NEXT_PUBLIC_FIREBASE_APP_ID',
   'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID',
   'NEXT_PUBLIC_USE_FIREBASE_EMULATORS',
+  'NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION',
+  'NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_SITE_KEY',
+  'NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN',
 ] as const
 
 type FirebaseEnvKey = (typeof FIREBASE_ENV_KEYS)[number]
@@ -25,6 +28,15 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((value) => value === 'true'),
+  NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
+  NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_SITE_KEY: z
+    .string()
+    .min(1)
+    .optional(),
+  NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN: z.string().min(1).optional(),
 })
 
 const DEV_FIREBASE_DEFAULTS: z.infer<typeof envSchema> = {
@@ -35,6 +47,7 @@ const DEV_FIREBASE_DEFAULTS: z.infer<typeof envSchema> = {
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000',
   NEXT_PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:demo',
   NEXT_PUBLIC_USE_FIREBASE_EMULATORS: false,
+  NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION: false,
 }
 
 /**
@@ -61,6 +74,12 @@ function readFirebaseEnvFromProcess(): Record<
       process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
     NEXT_PUBLIC_USE_FIREBASE_EMULATORS:
       process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS,
+    NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION:
+      process.env.NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION,
+    NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_SITE_KEY:
+      process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_SITE_KEY,
+    NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN:
+      process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN,
   }
 }
 
@@ -87,10 +106,16 @@ function pickDefinedFirebaseEnv(
   return picked
 }
 
+const OPTIONAL_FIREBASE_KEYS = new Set<FirebaseEnvKey>([
+  'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID',
+  'NEXT_PUBLIC_USE_FIREBASE_EMULATORS',
+  'NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION',
+  'NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_SITE_KEY',
+  'NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN',
+])
+
 const REQUIRED_FIREBASE_KEYS = FIREBASE_ENV_KEYS.filter(
-  (key) =>
-    key !== 'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID' &&
-    key !== 'NEXT_PUBLIC_USE_FIREBASE_EMULATORS'
+  (key) => !OPTIONAL_FIREBASE_KEYS.has(key)
 )
 
 function hasAnyFirebaseEnv(
@@ -119,6 +144,17 @@ function warnDevEnvFallback(data: z.infer<typeof envSchema>): void {
   }
 }
 
+function validateAppCheckEnv(data: z.infer<typeof envSchema>): void {
+  // Local `next build` sets NODE_ENV=production but is not a hosted deploy.
+  const isHostedProduction = process.env.VERCEL_ENV === 'production'
+
+  if (isHostedProduction && data.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN) {
+    throw new Error(
+      '[env] NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN must not be set in production.'
+    )
+  }
+}
+
 function throwInvalidEnv(error: z.ZodError, context: string): never {
   throw new Error(
     `[env] Invalid Firebase environment (${context}): ${formatZodErrors(error)}. ` +
@@ -131,6 +167,7 @@ function parseEnv(): z.infer<typeof envSchema> {
   const result = envSchema.safeParse(rawEnv)
 
   if (result.success) {
+    validateAppCheckEnv(result.data)
     if (
       process.env.NODE_ENV === 'development' &&
       result.data.NEXT_PUBLIC_FIREBASE_API_KEY === 'demo'
@@ -157,6 +194,7 @@ function parseEnv(): z.infer<typeof envSchema> {
   const devResult = envSchema.safeParse(merged)
 
   if (devResult.success) {
+    validateAppCheckEnv(devResult.data)
     warnDevEnvFallback(devResult.data)
     return devResult.data
   }

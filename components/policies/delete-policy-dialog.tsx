@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/cn'
@@ -23,6 +24,8 @@ export function DeletePolicyDialog({
   onConfirm,
   onCancel,
 }: DeletePolicyDialogProps) {
+  const t = useTranslations('policies.delete')
+  const ta = useTranslations('common.actions')
   const dialogRef = useRef<HTMLDialogElement>(null)
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -70,11 +73,10 @@ export function DeletePolicyDialog({
           </span>
           <div className="space-y-1">
             <h2 className="text-lg font-semibold tracking-tight">
-              Eliminar póliza
+              {t('title')}
             </h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Esta acción no se puede deshacer. Se registrará en el historial de
-              auditoría y se eliminará la póliza de tu cartera.
+              {t('description')}
             </p>
           </div>
         </div>
@@ -92,7 +94,7 @@ export function DeletePolicyDialog({
             onClick={onCancel}
             disabled={deleting}
           >
-            Cancelar
+            {ta('cancel')}
           </Button>
           <Button
             type="button"
@@ -101,7 +103,7 @@ export function DeletePolicyDialog({
             onClick={onConfirm}
             disabled={deleting}
           >
-            {deleting ? 'Eliminando…' : 'Eliminar póliza'}
+            {deleting ? ta('deleting') : t('confirm')}
           </Button>
         </div>
       </div>

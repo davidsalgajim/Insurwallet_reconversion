@@ -2,6 +2,19 @@
 
 > Formato compatible con Google Stitch / impeccable. Fuente de verdad visual para la reconversión web.
 
+## Estado de implementación (jun 2026)
+
+| Área                  | Target (este doc)                                 | Implementado hoy                                                                    |
+| --------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Tokens / colores      | `globals.css` OKLCH + primitivos iOS              | Sí — Button, Card, shell, landing                                                   |
+| Marketing / auth      | Editorial claro + hero navy; glass auth card      | Sí — landing light editorial (`bg-white`, hero navy frame); auth forms navy + glass |
+| App shell             | Sidebar CRM + topbar + bento dashboard            | Icon rail 76px + bottom nav móvil + KPI/journey reales                              |
+| Pólizas               | Lista, detalle sólido, wizard manual + upload PDF | Sí — CRUD, detalle `elevated-card`, upload Storage (revisión IA F2)                 |
+| App Check / env       | reCAPTCHA v3 monitor; `NEXT_PUBLIC_*` estáticos   | Sí — `lib/env.ts` lectura estática; App Check en cliente; emuladores omiten         |
+| MarIAna / pipeline IA | Chat glass + estados en vivo post-upload          | Upload UI + estado `pending`; worker/jobs F2                                        |
+
+Los patrones siguientes describen el **objetivo de diseño**; donde difiera la implementación actual, evolucionar hacia este spec sin romper tokens ni paleta.
+
 ## Design Read
 
 **Reading this as:** CRM-style product UI (dashboard bento + journey widgets + sidebar) para dueños de pólizas LATAM, con lenguaje premium tipo Customer Journey CRM Dashboard (Dribbble #24659454), continuidad iOS, light mode en app y navy en marketing.
@@ -150,8 +163,9 @@ Gradient rounded square per type (port from iOS `PolicyTypeIcon`):
 
 ### Navigation
 
-- **Mobile:** bottom nav ≤ 5 items (Dashboard, Pólizas, MarIAna, Alertas, Perfil)
-- **Desktop:** sidebar collapsible + top bar with glass
+- **Mobile (implementado):** bottom nav ≤ 5 items (Dashboard, Pólizas, MarIAna, Alertas, Perfil)
+- **Desktop (implementado F1):** icon rail vertical (`--rail-width: 76px`) + subnav/topbar
+- **Desktop (objetivo):** sidebar expandible ~260px con menú, CTA nueva póliza, promo MarIAna
 - Breadcrumbs on wizard and policy detail
 
 ### Loading
@@ -166,7 +180,8 @@ Gradient rounded square per type (port from iOS `PolicyTypeIcon`):
 
 ## Layout
 
-- **App shell:** sidebar fija 260px (sólida, no glass) + área principal con `app-shell-bg` (dot grid sutil)
+- **App shell (objetivo):** sidebar fija 260px (sólida) + área principal con `app-shell-bg` (dot grid)
+- **App shell (F1):** icon rail 76px + glass canvas + dot grid; sidebar completa en iteración posterior
 - **Topbar:** título + búsqueda + CTA nueva póliza + notificaciones + avatar (sticky, blur)
 - **Dashboard:** fila de 4 KPI cards → bento 7/5 (vencimientos | MarIAna + journey)
 - App max-width: contenido fluido en shell; no centrar en 1280px con márgenes vacíos
@@ -191,15 +206,15 @@ Gradient rounded square per type (port from iOS `PolicyTypeIcon`):
 
 ## Surfaces Map
 
-| Surface              | Register | Mode           | Glass                 |
-| -------------------- | -------- | -------------- | --------------------- |
-| Landing `/`          | brand    | dark navy hero | hero CTA card         |
-| Auth `/login`        | brand    | dark           | auth card             |
-| Dashboard `/app`     | product  | light          | nav + summary widgets |
-| Policy list/detail   | product  | light          | no                    |
-| Upload/review wizard | product  | light          | status overlay only   |
-| MarIAna chat         | product  | light          | panel + input bar     |
-| Settings/profile     | product  | light          | no                    |
+| Surface              | Register | Mode                              | Glass                       |
+| -------------------- | -------- | --------------------------------- | --------------------------- |
+| Landing `/`          | brand    | light editorial + navy hero frame | hero CTA card               |
+| Auth `/login`        | brand    | dark                              | auth card                   |
+| Dashboard `/app`     | product  | light                             | nav rail + summary widgets  |
+| Policy list/detail   | product  | light                             | no                          |
+| Upload/review wizard | product  | light                             | status overlay only         |
+| MarIAna chat         | product  | light                             | panel + input bar (stub UI) |
+| Settings/profile     | product  | light                             | no                          |
 
 ## shadcn/ui Customization
 
@@ -209,5 +224,6 @@ Gradient rounded square per type (port from iOS `PolicyTypeIcon`):
 
 ## Tailwind Integration
 
-Map CSS variables in `globals.css` → `tailwind.config` theme extension.
+Map CSS variables in `app/globals.css` (Tailwind v4, `@theme` / `@import "tailwindcss"`).
 Three-layer tokens per ckm-design-system: primitive → semantic → component.
+No `tailwind.config.ts` in this repo.
