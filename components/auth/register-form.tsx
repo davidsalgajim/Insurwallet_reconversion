@@ -145,7 +145,12 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
               {t(`errors.${errorKey}`)}
             </p>
           ) : null}
-          <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={submitting}
+          >
             {submitting ? (
               <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
             ) : null}

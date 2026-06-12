@@ -14,13 +14,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import {
-  deleteDoc,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-} from 'firebase/firestore'
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 
 const PROJECT_ID = 'insurwallet-rules-test'
@@ -200,7 +194,9 @@ describe.runIf(RUN_RULES_TESTS)('firestore.rules', () => {
       const attackerDb = dbFor(ATTACKER_UID)
       await assertFails(getDoc(doc(attackerDb, 'policies', 'policy-1')))
       await assertFails(
-        updateDoc(doc(attackerDb, 'policies', 'policy-1'), { status: 'expired' })
+        updateDoc(doc(attackerDb, 'policies', 'policy-1'), {
+          status: 'expired',
+        })
       )
       await assertFails(deleteDoc(doc(attackerDb, 'policies', 'policy-1')))
     })
@@ -253,11 +249,12 @@ describe.runIf(RUN_RULES_TESTS)('firestore.rules', () => {
 
       await assertSucceeds(getDoc(docRef))
       await assertFails(
-        setDoc(doc(sharedDb, 'policies', 'policy-1', 'documents', 'doc-2'), documentFixture)
+        setDoc(
+          doc(sharedDb, 'policies', 'policy-1', 'documents', 'doc-2'),
+          documentFixture
+        )
       )
-      await assertFails(
-        updateDoc(docRef, { fileName: 'tampered.pdf' })
-      )
+      await assertFails(updateDoc(docRef, { fileName: 'tampered.pdf' }))
       await assertFails(deleteDoc(docRef))
     })
 

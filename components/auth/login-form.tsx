@@ -75,7 +75,9 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         <div className="icon-circle mx-auto mb-2 size-12 border-0 bg-[var(--primitive-ink)] text-sm font-bold text-white shadow-lg">
           IW
         </div>
-        <CardTitle className="text-2xl text-white">{t('welcomeBack')}</CardTitle>
+        <CardTitle className="text-2xl text-white">
+          {t('welcomeBack')}
+        </CardTitle>
         <CardDescription className="text-white/60">
           {tc('tagline')}
         </CardDescription>
@@ -132,7 +134,12 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
               {t(`errors.${errorKey}`)}
             </p>
           ) : null}
-          <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={submitting}
+          >
             {submitting ? (
               <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
             ) : null}

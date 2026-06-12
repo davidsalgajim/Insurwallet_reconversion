@@ -57,7 +57,10 @@ describe.runIf(RUN_RULES_TESTS)('storage.rules', () => {
       'image/png',
       'image/webp',
     ]) {
-      const fileRef = ref(storage, storagePath('owner-a', `docs/file-${contentType}`))
+      const fileRef = ref(
+        storage,
+        storagePath('owner-a', `docs/file-${contentType}`)
+      )
       await assertSucceeds(
         uploadBytes(fileRef, new Uint8Array(1024), { contentType })
       )

@@ -14,6 +14,11 @@ import {
 import { z } from 'zod'
 
 import {
+  PolicyAuditActionSchema,
+  PolicyAuditLogSchema,
+  type PolicyAuditAction,
+} from '@/lib/schemas/policy-audit'
+import {
   PaymentFrequencySchema,
   PolicySchema,
   PolicyTypeSchema,
@@ -55,6 +60,59 @@ const DEFAULT_AGENT = {
 } as const
 
 const POLICIES_COLLECTION = 'policies'
+const AUDIT_LOGS_SUBCOLLECTION = 'auditLogs'
+
+export type WritePolicyAuditLogInput = {
+  action: PolicyAuditAction
+  actorUid: string
+  policyNumber?: string
+  insurerName?: string
+  createdAt?: Date
+}
+
+export function auditLogToFirestoreData(
+  log: WritePolicyAuditLogInput & { createdAt: Date }
+): Record<string, unknown> {
+  return {
+    action: log.action,
+    actorUid: log.actorUid,
+    createdAt: Timestamp.fromDate(log.createdAt),
+    ...(log.policyNumber ? { policyNumber: log.policyNumber } : {}),
+    ...(log.insurerName ? { insurerName: log.insurerName } : {}),
+  }
+}
+
+export async function writePolicyAuditLog(
+  db: Firestore,
+  policyId: string,
+  input: WritePolicyAuditLogInput
+): Promise<void> {
+  const createdAt = input.createdAt ?? new Date()
+  const payload = {
+    action: PolicyAuditActionSchema.parse(input.action),
+    actorUid: input.actorUid,
+    createdAt,
+    policyNumber: input.policyNumber,
+    insurerName: input.insurerName,
+  }
+
+  PolicyAuditLogSchema.parse({
+    ...payload,
+    policyNumber: payload.policyNumber,
+    insurerName: payload.insurerName,
+  })
+
+  await addDoc(
+    collection(db, POLICIES_COLLECTION, policyId, AUDIT_LOGS_SUBCOLLECTION),
+    auditLogToFirestoreData(payload)
+  )
+}
+
+function assertPolicyOwner(policy: Policy, actorUid: string): void {
+  if (policy.ownerUid !== actorUid) {
+    throw new Error('No tienes permiso para modificar esta póliza')
+  }
+}
 
 export function buildPolicyFromInput(
   input: CreatePolicyInput,
@@ -180,7 +238,10 @@ export async function listPoliciesForUser(
   const snapshot = await getDocs(policiesQuery)
 
   return snapshot.docs.map((policyDoc) =>
-    parsePolicyDocument(policyDoc.id, policyDoc.data() as Record<string, unknown>)
+    parsePolicyDocument(
+      policyDoc.id,
+      policyDoc.data() as Record<string, unknown>
+    )
   )
 }
 
@@ -203,7 +264,8 @@ export async function getPolicy(
 export async function updatePolicy(
   db: Firestore,
   policyId: string,
-  input: UpdatePolicyInput
+  input: UpdatePolicyInput,
+  actorUid: string
 ): Promise<PolicyDocument> {
   const existing = await getPolicy(db, policyId)
 
@@ -212,6 +274,8 @@ export async function updatePolicy(
   }
 
   const { id, ...existingPolicy } = existing
+  assertPolicyOwner(existingPolicy, actorUid)
+
   const updated = mergePolicyUpdate(existingPolicy, input)
 
   await updateDoc(
@@ -219,12 +283,35 @@ export async function updatePolicy(
     policyToFirestoreData(updated)
   )
 
+  await writePolicyAuditLog(db, policyId, {
+    action: 'update',
+    actorUid,
+    policyNumber: updated.policyNumber,
+    insurerName: updated.insurerName,
+  })
+
   return { id, ...updated }
 }
 
 export async function deletePolicy(
   db: Firestore,
-  policyId: string
+  policyId: string,
+  actorUid: string
 ): Promise<void> {
+  const existing = await getPolicy(db, policyId)
+
+  if (!existing) {
+    throw new Error('Policy not found')
+  }
+
+  assertPolicyOwner(existing, actorUid)
+
+  await writePolicyAuditLog(db, policyId, {
+    action: 'delete',
+    actorUid,
+    policyNumber: existing.policyNumber,
+    insurerName: existing.insurerName,
+  })
+
   await deleteDoc(doc(db, POLICIES_COLLECTION, policyId))
 }

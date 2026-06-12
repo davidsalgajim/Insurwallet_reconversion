@@ -2,6 +2,7 @@ import { Timestamp } from 'firebase/firestore'
 import { describe, expect, it } from 'vitest'
 
 import {
+  auditLogToFirestoreData,
   buildPolicyFromInput,
   firestoreDateToDate,
   mergePolicyUpdate,
@@ -77,5 +78,22 @@ describe('policies helpers', () => {
     expect(updated.status).toBe('expiring')
     expect(updated.updatedAt).toEqual(now)
     expect(updated.policyNumber).toBe('POL-001')
+  })
+
+  it('auditLogToFirestoreData converts createdAt to Timestamp', () => {
+    const createdAt = new Date('2025-06-01T12:00:00.000Z')
+    const data = auditLogToFirestoreData({
+      action: 'delete',
+      actorUid: 'user-123',
+      createdAt,
+      policyNumber: 'POL-001',
+      insurerName: 'Seguros Demo',
+    })
+
+    expect(data.action).toBe('delete')
+    expect(data.actorUid).toBe('user-123')
+    expect(data.createdAt).toBeInstanceOf(Timestamp)
+    expect(data.policyNumber).toBe('POL-001')
+    expect(data.insurerName).toBe('Seguros Demo')
   })
 })

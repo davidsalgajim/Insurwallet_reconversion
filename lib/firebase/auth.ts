@@ -3,10 +3,7 @@
 import type { User } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
-import {
-  type PreferredLanguage,
-  UserProfileSchema,
-} from '@/lib/schemas/user'
+import { type PreferredLanguage, UserProfileSchema } from '@/lib/schemas/user'
 
 import {
   clearSessionCookie,

@@ -91,8 +91,8 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 2.5 `firestore.indexes.json` (ownerUid+status, ownerUid+endDate, sharedWith+endDate)
   - [x] 2.6 Wizard paso 1 + paso 2 manual (`/policies/new/manual`) funcional con Firestore — PDF upload y pasos 3-4 pendientes
   - [x] 2.7 Lista de pólizas conectada a Firestore (`usePolicies`, `PoliciesList`) — detalle `/policies/[id]` pendiente
-  - [x] 2.8 Dashboard con resumen (0 pólizas), widgets glass y empty state en `/dashboard`
-  - [ ] 2.9 Implementar edición y borrado de pólizas con confirmación + registro en `auditLogs`
+  - [x] 2.8 Dashboard con KPIs y vencimientos reales desde Firestore (`dashboard-summary.tsx`)
+  - [x] 2.9 Edición y borrado de pólizas con confirmación + `auditLogs` — detalle `/policies/[id]`, edit `/policies/[id]/edit`
   - [ ] 2.10 Estados computed de póliza (active/expiring/expired) como helper puro con tests + Scheduled Function diaria que actualiza `status`
   - [x] 2.11 UI glass + responsive mobile/tablet verificado (dashboard, shell, workflow) — polish continuo en nuevas pantallas
   - [ ] 2.12 Deploy a staging, revisión con agentes (security-reviewer + typescript-reviewer + Bugbot) y commit de cierre
