@@ -18,7 +18,9 @@ import {
   getAuthErrorMessage,
   signInWithGoogle,
   signUpWithEmail,
+  userNeedsEmailVerification,
 } from '@/lib/firebase/auth'
+import { isEmailVerificationRequired } from '@/lib/firebase/email-verification-policy'
 import { type PreferredLanguage } from '@/lib/schemas/user'
 
 type RegisterFormProps = {
@@ -46,8 +48,13 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
     setSubmitting(true)
 
     try {
-      await signUpWithEmail(email, password, displayName, locale)
-      router.replace('/verify-email')
+      const user = await signUpWithEmail(email, password, displayName, locale)
+
+      if (isEmailVerificationRequired() && userNeedsEmailVerification(user)) {
+        router.replace('/verify-email')
+      } else {
+        router.replace(destination)
+      }
     } catch (error) {
       setErrorKey(getAuthErrorMessage(error))
     } finally {

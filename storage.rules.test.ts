@@ -47,21 +47,31 @@ describe.runIf(RUN_RULES_TESTS)('storage.rules', () => {
     await testEnv.clearStorage()
   })
 
-  it('allows owner to upload allowed mime types under 20MB', async () => {
+  it('allows owner to upload PDF under 20MB', async () => {
+    const owner = testEnv.authenticatedContext('owner-a')
+    const storage = owner.storage()
+    const fileRef = ref(
+      storage,
+      storagePath('owner-a', 'policies/p1/docs/doc1/policy.pdf')
+    )
+
+    await assertSucceeds(
+      uploadBytes(fileRef, new Uint8Array(1024), {
+        contentType: 'application/pdf',
+      })
+    )
+  })
+
+  it('denies image uploads until image support is needed', async () => {
     const owner = testEnv.authenticatedContext('owner-a')
     const storage = owner.storage()
 
-    for (const contentType of [
-      'application/pdf',
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-    ]) {
+    for (const contentType of ['image/jpeg', 'image/png', 'image/webp']) {
       const fileRef = ref(
         storage,
-        storagePath('owner-a', `docs/file-${contentType}`)
+        storagePath('owner-a', `policies/p1/docs/doc1/file-${contentType}`)
       )
-      await assertSucceeds(
+      await assertFails(
         uploadBytes(fileRef, new Uint8Array(1024), { contentType })
       )
     }

@@ -6,8 +6,8 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { type PreferredLanguage, UserProfileSchema } from '@/lib/schemas/user'
 
 import {
-  clearSessionCookie,
-  setSessionCookie,
+  clearServerSession,
+  createServerSession,
 } from '@/lib/firebase/session-cookie'
 import { userNeedsEmailVerification } from '@/lib/firebase/session-claims'
 
@@ -81,7 +81,7 @@ export async function ensureUserProfile(
 
 async function persistSession(user: User, forceRefresh = false): Promise<User> {
   const token = await user.getIdToken(forceRefresh)
-  setSessionCookie(token)
+  await createServerSession(token)
   return user
 }
 
@@ -177,7 +177,7 @@ export async function signInWithGoogle(
 }
 
 export async function signOut(): Promise<void> {
-  clearSessionCookie()
+  await clearServerSession()
   const { auth, firebaseAuth } = await getAuthModule()
   await firebaseAuth.signOut(auth)
 }

@@ -1,5 +1,9 @@
 import { z } from 'zod'
 
+import { validateAppCheckEnv } from '@/lib/env-app-check'
+
+export { validateAppCheckEnv } from '@/lib/env-app-check'
+
 const FIREBASE_ENV_KEYS = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
@@ -140,17 +144,6 @@ function warnDevEnvFallback(data: z.infer<typeof envSchema>): void {
   if (data.NEXT_PUBLIC_USE_FIREBASE_EMULATORS) {
     console.warn(
       '[env] Firebase emulators enabled (NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true).'
-    )
-  }
-}
-
-function validateAppCheckEnv(data: z.infer<typeof envSchema>): void {
-  // Local `next build` sets NODE_ENV=production but is not a hosted deploy.
-  const isHostedProduction = process.env.VERCEL_ENV === 'production'
-
-  if (isHostedProduction && data.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN) {
-    throw new Error(
-      '[env] NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN must not be set in production.'
     )
   }
 }

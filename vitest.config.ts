@@ -6,6 +6,12 @@ export default defineConfig({
   plugins: [react()],
   test: {
     passWithNoTests: true,
+    include: [
+      '**/*.test.{ts,tsx}',
+      'firestore.rules.test.ts',
+      'storage.rules.test.ts',
+    ],
+    exclude: ['**/node_modules/**', '**/e2e/**', '**/.next/**', '**/*.spec.ts'],
   },
   resolve: {
     alias: {

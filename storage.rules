@@ -7,9 +7,7 @@ service firebase.storage {
     }
 
     function isAllowedMimeType() {
-      return request.resource.contentType.matches(
-        'application/pdf|image/jpeg|image/png|image/webp'
-      );
+      return request.resource.contentType == 'application/pdf';
     }
 
     function isWithinSizeLimit() {

@@ -22,6 +22,7 @@ import {
 } from '@/lib/firebase/auth'
 import { isEmailVerificationRequired } from '@/lib/firebase/email-verification-policy'
 import { type PreferredLanguage } from '@/lib/schemas/user'
+import { safeRedirect } from '@/lib/utils/safe-redirect'
 
 type LoginFormProps = {
   redirectTo?: string
@@ -39,7 +40,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
-  const destination = redirectTo || '/dashboard'
+  const destination = safeRedirect(redirectTo, '/dashboard')
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()

@@ -29,42 +29,47 @@ export const refreshPolicyStatuses = onSchedule(
     timeZone: 'America/Bogota',
   },
   async () => {
-    const db = getFirestore()
-    const now = new Date()
-    const snapshot = await db.collection(POLICIES_COLLECTION).get()
+    try {
+      const db = getFirestore()
+      const now = new Date()
+      const snapshot = await db.collection(POLICIES_COLLECTION).get()
 
-    let scanned = 0
-    let updated = 0
-    let batch = db.batch()
-    let batchOps = 0
+      let scanned = 0
+      let updated = 0
+      let batch = db.batch()
+      let batchOps = 0
 
-    for (const policyDoc of snapshot.docs) {
-      scanned += 1
-      const data = policyDoc.data()
-      const startDate = firestoreDateToDate(data.startDate)
-      const endDate = firestoreDateToDate(data.endDate)
-      const computed = computePolicyStatus(startDate, endDate, now)
-      const stored = data.status as PolicyStatus | undefined
+      for (const policyDoc of snapshot.docs) {
+        scanned += 1
+        const data = policyDoc.data()
+        const startDate = firestoreDateToDate(data.startDate)
+        const endDate = firestoreDateToDate(data.endDate)
+        const computed = computePolicyStatus(startDate, endDate, now)
+        const stored = data.status as PolicyStatus | undefined
 
-      if (computed === stored) {
-        continue
+        if (computed === stored) {
+          continue
+        }
+
+        batch.update(policyDoc.ref, { status: computed })
+        updated += 1
+        batchOps += 1
+
+        if (batchOps >= FIRESTORE_BATCH_LIMIT) {
+          await batch.commit()
+          batch = db.batch()
+          batchOps = 0
+        }
       }
 
-      batch.update(policyDoc.ref, { status: computed })
-      updated += 1
-      batchOps += 1
-
-      if (batchOps >= FIRESTORE_BATCH_LIMIT) {
+      if (batchOps > 0) {
         await batch.commit()
-        batch = db.batch()
-        batchOps = 0
       }
-    }
 
-    if (batchOps > 0) {
-      await batch.commit()
+      logger.info('refreshPolicyStatuses complete', { scanned, updated })
+    } catch (error) {
+      logger.error('refreshPolicyStatuses failed', { error })
+      throw error
     }
-
-    logger.info('refreshPolicyStatuses complete', { scanned, updated })
   }
 )

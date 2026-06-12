@@ -1,7 +1,8 @@
 // InsurWallet Firestore access model:
-// - users/{userId}: owner read/write only
+// - users/{userId}: owner read/write; subscription field is server-write only (Admin SDK / payment webhooks)
 // - policies/{policyId}: owner full CRUD; users in sharedWith[] get read-only
-// - policies/{policyId}/documents and /auditLogs: inherit parent policy access
+// - policies/{policyId}/documents: inherit parent policy access
+// - jobs/{jobId}: owner read-only (writes via Admin SDK / Cloud Functions)
 // - all other paths: denied
 rules_version = '2';
 
@@ -40,24 +41,104 @@ service cloud.firestore {
       return canWritePolicy(parentPolicy(policyId));
     }
 
+    function isValidDocumentStoragePath(policyId, docId, storagePath) {
+      let policy = parentPolicy(policyId);
+      return storagePath.matches(
+        'users/' + policy.ownerUid + '/policies/' + policyId + '/docs/' + docId + '/.+'
+      );
+    }
+
+    function isValidDocumentData(policyId, docId, data) {
+      return data.keys().hasAll(['storagePath', 'mimeType'])
+        && data.mimeType == 'application/pdf'
+        && isValidDocumentStoragePath(policyId, docId, data.storagePath);
+    }
+
+    // Clients cannot mutate subscription — only Cloud Functions (Admin SDK) after verified webhooks.
+    function subscriptionUnchanged() {
+      return resource.data.keys().hasAny(['subscription'])
+        == request.resource.data.keys().hasAny(['subscription'])
+        && request.resource.data.subscription == resource.data.subscription;
+    }
+
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && subscriptionUnchanged();
+      allow delete: if isOwner(userId);
+    }
+
+    function isShareOwner(share) {
+      return share != null && isOwner(share.ownerUid);
+    }
+
+    function isShareRecipient(share) {
+      return share != null
+        && isSignedIn()
+        && request.auth.token.email == share.recipientEmail;
+    }
+
+    function isValidShareCreate(data) {
+      return data.keys().hasAll([
+          'policyId',
+          'ownerUid',
+          'recipientEmail',
+          'permission',
+          'tokenHash',
+          'expiresAt',
+          'status',
+          'createdAt',
+        ])
+        && data.ownerUid == request.auth.uid
+        && data.status == 'pending'
+        && data.permission in ['view', 'view_download'];
+    }
+
+    match /chats/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /messages/{messageId} {
+        allow read, create: if isOwner(uid);
+        allow update, delete: if false;
+      }
+    }
+
+    match /shares/{tokenHash} {
+      allow read: if isShareOwner(resource.data) || isShareRecipient(resource.data);
+      allow create: if isSignedIn() && isValidShareCreate(request.resource.data);
+      allow update: if isShareOwner(resource.data)
+        || (isShareRecipient(resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'recipientUid'])
+          && request.resource.data.status == 'accepted');
+      allow delete: if isShareOwner(resource.data);
     }
 
     match /policies/{policyId} {
       allow read: if canReadPolicy(resource.data);
       allow create: if canWritePolicy(request.resource.data);
-      allow update, delete: if canWritePolicy(resource.data);
+      allow update: if canWritePolicy(resource.data)
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if canWritePolicy(resource.data);
 
       match /documents/{docId} {
         allow read: if canReadParentPolicy(policyId);
-        allow create, update, delete: if canWriteParentPolicy(policyId);
+        allow create: if canWriteParentPolicy(policyId)
+          && isValidDocumentData(policyId, docId, request.resource.data);
+        allow update: if canWriteParentPolicy(policyId)
+          && isValidDocumentData(policyId, docId, request.resource.data);
+        allow delete: if canWriteParentPolicy(policyId);
       }
 
       match /auditLogs/{logId} {
         allow read: if canReadParentPolicy(policyId);
-        allow create, update, delete: if canWriteParentPolicy(policyId);
+        allow create: if canWriteParentPolicy(policyId);
       }
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isOwner(resource.data.ownerUid);
+      allow create, update, delete: if false;
     }
 
     match /{document=**} {

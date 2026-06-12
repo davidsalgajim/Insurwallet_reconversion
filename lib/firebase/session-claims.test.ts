@@ -1,9 +1,22 @@
 import { describe, expect, it } from 'vitest'
 
+import type { User } from 'firebase/auth'
+
 import {
   claimsNeedEmailVerification,
   parseSessionTokenClaims,
+  userNeedsEmailVerification,
 } from '@/lib/firebase/session-claims'
+
+function mockAuthUser(options: {
+  emailVerified: boolean
+  providerIds: string[]
+}): User {
+  return {
+    emailVerified: options.emailVerified,
+    providerData: options.providerIds.map((providerId) => ({ providerId })),
+  } as User
+}
 
 function encodePayload(payload: Record<string, unknown>): string {
   return Buffer.from(JSON.stringify(payload)).toString('base64url')
@@ -50,6 +63,30 @@ describe('claimsNeedEmailVerification', () => {
         email_verified: false,
         firebase: { sign_in_provider: 'google.com' },
       })
+    ).toBe(false)
+  })
+})
+
+describe('userNeedsEmailVerification', () => {
+  it('requires verification for unverified password users', () => {
+    expect(
+      userNeedsEmailVerification(
+        mockAuthUser({ emailVerified: false, providerIds: ['password'] })
+      )
+    ).toBe(true)
+  })
+
+  it('skips OAuth-only users and verified password users', () => {
+    expect(
+      userNeedsEmailVerification(
+        mockAuthUser({ emailVerified: false, providerIds: ['google.com'] })
+      )
+    ).toBe(false)
+
+    expect(
+      userNeedsEmailVerification(
+        mockAuthUser({ emailVerified: true, providerIds: ['password'] })
+      )
     ).toBe(false)
   })
 })

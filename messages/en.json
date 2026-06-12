@@ -308,6 +308,7 @@
         "pendingNote": "Your document is queued. We will notify you when extraction is ready to review.",
         "ready": "Extraction ready — you can review and confirm the data.",
         "failed": "We could not process the document. Try uploading again.",
+        "waitingJob": "Waiting for processing queue…",
         "steps": {
           "pending": "Document received",
           "extracting": "Extracting text from PDF",
@@ -315,6 +316,26 @@
           "ready": "Ready for review"
         }
       }
+    },
+    "review": {
+      "title": "Review extraction",
+      "subtitle": "Step 3 of 4 — confirm data before saving",
+      "backToDetail": "Back to detail",
+      "authRequired": "Sign in to review this policy.",
+      "documentPanel": "Original document",
+      "documentPanelHint": "The PDF viewer with field highlights will be available when the pipeline is complete.",
+      "pdfPlaceholderTitle": "PDF viewer (coming soon)",
+      "pdfPlaceholderDesc": "You will see the PDF with highlighted regions that sourced each extracted field.",
+      "fieldsPanel": "Extracted data",
+      "fieldsPanelHint": "Edit any field before confirming. Badges show AI confidence.",
+      "confidence": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "confirmNote": "Nothing is saved to your portfolio until you confirm. Low-confidence fields need manual review.",
+      "saveDraft": "Save draft",
+      "confirmPolicy": "Confirm policy"
     }
   },
   "dashboard": {
@@ -382,7 +403,22 @@
     "suggested1": "What does my health policy cover?",
     "suggested2": "When does my auto insurance expire?",
     "suggested3": "How do I report a claim?",
-    "suggested4": "Which beneficiaries do I have on file?"
+    "suggested4": "Which beneficiaries do I have on file?",
+    "streaming": "MarIAna is typing…",
+    "userLabel": "Your message",
+    "assistantLabel": "MarIAna reply",
+    "errorGeneric": "We could not process your question. Please try again.",
+    "errorEmpty": "No response received. Try another question."
+  },
+  "share": {
+    "title": "Policy shared with you",
+    "description": "Someone shared read-only access to a policy on InsurWallet.",
+    "tokenLabel": "Token",
+    "statusLabel": "Status",
+    "statusPending": "Pending acceptance",
+    "loginHint": "Sign in with the recipient email to accept access.",
+    "acceptCta": "Sign in and accept",
+    "declineCta": "Decline"
   },
   "alerts": {
     "title": "Alerts",
@@ -411,6 +447,35 @@
       "notificationsHint": "Renewals and alerts",
       "language": "Language",
       "languageHint": "Choose the interface language"
+    },
+    "exporting": "Exporting…",
+    "exportError": "We could not start the export. Please try again.",
+    "deleteError": "We could not process the request. Please try again.",
+    "deleteAccount": {
+      "title": "Delete your account?",
+      "description": "This action is permanent. Your policies, documents, and profile data will be deleted.",
+      "confirm": "Delete permanently",
+      "deleting": "Processing…"
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "badge": "Premium",
+      "title": "Unlock all of InsurWallet",
+      "close": "Close",
+      "cta": "View Premium plans",
+      "dismiss": "Not now",
+      "reasons": {
+        "policyLimit": "The free plan includes up to {limit} policies. Upgrade to add more.",
+        "cloudAi": "MarIAna and cloud AI extraction require Premium.",
+        "generic": "This feature requires a Premium subscription."
+      },
+      "features": {
+        "unlimitedPolicies": "Unlimited policies",
+        "mariana": "MarIAna — AI insurance assistant",
+        "cloudExtraction": "Automatic cloud PDF extraction",
+        "prioritySupport": "Priority support"
+      }
     }
   }
 }

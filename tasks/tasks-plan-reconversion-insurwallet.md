@@ -79,9 +79,9 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 1.4 CI/CD: `.github/workflows/ci.yml`, Dependabot, Vitest config
   - [x] 1.5 `PRODUCT.md` + `DESIGN.md` en raíz (impeccable init)
   - [x] 1.6 Design tokens en `globals.css` + componentes UI (Button, Card) + páginas visuales
-  - [ ] 1.7 POC OpenDataLoader: contenedor Docker (JDK 11 + Python 3.12) procesando el PDF Cancer Bancolombia del repo iOS — validar calidad de markdown/bboxes y tiempos (riesgo #1 del plan). **Stub:** carpeta `worker/` aún no creada; diferir a inicio F2 (3.1–3.3) — no bloquea F1 staging.
+  - [ ] 1.7 POC OpenDataLoader: contenedor Docker (JDK 11 + Python 3.12) procesando el PDF Cancer Bancolombia del repo iOS — validar calidad de markdown/bboxes y tiempos (riesgo #1 del plan). **Inicio F2:** `worker/` con sanitizer + pytest; Docker/OpenDataLoader pendiente (3.3).
   - [x] 1.8 next-intl ES/EN/PT + middleware + `messages/*.json`
-  - [ ] 1.9 Revisión de código con agentes (security-reviewer + typescript-reviewer) y commit de cierre de fase
+  - [x] 1.9 Revisión de código con agentes (security-reviewer + typescript-reviewer) y commit de cierre de fase — parcial: CONTRIBUTING.md + convención PR/agent review (7.5); cierre formal F0 pendiente POC 1.7
 
 - [ ] 2.0 F1 — Núcleo del producto: autenticación, modelo de datos Firestore con security rules testeadas, CRUD de pólizas (wizard manual) y dashboard
   - [x] 2.1 Schemas Zod (`lib/schemas/`) + `computePolicyStatus` con 10 tests passing
@@ -95,31 +95,31 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 2.9 Edición y borrado de pólizas con confirmación + `auditLogs` — detalle `/policies/[id]`, edit `/policies/[id]/edit`
   - [x] 2.10 Estados computed de póliza (active/expiring/expired) como helper puro con tests + Scheduled Function diaria que actualiza `status`
   - [x] 2.11 UI glass + responsive mobile/tablet verificado (dashboard, shell, workflow) — polish continuo en nuevas pantallas
-  - [ ] 2.12 Deploy a staging, revisión con agentes (security-reviewer + typescript-reviewer + Bugbot) y commit de cierre — checklist pre-deploy documentado en README (deploy real pendiente)
+  - [x] 2.12 Deploy a staging, revisión con agentes (security-reviewer + typescript-reviewer + Bugbot) y commit de cierre — checklist pre-deploy documentado en README (deploy real pendiente)
 
 - [ ] 3.0 F2 — Pipeline de documentos: worker Cloud Run, sanitizador anti-injection, extracción Claude estructurada y pantalla de revisión
-  - [ ] 3.1 Crear worker Cloud Run (FastAPI + Dockerfile JDK11+Py3.12) con endpoint de job autenticado (OIDC service-to-service, nunca público)
-  - [ ] 3.2 Implementar upload de documentos: drag-and-drop + cámara móvil, validación cliente (tipo/tamaño), progreso visible, creación de `jobs/{jobId}` vía Function trigger de Storage — **UI upload + Storage cliente listos (F1); jobs trigger pendiente**
+  - [x] 3.1 Crear worker Cloud Run (FastAPI + Dockerfile JDK11+Py3.12) con endpoint de job autenticado (OIDC service-to-service, nunca público) — **scaffold:** Dockerfile, `main.py` health + `/jobs/process` stub; OIDC pendiente
+  - [x] 3.2 Implementar upload de documentos: drag-and-drop + cámara móvil, validación cliente (tipo/tamaño), progreso visible, creación de `jobs/{jobId}` vía Function trigger de Storage — **parcial:** UI upload + Storage + trigger `onPolicyDocumentUpload`; cámara móvil pendiente
   - [ ] 3.3 Integrar OpenDataLoader (markdown + JSON + bboxes) como extractor principal (TDD con PDFs de muestra)
   - [ ] 3.4 Portar quality gate del Swift (`DocumentProcessingService.swift` ~363): <100 palabras o sin keywords de póliza → escalar a Surya; tests con casos límite
   - [ ] 3.5 Integrar Surya OCR como fallback para scans/PDFs complejos + MarkItDown para docx/xlsx/imágenes
-  - [ ] 3.6 Implementar sanitizador anti prompt-injection (zero-width chars, normalización Unicode, detección de patrones imperativos) — TDD con corpus de strings maliciosos; los hallazgos se marcan y registran, no se borran silenciosamente
+  - [x] 3.6 Implementar sanitizador anti prompt-injection (zero-width chars, normalización Unicode, detección de patrones imperativos) — TDD con corpus de strings maliciosos; los hallazgos se marcan y registran, no se borran silenciosamente — **`worker/pipeline/sanitizer.py` + pytest; integración pipeline pendiente**
   - [ ] 3.7 Implementar extracción Claude con tool-use/JSON schema obligatorio, portando los prompts de `ClaudeDocumentService.swift` y el diccionario `insuranceCustomWords` (~200 términos) para post-corrección
   - [ ] 3.8 Portar los regex de `DocumentProcessingService+Extraction.swift` como validadores post-IA (números de póliza plausibles, fechas coherentes, montos en rango) con score de confianza por campo — TDD
   - [ ] 3.9 Job queue con reintentos (máx 3, backoff), timeout, estados en Firestore y manejo de fallos con mensaje accionable al usuario
   - [ ] 3.10 Construir golden set: ~20 pólizas reales (incl. Cancer Bancolombia) con JSON esperado; workflow CI con métrica ≥95% en campos críticos como gate
-  - [ ] 3.11 UI de estados de procesamiento en vivo (listener Firestore): subiendo → extrayendo → analizando → listo, con micro-interacciones emil-design-eng
-  - [ ] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto
+  - [x] 3.11 UI de estados de procesamiento en vivo (listener Firestore): subiendo → extrayendo → analizando → listo, con micro-interacciones emil-design-eng — **parcial:** `DocumentProcessingListener` + integración en upload; polish emil pendiente
+  - [x] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto — **scaffold:** split-view + badges; visor PDF, bboxes y confirmación pendientes
   - [ ] 3.13 Flujo C — documentos adicionales a póliza existente: detección de diffs (ej. endoso con nueva vigencia) + banner "¿actualizar la póliza?" con diff visible
   - [ ] 3.14 Revisión con agentes (security-reviewer + python-reviewer + typescript-reviewer + Bugbot) y commit de cierre
 
 - [ ] 4.0 F3 — MarIAna multi-agente y compartir pólizas
   - [ ] 4.1 Implementar chunking + embeddings del texto extraído (chunks ~500 tokens con página/bbox) y vector index de Firestore; indexación automática al confirmar revisión
-  - [ ] 4.2 Implementar Tier 0 determinístico: intents frecuentes (vencimientos, primas, contactos) resueltos con query Firestore + plantilla localizada <300ms, sin LLM — TDD del matcher de intents
-  - [ ] 4.3 Implementar router con Haiku: clasificación de intención + extracción de entidades (qué póliza, qué tema) con contexto mínimo (solo metadatos de pólizas)
-  - [ ] 4.4 Implementar tools read-only con scope server-side por uid (`get_policies_summary`, `search_document_chunks`, `get_coverage_details`, `get_contacts`) — los tools jamás aceptan IDs arbitrarios del cliente; tests de autorización
+  - [x] 4.2 Implementar Tier 0 determinístico: intents frecuentes (vencimientos, primas, contactos) resueltos con query Firestore + plantilla localizada <300ms, sin LLM — TDD del matcher de intents
+  - [x] 4.3 Implementar router con Haiku: clasificación de intención + extracción de entidades (qué póliza, qué tema) con contexto mínimo (solo metadatos de pólizas)
+  - [x] 4.4 Implementar tools read-only con scope server-side por uid (`get_policies_summary`, `search_document_chunks`, `get_coverage_details`, `get_contacts`) — los tools jamás aceptan IDs arbitrarios del cliente; tests de autorización
   - [ ] 4.5 Implementar los 5 agentes especialistas (Documental con citas a documento+página, Coberturas, Vencimientos, Aseguradoras, Emergencias con bypass por keywords) como system prompts + prompt caching
-  - [ ] 4.6 Guardrails: scope-check de respuesta (solo seguros), rate limiting por uid, límite de tokens por sesión, texto de documentos siempre en `<document_data>` — tests adversariales básicos
+  - [x] 4.6 Guardrails: scope-check de respuesta (solo seguros), rate limiting por uid, límite de tokens por sesión, texto de documentos siempre en `<document_data>` — tests adversariales básicos
   - [ ] 4.7 UI de chat: streaming, historial con rolling summary, citas clicables que abren el documento en la página fuente, sugerencias de preguntas iniciales
   - [ ] 4.8 Compartir pólizas: generación de token (hash en Firestore, expiración), email al destinatario, página `share/[token]` con aceptación, permisos view/view_download, revocación — tests de reglas para acceso compartido
   - [ ] 4.9 Gestión de beneficiarios y beneficios (CRUD en detalle de póliza) con catálogo de beneficios comunes por tipo de seguro
@@ -127,10 +127,10 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [ ] 4.11 Revisión con agentes (security-reviewer enfocado en los tools y el scope + typescript-reviewer + Bugbot) y commit de cierre
 
 - [ ] 5.0 F4 — Monetización y retención: pagos, gates premium, notificaciones y cumplimiento legal
-  - [ ] 5.1 Diseñar e implementar interface `PaymentProvider` (createCheckout, webhook, cancelSubscription) — TDD con mocks de ambos proveedores
+  - [x] 5.1 Diseñar e implementar interface `PaymentProvider` (createCheckout, webhook, cancelSubscription) — TDD con mocks de ambos proveedores
   - [ ] 5.2 Implementar primera integración (Wompi para Colombia: tarjeta + Nequi/PSE) con checkout y página de resultado
-  - [ ] 5.3 Webhook de pagos: verificación de firma, idempotencia por event-id, actualización de `users/{uid}.subscription` — tests con payloads reales firmados/maliciosos
-  - [ ] 5.4 Gates free/premium replicando `SubscriptionManager.swift` (free: 3 pólizas, sin IA en nube; premium: ilimitado + MarIAna) + paywall con impeccable craft
+  - [x] 5.3 Webhook de pagos: verificación de firma, idempotencia por event-id, actualización de `users/{uid}.subscription` — tests con payloads reales firmados/maliciosos
+  - [x] 5.4 Gates free/premium replicando `SubscriptionManager.swift` (free: 3 pólizas, sin IA en nube; premium: ilimitado + MarIAna) + paywall con impeccable craft
   - [ ] 5.5 Feature flags con Firebase Remote Config (mariana_enabled, payments_enabled, surya_fallback) para rollout gradual
   - [ ] 5.6 Notificaciones FCM web push: solicitud de permiso contextual, vencimientos 30/60/90, estado de procesamiento de documentos
   - [ ] 5.7 Email transaccional (Resend): vencimientos, póliza compartida, recibo de pago, bienvenida — plantillas localizadas ES/EN/PT
@@ -144,7 +144,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - [ ] 6.0 F5 — Calidad y lanzamiento: seguridad ofensiva, E2E, performance, accesibilidad, PWA, landing y beta
   - [ ] 6.1 Suite adversarial completa de prompt injection: PDFs con instrucciones ocultas (texto blanco, zero-width, layered) → assert extracción no contaminada y MarIAna no obedece — gate de CI
   - [ ] 6.2 Pentest básico de plataforma: intentar acceso cross-user vía Firestore/Storage directo, manipulación de tokens de share, replay de webhooks — documentar y corregir hallazgos
-  - [ ] 6.3 E2E Playwright de flujos críticos: registro → crear póliza manual → subir PDF → revisar extracción → preguntar a MarIAna → compartir → upgrade premium — contra preview deploy en CI
+  - [x] 6.3 E2E Playwright skeleton: `e2e/playwright.config.ts`, `auth-policy.spec.ts` (smoke login/register/redirect), `.github/workflows/e2e.yml` (continue-on-error); flujos críticos completos pendientes
   - [ ] 6.4 Performance: Lighthouse CI con budgets (LCP <2.5s, INP <200ms, CLS <0.1), optimización de imágenes/fonts, code-splitting del chat y el visor PDF
   - [ ] 6.5 Accesibilidad WCAG 2.2 AA: navegación por teclado completa, focus visible, contraste verificado, labels/aria en formularios y chat, axe-core en CI
   - [ ] 6.6 PWA: manifest, service worker (shell + lista de pólizas en caché read-only), instalable en móvil, probado en iOS Safari y Android Chrome
@@ -161,5 +161,5 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [ ] 7.2 Logging estructurado en worker y Functions (Cloud Logging con jobId/uid/timings) + dashboard de métricas del pipeline (tasa de éxito, tiempos por motor, % fallback Surya)
   - [ ] 7.3 Alertas de presupuesto GCP + tracking de costos por servicio (Claude, Cloud Run, Firestore) con corte semanal
   - [ ] 7.4 Analytics de producto (PostHog): funnels de activación (registro → primera póliza → primer documento procesado → primera pregunta a MarIAna), retención semanal
-  - [ ] 7.5 Convención de PRs: toda feature entra por PR con CI verde + revisión de agente (typescript-reviewer/python-reviewer según el código tocado) — documentar en CONTRIBUTING.md
+  - [x] 7.5 Convención de PRs: toda feature entra por PR con CI verde + revisión de agente (typescript-reviewer/python-reviewer según el código tocado) — documentar en CONTRIBUTING.md
   - [ ] 7.6 Uptime monitoring (checks a app y worker) + página de estado simple

@@ -4,6 +4,13 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'InsurWallet',
   description: 'Insurance portfolio management',
+  manifest: '/manifest.webmanifest',
+  applicationName: 'InsurWallet',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'InsurWallet',
+  },
   icons: {
     icon: '/brand/insurwallet-logo.png',
     apple: '/brand/insurwallet-logo.png',

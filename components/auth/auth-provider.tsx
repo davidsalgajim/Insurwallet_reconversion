@@ -11,8 +11,8 @@ import {
 import type { User } from 'firebase/auth'
 
 import {
-  clearSessionCookie,
-  setSessionCookie,
+  clearServerSession,
+  createServerSession,
 } from '@/lib/firebase/session-cookie'
 
 type AuthContextValue = {
@@ -39,10 +39,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(firebaseUser)
 
         if (firebaseUser) {
-          const token = await firebaseUser.getIdToken()
-          setSessionCookie(token)
+          try {
+            const token = await firebaseUser.getIdToken()
+            await createServerSession(token)
+          } catch {
+            await clearServerSession().catch(() => undefined)
+            const [{ auth }, { signOut: firebaseSignOut }] = await Promise.all([
+              import('@/lib/firebase/client'),
+              import('firebase/auth'),
+            ])
+            await firebaseSignOut(auth)
+            setUser(null)
+          }
         } else {
-          clearSessionCookie()
+          await clearServerSession().catch(() => undefined)
         }
 
         setLoading(false)

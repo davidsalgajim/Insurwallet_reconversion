@@ -308,6 +308,7 @@
         "pendingNote": "Seu documento está na fila. Avisaremos quando a extração estiver pronta para revisão.",
         "ready": "Extração pronta — você pode revisar e confirmar os dados.",
         "failed": "Não foi possível processar o documento. Tente enviar novamente.",
+        "waitingJob": "Aguardando fila de processamento…",
         "steps": {
           "pending": "Documento recebido",
           "extracting": "Extraindo texto do PDF",
@@ -315,6 +316,26 @@
           "ready": "Pronto para revisão"
         }
       }
+    },
+    "review": {
+      "title": "Revisar extração",
+      "subtitle": "Passo 3 de 4 — confirme os dados antes de salvar",
+      "backToDetail": "Voltar ao detalhe",
+      "authRequired": "Faça login para revisar esta apólice.",
+      "documentPanel": "Documento original",
+      "documentPanelHint": "O visualizador PDF com destaque de campos estará disponível quando o pipeline estiver completo.",
+      "pdfPlaceholderTitle": "Visualizador PDF (em breve)",
+      "pdfPlaceholderDesc": "Você verá o PDF com regiões destacadas que originaram cada dado extraído.",
+      "fieldsPanel": "Dados extraídos",
+      "fieldsPanelHint": "Edite qualquer campo antes de confirmar. Os badges indicam a confiança da IA.",
+      "confidence": {
+        "high": "Alta",
+        "medium": "Média",
+        "low": "Baixa"
+      },
+      "confirmNote": "Nenhum dado é salvo na sua carteira até você confirmar. Campos com baixa confiança exigem revisão manual.",
+      "saveDraft": "Salvar rascunho",
+      "confirmPolicy": "Confirmar apólice"
     }
   },
   "dashboard": {
@@ -382,7 +403,22 @@
     "suggested1": "O que cobre minha apólice de saúde?",
     "suggested2": "Quando vence meu seguro de auto?",
     "suggested3": "Como reporto um sinistro?",
-    "suggested4": "Quais beneficiários tenho registrados?"
+    "suggested4": "Quais beneficiários tenho registrados?",
+    "streaming": "MarIAna está digitando…",
+    "userLabel": "Sua mensagem",
+    "assistantLabel": "Resposta da MarIAna",
+    "errorGeneric": "Não foi possível processar sua pergunta. Tente novamente.",
+    "errorEmpty": "Nenhuma resposta recebida. Tente outra pergunta."
+  },
+  "share": {
+    "title": "Apólice compartilhada com você",
+    "description": "Alguém compartilhou acesso somente leitura a uma apólice no InsurWallet.",
+    "tokenLabel": "Token",
+    "statusLabel": "Status",
+    "statusPending": "Aceitação pendente",
+    "loginHint": "Entre com o e-mail do destinatário para aceitar o acesso.",
+    "acceptCta": "Entrar e aceitar",
+    "declineCta": "Recusar"
   },
   "alerts": {
     "title": "Alertas",
@@ -411,6 +447,35 @@
       "notificationsHint": "Vencimentos e alertas",
       "language": "Idioma",
       "languageHint": "Escolha o idioma da interface"
+    },
+    "exporting": "Exportando…",
+    "exportError": "Não foi possível iniciar a exportação. Tente novamente.",
+    "deleteError": "Não foi possível processar a solicitação. Tente novamente.",
+    "deleteAccount": {
+      "title": "Excluir sua conta?",
+      "description": "Esta ação é permanente. Suas apólices, documentos e dados de perfil serão excluídos.",
+      "confirm": "Excluir permanentemente",
+      "deleting": "Processando…"
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "badge": "Premium",
+      "title": "Desbloqueie todo o InsurWallet",
+      "close": "Fechar",
+      "cta": "Ver planos Premium",
+      "dismiss": "Agora não",
+      "reasons": {
+        "policyLimit": "O plano gratuito inclui até {limit} apólices. Atualize para adicionar mais.",
+        "cloudAi": "MarIAna e extração com IA na nuvem exigem Premium.",
+        "generic": "Este recurso requer assinatura Premium."
+      },
+      "features": {
+        "unlimitedPolicies": "Apólices ilimitadas",
+        "mariana": "MarIAna — assistente de seguros com IA",
+        "cloudExtraction": "Extração automática de PDFs na nuvem",
+        "prioritySupport": "Suporte prioritário"
+      }
     }
   }
 }

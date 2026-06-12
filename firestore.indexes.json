@@ -23,6 +23,15 @@
         { "fieldPath": "sharedWith", "arrayConfig": "CONTAINS" },
         { "fieldPath": "endDate", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "policyId", "order": "ASCENDING" },
+        { "fieldPath": "docId", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

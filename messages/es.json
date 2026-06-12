@@ -308,6 +308,7 @@
         "pendingNote": "Tu documento está en cola. Te avisaremos cuando la extracción esté lista para revisar.",
         "ready": "Extracción lista — puedes revisar y confirmar los datos.",
         "failed": "No pudimos procesar el documento. Intenta subirlo de nuevo.",
+        "waitingJob": "Esperando cola de procesamiento…",
         "steps": {
           "pending": "Documento recibido",
           "extracting": "Extrayendo texto del PDF",
@@ -315,6 +316,26 @@
           "ready": "Listo para revisión"
         }
       }
+    },
+    "review": {
+      "title": "Revisar extracción",
+      "subtitle": "Paso 3 de 4 — confirma los datos antes de guardar",
+      "backToDetail": "Volver al detalle",
+      "authRequired": "Inicia sesión para revisar esta póliza.",
+      "documentPanel": "Documento original",
+      "documentPanelHint": "El visor PDF con resaltado de campos estará disponible cuando el pipeline esté completo.",
+      "pdfPlaceholderTitle": "Visor PDF (próximamente)",
+      "pdfPlaceholderDesc": "Aquí verás el PDF con las regiones resaltadas que originaron cada dato extraído.",
+      "fieldsPanel": "Datos extraídos",
+      "fieldsPanelHint": "Edita cualquier campo antes de confirmar. Los badges indican confianza de la IA.",
+      "confidence": {
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Baja"
+      },
+      "confirmNote": "Ningún dato se guardará en tu cartera hasta que confirmes. Los campos con confianza baja requieren revisión manual.",
+      "saveDraft": "Guardar borrador",
+      "confirmPolicy": "Confirmar póliza"
     }
   },
   "dashboard": {
@@ -382,7 +403,22 @@
     "suggested1": "¿Qué cubre mi póliza de salud?",
     "suggested2": "¿Cuándo vence mi seguro de auto?",
     "suggested3": "¿Cómo reporto un siniestro?",
-    "suggested4": "¿Qué beneficiarios tengo registrados?"
+    "suggested4": "¿Qué beneficiarios tengo registrados?",
+    "streaming": "MarIAna está escribiendo…",
+    "userLabel": "Tu mensaje",
+    "assistantLabel": "Respuesta de MarIAna",
+    "errorGeneric": "No pudimos procesar tu pregunta. Intenta de nuevo.",
+    "errorEmpty": "No recibimos respuesta. Intenta otra pregunta."
+  },
+  "share": {
+    "title": "Póliza compartida contigo",
+    "description": "Alguien te compartió acceso de solo lectura a una póliza en InsurWallet.",
+    "tokenLabel": "Token",
+    "statusLabel": "Estado",
+    "statusPending": "Pendiente de aceptación",
+    "loginHint": "Inicia sesión con el correo del destinatario para aceptar el acceso.",
+    "acceptCta": "Iniciar sesión y aceptar",
+    "declineCta": "Rechazar"
   },
   "alerts": {
     "title": "Alertas",

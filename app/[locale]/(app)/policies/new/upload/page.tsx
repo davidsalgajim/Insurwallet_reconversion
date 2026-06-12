@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/navigation'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { AppTopbar } from '@/components/layout/app-topbar'
-import { DocumentProcessingStatus } from '@/components/policies/document-processing-status'
+import { DocumentProcessingListener } from '@/components/policies/document-processing-listener'
 import { PdfUploadZone } from '@/components/policies/pdf-upload-zone'
 import { PolicyWizardProgress } from '@/components/policies/policy-wizard-progress'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ export default function UploadPolicyPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
   const [policyId, setPolicyId] = useState<string | null>(null)
+  const [docId, setDocId] = useState<string | null>(null)
 
   const isBusy = phase === 'validating' || phase === 'uploading'
 
@@ -94,13 +95,12 @@ export default function UploadPolicyPage() {
       })
 
       setPolicyId(draftPolicy.id)
+      setDocId(docId)
       setUploadedFileName(validation.file.name)
       setPhase('processing')
       setSelectedFile(null)
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : t('errors.uploadFailed')
-      )
+    } catch {
+      setErrorMessage(t('errors.uploadFailed'))
       setPhase('error')
     }
   }
@@ -110,11 +110,20 @@ export default function UploadPolicyPage() {
       <AppTopbar title={t('title')} subtitle={t('subtitle')} />
       <PolicyWizardProgress currentStep={2} />
 
-      {phase === 'processing' && uploadedFileName ? (
+      {phase === 'processing' &&
+      uploadedFileName &&
+      user &&
+      policyId &&
+      docId ? (
         <div className="space-y-6">
-          <DocumentProcessingStatus
-            state="pending"
+          <DocumentProcessingListener
+            ownerUid={user.uid}
+            policyId={policyId}
+            docId={docId}
             fileName={uploadedFileName}
+            onReady={() => {
+              router.push(`/policies/${policyId}/review`)
+            }}
           />
 
           <div className="rounded-[var(--radius-card)] border border-accent/20 bg-accent/5 p-4">
