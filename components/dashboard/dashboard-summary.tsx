@@ -15,10 +15,16 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
 import { StatCard } from '@/components/dashboard/stat-card'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/components/auth/auth-provider'
 import { usePolicies } from '@/hooks/usePolicies'
 import { Link } from '@/i18n/navigation'
 import { formatPolicyDate } from '@/lib/i18n/format'
 import type { PolicyDocument } from '@/lib/firebase/policies'
+import {
+  calculateMonthlyPremiumTotal,
+  formatPremiumAmount,
+} from '@/lib/utils/format-premium'
+import { getMarianaQueryCount } from '@/lib/utils/mariana-stats'
 import {
   EXPIRING_THRESHOLD_DAYS,
   computePolicyStatus,
@@ -48,6 +54,8 @@ function useDashboardPolicies() {
   }
   return context
 }
+
+export { useDashboardPolicies }
 
 function getRenewalBucket(daysRemaining: number): RenewalBucket {
   if (daysRemaining <= 30) {
@@ -137,9 +145,22 @@ export function DashboardPolicyProvider({
 
 export function DashboardSummary() {
   const t = useTranslations('dashboard')
+  const locale = useLocale()
+  const { user } = useAuth()
   const { policies, loading, error } = useDashboardPolicies()
   const now = useMemo(() => new Date(), [])
   const { activeCount, expiringCount } = usePolicyMetrics(policies, now)
+  const marianaQueries = user ? getMarianaQueryCount(user.uid) : 0
+
+  const monthlyPremium = useMemo(
+    () => calculateMonthlyPremiumTotal(policies),
+    [policies]
+  )
+
+  const premiumDisplay =
+    monthlyPremium === null
+      ? '—'
+      : formatPremiumAmount(monthlyPremium, 'COP', locale)
 
   if (loading) {
     return <SummarySkeleton />
@@ -171,14 +192,14 @@ export function DashboardSummary() {
       />
       <StatCard
         label={t('totalPremium')}
-        value="—"
+        value={premiumDisplay}
         icon={Wallet}
         tone="primary"
         hint={t('premiumHint')}
       />
       <StatCard
         label={t('marianaQueries')}
-        value="0"
+        value={String(marianaQueries)}
         icon={MessageSquareText}
         tone="accent"
         hint={t('marianaStatHint')}

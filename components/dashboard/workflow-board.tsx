@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useId, useState } from 'react'
 import { WorkflowColumn } from '@/components/dashboard/workflow-column'
+import { useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/cn'
 
 export type WorkflowStepId = 'upload' | 'review' | 'track' | 'ask'
@@ -30,6 +31,7 @@ const STEP_ICONS: Record<WorkflowStepId, LucideIcon> = {
 type WorkflowBoardProps = {
   steps: WorkflowStep[]
   defaultActiveIndex?: number
+  stepLinks?: Partial<Record<WorkflowStepId, string>>
   className?: string
 }
 
@@ -41,14 +43,26 @@ const NODE_POSITIONS = [100, 300, 500, 700]
 export function WorkflowBoard({
   steps,
   defaultActiveIndex = 0,
+  stepLinks,
   className,
 }: WorkflowBoardProps) {
   const [activeIndex, setActiveIndex] = useState(defaultActiveIndex)
   const gradientId = useId()
+  const router = useRouter()
 
-  const handleSelect = useCallback((index: number) => {
-    setActiveIndex(index)
-  }, [])
+  const handleSelect = useCallback(
+    (index: number) => {
+      setActiveIndex(index)
+
+      const step = steps[index]
+      const href = step ? stepLinks?.[step.id] : undefined
+
+      if (href) {
+        router.push(href)
+      }
+    },
+    [router, stepLinks, steps]
+  )
 
   const progress = steps.length <= 1 ? 1 : activeIndex / (steps.length - 1)
 

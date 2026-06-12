@@ -32,7 +32,8 @@
       "uploadDocument": "Enviar documento",
       "calendar": "Calendário",
       "notifications": "Notificações",
-      "comingSoon": "Em breve"
+      "comingSoon": "Em breve",
+      "profileAria": "Perfil de {initials}"
     },
     "actions": {
       "back": "Voltar",
@@ -179,6 +180,9 @@
   "policies": {
     "title": "Apólices",
     "subtitle": "Gerencie e revise seus seguros em um só lugar.",
+    "searchResultsSubtitle": "Resultados da busca na sua carteira",
+    "searchEmptyTitle": "Nenhum resultado",
+    "searchEmptyDesc": "Tente o nome da seguradora ou o número da apólice.",
     "listAria": "Lista de apólices",
     "policyNumberPrefix": "Apólice {number}",
     "errors": {
@@ -334,8 +338,14 @@
         "low": "Baixa"
       },
       "confirmNote": "Nenhum dado é salvo na sua carteira até você confirmar. Campos com baixa confiança exigem revisão manual.",
+      "draftNotice": "Esta apólice está em rascunho. Revise e corrija os campos antes de confirmar.",
+      "draftSaved": "Rascunho salvo. Você pode continuar editando depois.",
       "saveDraft": "Salvar rascunho",
-      "confirmPolicy": "Confirmar apólice"
+      "confirmPolicy": "Confirmar apólice",
+      "errors": {
+        "requiredFields": "Preencha seguradora, número da apólice e tomador.",
+        "saveFailed": "Não foi possível salvar a apólice. Tente novamente."
+      }
     }
   },
   "dashboard": {
@@ -367,6 +377,11 @@
     "marianaQuestion3": "Quem devo ligar em emergência?",
     "coverageVisualTitle": "Cobertura ativa",
     "coverageVisualSubtitle": "Veja o status da sua carteira quando adicionar apólices",
+    "coverageVisualActiveCount": "{count} ativas",
+    "coverageVisualExpiringCount": "{count} a vencer",
+    "journeyMetaCount": "{count} na carteira",
+    "journeyMetaDrafts": "{count} pendentes",
+    "journeyMetaActive": "{count} vigentes",
     "filterAria": "Filtrar jornada",
     "filterAll": "Todas",
     "filterActive": "Ativas",
@@ -424,7 +439,11 @@
     "title": "Alertas",
     "subtitle": "Vencimentos, renovações e atividade relevante da sua carteira.",
     "emptyTitle": "Sem alertas por enquanto",
-    "emptyDescription": "Avisaremos quando uma apólice estiver prestes a vencer ou houver atividade importante."
+    "emptyDescription": "Avisaremos quando uma apólice estiver prestes a vencer ou houver atividade importante.",
+    "expiringBadge": "A vencer",
+    "expiredBadge": "Vencida",
+    "daysRemaining": "{count} dias restantes",
+    "expiredDays": "Venceu há {count} dias"
   },
   "settings": {
     "title": "Perfil",
@@ -450,7 +469,9 @@
     },
     "exporting": "Exportando…",
     "exportError": "Não foi possível iniciar a exportação. Tente novamente.",
+    "exportStubSuccess": "Solicitação registrada. Você receberá um link de download por e-mail quando estiver disponível.",
     "deleteError": "Não foi possível processar a solicitação. Tente novamente.",
+    "deleteStubSuccess": "Solicitação registrada. A exclusão completa estará disponível em breve.",
     "deleteAccount": {
       "title": "Excluir sua conta?",
       "description": "Esta ação é permanente. Suas apólices, documentos e dados de perfil serão excluídos.",
@@ -475,6 +496,80 @@
         "mariana": "MarIAna — assistente de seguros com IA",
         "cloudExtraction": "Extração automática de PDFs na nuvem",
         "prioritySupport": "Suporte prioritário"
+      }
+    }
+  },
+  "legal": {
+    "back": "Voltar ao início",
+    "lastUpdatedLabel": "Última atualização",
+    "lastUpdatedDate": "12 de junho de 2026",
+    "terms": {
+      "title": "Termos e Condições",
+      "intro": "Este documento é um rascunho placeholder para o InsurWallet. Será substituído por termos legais revisados antes do lançamento público.",
+      "sections": {
+        "acceptance": {
+          "title": "1. Aceitação",
+          "body": "Ao usar o InsurWallet você aceita estes termos. Se não concordar, não utilize o serviço."
+        },
+        "service": {
+          "title": "2. Descrição do serviço",
+          "body": "InsurWallet é uma plataforma para organizar apólices de seguro, documentos associados e assistência com IA (MarIAna). Não somos uma seguradora nem intermediamos contratação de apólices."
+        },
+        "accounts": {
+          "title": "3. Contas e assinaturas",
+          "body": "O plano gratuito inclui até 3 apólices. Recursos premium (ilimitadas, IA na nuvem) exigem assinatura paga. Preços e condições de cobrança serão publicados no app."
+        },
+        "ai": {
+          "title": "4. Uso de inteligência artificial",
+          "body": "Recursos de IA na nuvem processam documentos e consultas com seu consentimento explícito. Os resultados são informativos e não constituem assessoria legal, financeira ou de seguros."
+        },
+        "liability": {
+          "title": "5. Limitação de responsabilidade",
+          "body": "InsurWallet é fornecido \"como está\". Sempre verifique as informações das suas apólices com sua seguradora."
+        },
+        "contact": {
+          "title": "6. Contato",
+          "body": "Para dúvidas sobre estes termos:"
+        }
+      }
+    },
+    "privacy": {
+      "title": "Política de Privacidade",
+      "intro": "Este documento é um rascunho placeholder alinhado com princípios GDPR e legislação aplicável. Será revisado por assessoria jurídica antes do lançamento.",
+      "sections": {
+        "controller": {
+          "title": "1. Controlador de dados",
+          "body": "InsurWallet, com sede na Colômbia, é responsável pelo tratamento dos seus dados pessoais. Contato:"
+        },
+        "data": {
+          "title": "2. Dados que coletamos",
+          "items": {
+            "account": "Dados de conta: e-mail, nome, preferências de idioma.",
+            "policies": "Dados de apólices: informações que você insere ou extrai de documentos.",
+            "documents": "Documentos PDF/imagens enviados para processamento (com consentimento para IA na nuvem).",
+            "technical": "Dados técnicos: logs de uso, identificadores de dispositivo."
+          }
+        },
+        "purpose": {
+          "title": "3. Finalidades",
+          "body": "Prestação do serviço, lembretes de vencimento, processamento de documentos, assistência MarIAna, conformidade legal e melhoria do produto."
+        },
+        "legalBasis": {
+          "title": "4. Base legal e consentimento",
+          "body": "O tratamento baseia-se na execução do contrato, consentimento (especialmente para IA na nuvem) e interesse legítimo em segurança e prevenção de fraudes."
+        },
+        "rights": {
+          "title": "5. Seus direitos",
+          "body": "Você pode acessar, retificar, excluir, opor-se, revogar consentimento e solicitar portabilidade em Configurações → Exportar meus dados / Excluir conta."
+        },
+        "retention": {
+          "title": "6. Retenção e segurança",
+          "body": "Conservamos os dados enquanto você mantiver sua conta. Aplicamos criptografia em trânsito, regras de acesso por usuário e auditoria de ações sensíveis."
+        },
+        "transfers": {
+          "title": "7. Transferências internacionais",
+          "body": "Alguns provedores (ex.: infraestrutura cloud, IA) podem processar dados fora da Colômbia com salvaguardas contratuais adequadas."
+        }
       }
     }
   }

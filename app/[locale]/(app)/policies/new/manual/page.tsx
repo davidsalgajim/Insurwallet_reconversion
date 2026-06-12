@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { AppTopbar } from '@/components/layout/app-topbar'
+import { PolicyWizardProgress } from '@/components/policies/policy-wizard-progress'
 import { Button } from '@/components/ui/button'
 import { useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/cn'
@@ -64,21 +65,7 @@ export default function ManualPolicyPage() {
         subtitle={t('manual.stepSubtitle')}
       />
 
-      <div className="mb-6 flex gap-2">
-        {[1, 2, 3, 4].map((step) => (
-          <span
-            key={step}
-            className={cn(
-              'flex size-8 items-center justify-center rounded-full text-xs font-semibold',
-              step <= 2
-                ? 'bg-[var(--primitive-ink)] text-white shadow-md'
-                : 'bg-white/60 text-muted-foreground ring-1 ring-border'
-            )}
-          >
-            {step}
-          </span>
-        ))}
-      </div>
+      <PolicyWizardProgress currentStep={2} />
 
       <form onSubmit={handleSubmit} className="glass-panel space-y-6 p-6">
         <div className="space-y-2">

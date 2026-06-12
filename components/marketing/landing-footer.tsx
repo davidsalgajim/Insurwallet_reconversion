@@ -100,12 +100,18 @@ export async function LandingFooter() {
           </p>
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <LocaleSwitcher variant="inverse" />
-            <a href="#" className="transition-colors hover:text-white/70">
+            <Link
+              href="/legal/terms"
+              className="transition-colors hover:text-white/70"
+            >
               {t('landing.footerTerms')}
-            </a>
-            <a href="#" className="transition-colors hover:text-white/70">
+            </Link>
+            <Link
+              href="/legal/privacy"
+              className="transition-colors hover:text-white/70"
+            >
               {t('landing.footerPrivacy')}
-            </a>
+            </Link>
           </div>
         </div>
       </div>

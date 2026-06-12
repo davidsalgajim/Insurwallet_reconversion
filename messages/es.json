@@ -32,7 +32,8 @@
       "uploadDocument": "Subir documento",
       "calendar": "Calendario",
       "notifications": "Notificaciones",
-      "comingSoon": "Próximamente"
+      "comingSoon": "Próximamente",
+      "profileAria": "Perfil de {initials}"
     },
     "actions": {
       "back": "Volver",
@@ -179,6 +180,9 @@
   "policies": {
     "title": "Pólizas",
     "subtitle": "Gestiona y revisa tus seguros en un solo lugar.",
+    "searchResultsSubtitle": "Resultados de búsqueda en tu cartera",
+    "searchEmptyTitle": "Sin resultados",
+    "searchEmptyDesc": "Prueba con el nombre de la aseguradora o el número de póliza.",
     "listAria": "Lista de pólizas",
     "policyNumberPrefix": "Póliza {number}",
     "errors": {
@@ -334,8 +338,14 @@
         "low": "Baja"
       },
       "confirmNote": "Ningún dato se guardará en tu cartera hasta que confirmes. Los campos con confianza baja requieren revisión manual.",
+      "draftNotice": "Esta póliza está en borrador. Revisa y corrige los campos antes de confirmar.",
+      "draftSaved": "Borrador guardado. Puedes continuar editando más tarde.",
       "saveDraft": "Guardar borrador",
-      "confirmPolicy": "Confirmar póliza"
+      "confirmPolicy": "Confirmar póliza",
+      "errors": {
+        "requiredFields": "Completa aseguradora, número de póliza y tomador.",
+        "saveFailed": "No se pudo guardar la póliza. Intenta de nuevo."
+      }
     }
   },
   "dashboard": {
@@ -367,6 +377,11 @@
     "marianaQuestion3": "¿A quién llamo en emergencia?",
     "coverageVisualTitle": "Cobertura activa",
     "coverageVisualSubtitle": "Visualiza el estado de tu cartera cuando agregues pólizas",
+    "coverageVisualActiveCount": "{count} activas",
+    "coverageVisualExpiringCount": "{count} por vencer",
+    "journeyMetaCount": "{count} en cartera",
+    "journeyMetaDrafts": "{count} pendientes",
+    "journeyMetaActive": "{count} vigentes",
     "filterAria": "Filtrar recorrido",
     "filterAll": "Todas",
     "filterActive": "Activas",
@@ -424,7 +439,11 @@
     "title": "Alertas",
     "subtitle": "Vencimientos, renovaciones y actividad relevante de tu cartera.",
     "emptyTitle": "Sin alertas por ahora",
-    "emptyDescription": "Te avisaremos cuando una póliza esté por vencer o haya actividad importante."
+    "emptyDescription": "Te avisaremos cuando una póliza esté por vencer o haya actividad importante.",
+    "expiringBadge": "Por vencer",
+    "expiredBadge": "Vencida",
+    "daysRemaining": "{count} días restantes",
+    "expiredDays": "Venció hace {count} días"
   },
   "settings": {
     "title": "Perfil",
@@ -447,6 +466,111 @@
       "notificationsHint": "Vencimientos y alertas",
       "language": "Idioma",
       "languageHint": "Elige el idioma de la interfaz"
+    },
+    "exporting": "Exportando…",
+    "exportError": "No se pudo iniciar la exportación. Intenta de nuevo.",
+    "exportStubSuccess": "Solicitud registrada. Recibirás un enlace de descarga por correo cuando esté disponible.",
+    "deleteError": "No se pudo procesar la solicitud. Intenta de nuevo.",
+    "deleteStubSuccess": "Solicitud registrada. La eliminación completa estará disponible pronto.",
+    "deleteAccount": {
+      "title": "¿Eliminar tu cuenta?",
+      "description": "Esta acción es permanente. Se borrarán tus pólizas, documentos y datos de perfil.",
+      "confirm": "Eliminar permanentemente",
+      "deleting": "Procesando…"
+    }
+  },
+  "subscription": {
+    "paywall": {
+      "badge": "Premium",
+      "title": "Desbloquea todo InsurWallet",
+      "close": "Cerrar",
+      "cta": "Ver planes Premium",
+      "dismiss": "Ahora no",
+      "reasons": {
+        "policyLimit": "El plan gratuito incluye hasta {limit} pólizas. Actualiza para agregar más.",
+        "cloudAi": "MarIAna y la extracción con IA en nube requieren Premium.",
+        "generic": "Esta función requiere suscripción Premium."
+      },
+      "features": {
+        "unlimitedPolicies": "Pólizas ilimitadas",
+        "mariana": "MarIAna — asistente de seguros con IA",
+        "cloudExtraction": "Extracción automática de PDFs en la nube",
+        "prioritySupport": "Soporte prioritario"
+      }
+    }
+  },
+  "legal": {
+    "back": "Volver al inicio",
+    "lastUpdatedLabel": "Última actualización",
+    "lastUpdatedDate": "12 de junio de 2026",
+    "terms": {
+      "title": "Términos y Condiciones",
+      "intro": "Este documento es un borrador placeholder para InsurWallet. Será reemplazado por términos legales revisados por asesoría jurídica antes del lanzamiento público.",
+      "sections": {
+        "acceptance": {
+          "title": "1. Aceptación",
+          "body": "Al usar InsurWallet aceptas estos términos. Si no estás de acuerdo, no utilices el servicio."
+        },
+        "service": {
+          "title": "2. Descripción del servicio",
+          "body": "InsurWallet es una plataforma para organizar pólizas de seguro, documentos asociados y asistencia con IA (MarIAna). No somos una aseguradora ni intermediamos la contratación de pólizas."
+        },
+        "accounts": {
+          "title": "3. Cuentas y suscripciones",
+          "body": "El plan gratuito permite hasta 3 pólizas. Las funciones premium (ilimitadas, IA en nube) requieren suscripción de pago. Los precios y condiciones de facturación se publicarán en la app."
+        },
+        "ai": {
+          "title": "4. Uso de inteligencia artificial",
+          "body": "Las funciones de IA en nube procesan documentos y consultas bajo tu consentimiento explícito. Los resultados son orientativos y no constituyen asesoría legal, financiera ni de seguros."
+        },
+        "liability": {
+          "title": "5. Limitación de responsabilidad",
+          "body": "InsurWallet se proporciona \"tal cual\". Verifica siempre la información de tus pólizas con tu aseguradora."
+        },
+        "contact": {
+          "title": "6. Contacto",
+          "body": "Para consultas sobre estos términos:"
+        }
+      }
+    },
+    "privacy": {
+      "title": "Política de Privacidad",
+      "intro": "Este documento es un borrador placeholder alineado con la Ley 1581 de 2012 (Habeas Data — Colombia) y principios GDPR. Será revisado por asesoría jurídica antes del lanzamiento.",
+      "sections": {
+        "controller": {
+          "title": "1. Responsable del tratamiento",
+          "body": "InsurWallet, con domicilio en Colombia, es responsable del tratamiento de tus datos personales. Contacto:"
+        },
+        "data": {
+          "title": "2. Datos que recopilamos",
+          "items": {
+            "account": "Datos de cuenta: correo, nombre, preferencias de idioma.",
+            "policies": "Datos de pólizas: información que ingresas o extraes de documentos.",
+            "documents": "Documentos PDF/imágenes que subes para procesamiento (con tu consentimiento para IA en nube).",
+            "technical": "Datos técnicos: logs de uso, identificadores de dispositivo."
+          }
+        },
+        "purpose": {
+          "title": "3. Finalidades",
+          "body": "Prestación del servicio, recordatorios de vencimiento, procesamiento de documentos, asistencia MarIAna, cumplimiento legal y mejora del producto."
+        },
+        "legalBasis": {
+          "title": "4. Base legal y consentimiento",
+          "body": "El tratamiento se basa en la ejecución del contrato, consentimiento (especialmente para IA en nube y cookies no esenciales) e interés legítimo en seguridad y prevención de fraude."
+        },
+        "rights": {
+          "title": "5. Tus derechos",
+          "body": "Puedes acceder, rectificar, suprimir, oponerte, revocar consentimiento y solicitar portabilidad de tus datos desde Configuración → Exportar mis datos / Eliminar cuenta."
+        },
+        "retention": {
+          "title": "6. Retención y seguridad",
+          "body": "Conservamos los datos mientras mantengas tu cuenta. Aplicamos cifrado en tránsito, reglas de acceso por usuario y auditoría de acciones sensibles."
+        },
+        "transfers": {
+          "title": "7. Transferencias internacionales",
+          "body": "Algunos proveedores (p. ej. infraestructura cloud, IA) pueden procesar datos fuera de Colombia con salvaguardas contractuales adecuadas."
+        }
+      }
     }
   }
 }

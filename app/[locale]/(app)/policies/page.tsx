@@ -1,10 +1,19 @@
+import { Suspense } from 'react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { AppTopbar } from '@/components/layout/app-topbar'
-import { PoliciesList } from '@/components/policies/policies-list'
+import { PoliciesPageContent } from '@/components/policies/policies-page-content'
 
 type PoliciesPageProps = {
   params: Promise<{ locale: string }>
+}
+
+function PoliciesPageFallback() {
+  return (
+    <div className="animate-fade-up">
+      <div className="mb-6 h-16 animate-pulse rounded-[var(--radius-card)] bg-white/50" />
+      <div className="glass-panel h-64 animate-pulse" />
+    </div>
+  )
 }
 
 export default async function PoliciesPage({ params }: PoliciesPageProps) {
@@ -13,11 +22,12 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
   const t = await getTranslations('policies')
 
   return (
-    <div className="animate-fade-up">
-      <AppTopbar title={t('title')} subtitle={t('subtitle')} />
-      <section className="glass-panel" aria-label={t('listAria')}>
-        <PoliciesList />
-      </section>
-    </div>
+    <Suspense fallback={<PoliciesPageFallback />}>
+      <PoliciesPageContent
+        title={t('title')}
+        subtitle={t('subtitle')}
+        listAria={t('listAria')}
+      />
+    </Suspense>
   )
 }

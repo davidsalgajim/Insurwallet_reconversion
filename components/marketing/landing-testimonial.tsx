@@ -40,7 +40,7 @@ export async function LandingTestimonial() {
                 asChild
                 className="rounded-[var(--radius-pill)]"
               >
-                <Link href="/dashboard">
+                <Link href="/login?redirect=%2Fdashboard">
                   {t('landing.testimonialCta')}
                   <ArrowRight className="size-4" strokeWidth={1.5} />
                 </Link>

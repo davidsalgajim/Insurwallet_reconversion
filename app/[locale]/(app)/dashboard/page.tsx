@@ -6,7 +6,7 @@ import {
   DashboardSummary,
   DashboardUpcomingRenewals,
 } from '@/components/dashboard/dashboard-summary'
-import { JourneyVisual } from '@/components/dashboard/journey-visual'
+import { JourneyVisualStats } from '@/components/dashboard/journey-visual-stats'
 import { JourneyWorkflowSection } from '@/components/dashboard/journey-workflow-section'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { Link } from '@/i18n/navigation'
@@ -118,7 +118,7 @@ export default async function DashboardPage({ params }: Props) {
               </div>
             </div>
 
-            <JourneyVisual
+            <JourneyVisualStats
               title={t('coverageVisualTitle')}
               subtitle={t('coverageVisualSubtitle')}
             />

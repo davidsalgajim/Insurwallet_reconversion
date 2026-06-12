@@ -4,6 +4,8 @@ import { MessageSquareText, Send } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useRef, useState } from 'react'
 
+import { useAuth } from '@/components/auth/auth-provider'
+import { incrementMarianaQueryCount } from '@/lib/utils/mariana-stats'
 import { cn } from '@/lib/utils/cn'
 
 type ChatMessage = {
@@ -24,6 +26,7 @@ type StreamChunk = {
 export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
   const t = useTranslations('mariana')
   const locale = useLocale()
+  const { user } = useAuth()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -121,6 +124,8 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
                 : message
             )
           )
+        } else if (user) {
+          incrementMarianaQueryCount(user.uid)
         }
       } catch (caught) {
         const message =
@@ -132,7 +137,7 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
         scrollToBottom()
       }
     },
-    [isStreaming, locale, scrollToBottom, t]
+    [isStreaming, locale, scrollToBottom, t, user]
   )
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

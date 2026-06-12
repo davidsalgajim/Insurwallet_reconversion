@@ -1,8 +1,11 @@
 'use client'
 
-import { Bell, Calendar, Plus, Search, Upload } from 'lucide-react'
+import { Bell, Calendar, Plus, Upload } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { Suspense } from 'react'
+import { useAuth } from '@/components/auth/auth-provider'
 import { SignOutButton } from '@/components/auth/sign-out-button'
+import { PolicySearchInput } from '@/components/layout/policy-search-input'
 import {
   IconCircleButton,
   IconCircleLink,
@@ -10,6 +13,7 @@ import {
 import { Tooltip } from '@/components/ui/tooltip'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/cn'
+import { getUserDisplayInitials } from '@/lib/utils/user-display'
 
 type AppTopbarProps = {
   title: string
@@ -19,6 +23,8 @@ type AppTopbarProps = {
 
 export function AppTopbar({ title, subtitle, className }: AppTopbarProps) {
   const t = useTranslations('common')
+  const { user } = useAuth()
+  const avatarInitials = getUserDisplayInitials(user)
 
   return (
     <header className={cn('mb-4 sm:mb-6 md:mb-8', className)}>
@@ -35,22 +41,16 @@ export function AppTopbar({ title, subtitle, className }: AppTopbarProps) {
         </div>
 
         <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:max-w-none">
-          <div className="relative min-w-0 w-full sm:flex-1 sm:min-w-[200px] md:min-w-[240px] lg:min-w-[280px]">
-            <label htmlFor="app-topbar-search" className="sr-only">
-              {t('topbar.searchAria')}
-            </label>
-            <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-              strokeWidth={1.5}
-              aria-hidden
-            />
-            <input
-              id="app-topbar-search"
-              type="search"
-              placeholder={t('topbar.searchPlaceholder')}
-              className="h-10 w-full rounded-[var(--radius-pill)] border border-border bg-white/70 pl-10 pr-4 text-sm shadow-[var(--shadow-soft)] outline-none backdrop-blur-sm transition-[box-shadow,border-color] duration-200 placeholder:text-muted-foreground focus:border-primary/30 focus:shadow-[var(--shadow-float)] focus:ring-2 focus:ring-primary/20 sm:h-11"
-            />
-          </div>
+          <Suspense
+            fallback={
+              <div
+                className="h-10 w-full animate-pulse rounded-[var(--radius-pill)] bg-white/50 sm:h-11 sm:min-w-[200px] md:min-w-[240px] lg:min-w-[280px]"
+                aria-hidden
+              />
+            }
+          >
+            <PolicySearchInput />
+          </Suspense>
           <div
             className="flex items-center justify-end gap-1.5 sm:gap-2"
             role="toolbar"
@@ -89,10 +89,12 @@ export function AppTopbar({ title, subtitle, className }: AppTopbarProps) {
             <Tooltip label={t('settings')}>
               <Link
                 href="/settings"
-                aria-label={t('settings')}
+                aria-label={t('topbar.profileAria', {
+                  initials: avatarInitials,
+                })}
                 className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primitive-accent-soft)] to-primary text-xs font-bold text-white shadow-md ring-2 ring-white/80 sm:size-11"
               >
-                U
+                {avatarInitials}
               </Link>
             </Tooltip>
             <SignOutButton />

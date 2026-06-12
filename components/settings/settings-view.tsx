@@ -12,6 +12,7 @@ import {
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 
+import { useAuth } from '@/components/auth/auth-provider'
 import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { DeleteAccountDialog } from '@/components/settings/delete-account-dialog'
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils/cn'
 
 export function SettingsView() {
   const t = useTranslations('settings')
+  const { user } = useAuth()
   const [exporting, setExporting] = useState(false)
   const [exportMessage, setExportMessage] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -36,7 +38,8 @@ export function SettingsView() {
     setExportMessage(null)
     try {
       const result = await requestDataExport()
-      setExportMessage(result.message)
+      setExportMessage(t('exportStubSuccess'))
+      void result
     } catch {
       setExportMessage(t('exportError'))
     } finally {
@@ -49,7 +52,8 @@ export function SettingsView() {
     setDeleteMessage(null)
     try {
       const result = await requestAccountDeletion()
-      setDeleteMessage(result.message)
+      setDeleteMessage(t('deleteStubSuccess'))
+      void result
       setDeleteOpen(false)
     } catch {
       setDeleteMessage(t('deleteError'))
@@ -67,7 +71,8 @@ export function SettingsView() {
         {
           icon: User,
           label: t('items.personalData'),
-          hint: t('items.personalDataHint'),
+          hint: user?.email ?? t('items.personalDataHint'),
+          profile: true as const,
         },
       ],
     },
@@ -104,6 +109,7 @@ export function SettingsView() {
           icon: Bell,
           label: t('items.notifications'),
           hint: t('items.notificationsHint'),
+          href: '/alerts' as const,
         },
         {
           icon: Globe,
@@ -158,6 +164,26 @@ export function SettingsView() {
                           </span>
                         </span>
                         <LocaleSwitcher />
+                      </div>
+                    </li>
+                  )
+                }
+
+                if ('profile' in item && item.profile) {
+                  return (
+                    <li key={item.label}>
+                      <div className="flex w-full min-h-[3.25rem] items-center gap-4 px-5 py-3.5">
+                        <span className="icon-circle size-10 shrink-0 border-0 bg-white/70 text-muted-foreground">
+                          <Icon className="size-4" strokeWidth={1.5} />
+                        </span>
+                        <span className="min-w-0 flex-1 text-left">
+                          <span className="block text-sm font-medium text-foreground">
+                            {user?.displayName ?? item.label}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {user?.email ?? item.hint}
+                          </span>
+                        </span>
                       </div>
                     </li>
                   )

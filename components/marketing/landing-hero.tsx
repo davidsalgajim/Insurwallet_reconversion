@@ -46,7 +46,7 @@ export async function LandingHero() {
                   </Link>
                 </Button>
                 <Link
-                  href="/dashboard"
+                  href="/login?redirect=%2Fdashboard"
                   className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/85 transition-colors hover:text-white"
                 >
                   {t('landing.heroCtaSecondary')}

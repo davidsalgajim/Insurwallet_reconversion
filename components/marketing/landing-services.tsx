@@ -12,21 +12,25 @@ export async function LandingServices() {
       num: '01',
       title: t('landing.service1Title'),
       desc: t('landing.service1Desc'),
+      href: '/login?redirect=%2Fpolicies%2Fnew%2Fupload',
     },
     {
       num: '02',
       title: t('landing.service2Title'),
       desc: t('landing.service2Desc'),
+      href: '/login?redirect=%2Fpolicies%2Fnew%2Fupload',
     },
     {
       num: '03',
       title: t('landing.service3Title'),
       desc: t('landing.service3Desc'),
+      href: '/login?redirect=%2Fdashboard',
     },
     {
       num: '04',
       title: t('landing.service4Title'),
       desc: t('landing.service4Desc'),
+      href: '/login?redirect=%2Fmariana',
     },
   ] as const
 
@@ -63,7 +67,7 @@ export async function LandingServices() {
                   {service.desc}
                 </p>
                 <Link
-                  href="/register"
+                  href={service.href}
                   className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-primary/80"
                 >
                   {t('landing.serviceViewDetails')}

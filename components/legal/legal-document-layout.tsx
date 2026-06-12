@@ -1,4 +1,3 @@
-import { ArrowLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { AppLogo } from '@/components/brand/app-logo'
@@ -7,12 +6,16 @@ import { Link } from '@/i18n/navigation'
 type LegalDocumentLayoutProps = {
   title: string
   lastUpdated: string
+  backLabel: string
+  updatedLabel: string
   children: ReactNode
 }
 
 export function LegalDocumentLayout({
   title,
   lastUpdated,
+  backLabel,
+  updatedLabel,
   children,
 }: LegalDocumentLayoutProps) {
   return (
@@ -27,8 +30,7 @@ export function LegalDocumentLayout({
             href="/"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="size-4" strokeWidth={1.5} />
-            Volver
+            {backLabel}
           </Link>
         </div>
       </header>
@@ -40,7 +42,7 @@ export function LegalDocumentLayout({
               {title}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Última actualización: {lastUpdated}
+              {updatedLabel}: {lastUpdated}
             </p>
           </header>
           {children}
