@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { useAuth } from '@/components/auth/auth-provider'
@@ -18,13 +18,12 @@ const CONSENT_STORAGE_KEY = 'iw_cookie_consent'
 export function CookieConsentBanner() {
   const t = useTranslations('legal.cookies')
   const { user } = useAuth()
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false
-    }
-
-    return localStorage.getItem(CONSENT_STORAGE_KEY) !== 'accepted'
-  })
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
+  const [dismissed, setDismissed] = useState(false)
 
   const persistConsent = useCallback(async () => {
     localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted')
@@ -37,10 +36,14 @@ export function CookieConsentBanner() {
       }).catch(() => undefined)
     }
 
-    setVisible(false)
+    setDismissed(true)
   }, [user])
 
-  if (!visible) {
+  if (!mounted || dismissed) {
+    return null
+  }
+
+  if (localStorage.getItem(CONSENT_STORAGE_KEY) === 'accepted') {
     return null
   }
 
@@ -76,7 +79,7 @@ export function CookieConsentBanner() {
             type="button"
             variant="secondary"
             className="rounded-[var(--radius-pill)]"
-            onClick={() => setVisible(false)}
+            onClick={() => setDismissed(true)}
           >
             {t('dismiss')}
           </Button>
