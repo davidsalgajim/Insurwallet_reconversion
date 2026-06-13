@@ -1,6 +1,7 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
 
 import type { SessionTokenClaims } from '@/lib/firebase/session-claims'
+import { normalizeSessionToken } from '@/lib/firebase/session-token'
 
 const GOOGLE_JWKS_URL =
   'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'
@@ -131,7 +132,7 @@ function verifyEmulatorSession(token: string): VerifiedFirebaseToken | null {
 export async function verifyFirebaseToken(
   token: string
 ): Promise<VerifiedFirebaseToken | null> {
-  const normalized = decodeURIComponent(token)
+  const normalized = normalizeSessionToken(token)
 
   if (!normalized) {
     return null

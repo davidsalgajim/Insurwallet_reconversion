@@ -1,9 +1,17 @@
 import { cookies } from 'next/headers'
 
+import {
+  appCheckDevHint,
+  getAppCheckTokenForRest,
+} from '@/lib/firebase/app-check-server'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { firebaseConfig } from '@/lib/firebase/config'
 import { SESSION_COOKIE_NAME } from '@/lib/firebase/session-config'
 import { usesDevIdTokenSession } from '@/lib/firebase/session-server'
+import {
+  assertIdTokenForFirestoreRest,
+  normalizeSessionToken,
+} from '@/lib/firebase/session-token'
 
 type FirestoreValue =
   | { nullValue: null }
@@ -144,7 +152,23 @@ function buildRestFields(
 
 export async function getSessionIdToken(): Promise<string | null> {
   const cookieStore = await cookies()
-  return cookieStore.get(SESSION_COOKIE_NAME)?.value ?? null
+  const raw = cookieStore.get(SESSION_COOKIE_NAME)?.value
+  return raw ? normalizeSessionToken(raw) : null
+}
+
+async function buildFirestoreRestHeaders(
+  idToken: string
+): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${assertIdTokenForFirestoreRest(idToken)}`,
+  }
+
+  const appCheckToken = await getAppCheckTokenForRest()
+  if (appCheckToken) {
+    headers['X-Firebase-AppCheck'] = appCheckToken
+  }
+
+  return headers
 }
 
 async function requireSessionIdToken(): Promise<string> {
@@ -162,9 +186,7 @@ async function readUserDocumentRest(
   idToken: string
 ): Promise<Record<string, unknown> | undefined> {
   const response = await fetch(`${getRestBaseUrl()}/users/${uid}`, {
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-    },
+    headers: await buildFirestoreRestHeaders(idToken),
   })
 
   if (response.status === 404) {
@@ -173,7 +195,13 @@ async function readUserDocumentRest(
 
   if (!response.ok) {
     const body = await response.text()
-    throw new Error(`Firestore read failed (${response.status}): ${body}`)
+    const hint =
+      response.status === 403 && body.includes('PERMISSION_DENIED')
+        ? ` ${appCheckDevHint()}`
+        : ''
+    throw new Error(
+      `Firestore read failed (${response.status}): ${body}${hint}`
+    )
   }
 
   const document = (await response.json()) as {
@@ -200,7 +228,7 @@ async function mergeUserDocumentRest(
   const response = await fetch(`${getRestBaseUrl()}/users/${uid}?${query}`, {
     method: 'PATCH',
     headers: {
-      Authorization: `Bearer ${idToken}`,
+      ...(await buildFirestoreRestHeaders(idToken)),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -210,7 +238,13 @@ async function mergeUserDocumentRest(
 
   if (!response.ok) {
     const body = await response.text()
-    throw new Error(`Firestore write failed (${response.status}): ${body}`)
+    const hint =
+      response.status === 403 && body.includes('PERMISSION_DENIED')
+        ? ` ${appCheckDevHint()}`
+        : ''
+    throw new Error(
+      `Firestore write failed (${response.status}): ${body}${hint}`
+    )
   }
 }
 

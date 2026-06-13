@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 const getAdminFirestore = vi.fn()
 const usesDevIdTokenSession = vi.fn()
+const getAppCheckTokenForRest = vi.fn()
 
 vi.mock('@/lib/firebase/config', () => ({
   firebaseConfig: { projectId: 'insurwallet-staging' },
@@ -16,10 +17,23 @@ vi.mock('@/lib/firebase/session-server', () => ({
   usesDevIdTokenSession: () => usesDevIdTokenSession(),
 }))
 
+vi.mock('@/lib/firebase/app-check-server', () => ({
+  getAppCheckTokenForRest: () => getAppCheckTokenForRest(),
+  appCheckDevHint: () => 'Set FIREBASE_APPCHECK_DEBUG_TOKEN for dev REST.',
+}))
+
+function encodePayload(payload: Record<string, unknown>): string {
+  return Buffer.from(JSON.stringify(payload)).toString('base64url')
+}
+
+const idToken = `header.${encodePayload({
+  iss: 'https://securetoken.google.com/insurwallet-staging',
+})}.signature`
+
 vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({
     get: (name: string) =>
-      name === '__session' ? { value: 'dev-id-token' } : undefined,
+      name === '__session' ? { value: idToken } : undefined,
   })),
 }))
 
@@ -33,6 +47,8 @@ describe('user-doc-server', () => {
   beforeEach(() => {
     getAdminFirestore.mockReset()
     usesDevIdTokenSession.mockReset()
+    getAppCheckTokenForRest.mockReset()
+    getAppCheckTokenForRest.mockResolvedValue(null)
     vi.stubGlobal('fetch', vi.fn())
   })
 
@@ -83,12 +99,40 @@ describe('user-doc-server', () => {
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/documents/users/user-123'),
       expect.objectContaining({
-        headers: { Authorization: 'Bearer dev-id-token' },
+        headers: { Authorization: `Bearer ${idToken}` },
       })
     )
     expect(data?.consents).toEqual({
       cookies: new Date('2026-06-12T12:00:00.000Z'),
     })
+  })
+
+  it('returns undefined when the user document does not exist', async () => {
+    usesDevIdTokenSession.mockReturnValue(true)
+    vi.mocked(fetch).mockResolvedValue(new Response('', { status: 404 }))
+
+    await expect(readUserDocument('user-123')).resolves.toBeUndefined()
+  })
+
+  it('includes App Check header when a token is available', async () => {
+    usesDevIdTokenSession.mockReturnValue(true)
+    getAppCheckTokenForRest.mockResolvedValue('app-check-jwt')
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ fields: {} }), { status: 200 })
+    )
+
+    await readUserDocument('user-123')
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/documents/users/user-123'),
+      expect.objectContaining({
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'X-Firebase-AppCheck': 'app-check-jwt',
+        },
+      })
+    )
   })
 
   it('merges user documents via Firestore REST in dev fallback mode', async () => {
@@ -108,7 +152,7 @@ describe('user-doc-server', () => {
       expect.objectContaining({
         method: 'PATCH',
         headers: expect.objectContaining({
-          Authorization: 'Bearer dev-id-token',
+          Authorization: `Bearer ${idToken}`,
         }),
       })
     )
