@@ -7,6 +7,7 @@ import {
   POLICY_TYPE_VALUES,
   usePolicyLabels,
 } from '@/hooks/use-policy-labels'
+import { SUPPORTED_CURRENCIES } from '@/lib/schemas/user'
 import type { PaymentFrequency, PolicyType } from '@/lib/schemas/policy'
 import { cn } from '@/lib/utils/cn'
 
@@ -35,12 +36,14 @@ type PolicyBasicFieldsProps = {
     value: PolicyBasicFieldsValues[K]
   ) => void
   showExtendedFields?: boolean
+  defaultCurrency?: string
 }
 
 export function PolicyBasicFields({
   values,
   onChange,
   showExtendedFields = false,
+  defaultCurrency,
 }: PolicyBasicFieldsProps) {
   const t = useTranslations('policies.fields')
   const { policyType, paymentFrequency } = usePolicyLabels()
@@ -172,18 +175,19 @@ export function PolicyBasicFields({
               <label htmlFor="currency" className="text-sm font-medium">
                 {t('currency')}
               </label>
-              <input
+              <select
                 id="currency"
                 name="currency"
-                type="text"
-                maxLength={3}
-                value={values.currency}
-                onChange={(event) =>
-                  onChange('currency', event.target.value.toUpperCase())
-                }
-                placeholder="COP"
-                className={cn(policyFieldClassName, 'font-mono uppercase')}
-              />
+                value={values.currency || defaultCurrency || 'COP'}
+                onChange={(event) => onChange('currency', event.target.value)}
+                className={policyFieldClassName}
+              >
+                {SUPPORTED_CURRENCIES.map((code) => (
+                  <option key={code} value={code}>
+                    {code}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

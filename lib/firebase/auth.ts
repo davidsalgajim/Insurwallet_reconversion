@@ -189,6 +189,60 @@ export async function resetPassword(email: string): Promise<void> {
   await firebaseAuth.sendPasswordResetEmail(auth, email)
 }
 
+export async function updateUserProfile(input: {
+  displayName: string
+  photoURL?: string
+}): Promise<User> {
+  const { auth, firebaseAuth } = await getAuthModule()
+  const user = auth.currentUser
+
+  if (!user) {
+    throw new Error('No authenticated user')
+  }
+
+  await firebaseAuth.updateProfile(user, {
+    displayName: input.displayName.trim(),
+    ...(input.photoURL ? { photoURL: input.photoURL } : {}),
+  })
+
+  const response = await fetch('/api/user/profile', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      displayName: input.displayName.trim(),
+      ...(input.photoURL ? { photoURL: input.photoURL } : {}),
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to persist profile')
+  }
+
+  return persistSession(user, true)
+}
+
+export async function uploadUserAvatar(
+  file: File,
+  uid: string
+): Promise<string> {
+  const [{ storage }, { ref, uploadBytes, getDownloadURL }] = await Promise.all(
+    [import('@/lib/firebase/client'), import('firebase/storage')]
+  )
+
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const safeExtension = ['jpg', 'jpeg', 'png', 'webp'].includes(extension)
+    ? extension
+    : 'jpg'
+  const objectRef = ref(storage, `users/${uid}/avatar.${safeExtension}`)
+
+  await uploadBytes(objectRef, file, {
+    contentType:
+      file.type || `image/${safeExtension === 'jpg' ? 'jpeg' : safeExtension}`,
+  })
+
+  return getDownloadURL(objectRef)
+}
+
 export function getAuthErrorMessage(error: unknown): string {
   if (
     typeof error === 'object' &&

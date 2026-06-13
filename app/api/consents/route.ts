@@ -52,22 +52,22 @@ export async function POST(request: Request) {
     )
   }
 
+  const userData = await readUserDocument(session.uid)
   const now = new Date()
+  const existing = UserConsentsSchema.safeParse(userData?.consents)
+  const currentConsents = existing.success ? existing.data : {}
+
   const update: Record<string, unknown> = {
     updatedAt: now,
+    consents: { ...currentConsents },
   }
 
   if (parsed.data.cookies) {
-    update.consents = { cookies: now }
+    ;(update.consents as Record<string, unknown>).cookies = now
   }
 
   if (parsed.data.cloudAI) {
-    update.consents = {
-      ...(typeof update.consents === 'object' && update.consents !== null
-        ? (update.consents as Record<string, unknown>)
-        : {}),
-      cloudAI: now,
-    }
+    ;(update.consents as Record<string, unknown>).cloudAI = now
   }
 
   await mergeUserDocument(session.uid, update)

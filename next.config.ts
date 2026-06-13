@@ -1,8 +1,16 @@
 import type { NextConfig } from 'next'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
+const packageJson = JSON.parse(
+  readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')
+) as { version?: string }
+
+const appVersion =
+  process.env.NEXT_PUBLIC_APP_VERSION ?? packageJson.version ?? '0.0.0'
 const isDev = process.env.NODE_ENV === 'development'
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -26,6 +34,8 @@ function buildContentSecurityPolicy(): string {
     'https://www.google.com',
     'https://www.gstatic.com',
     'https://accounts.google.com',
+    'https://*.ingest.sentry.io',
+    'https://*.ingest.us.sentry.io',
     ...(isDev
       ? [
           'http://127.0.0.1:*',
@@ -70,9 +80,10 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  images: {
-    formats: ['image/avif', 'image/webp'],
+  env: {
+    NEXT_PUBLIC_APP_VERSION: appVersion,
   },
+  images: { formats: ['image/avif', 'image/webp'] },
   async headers() {
     return [
       {

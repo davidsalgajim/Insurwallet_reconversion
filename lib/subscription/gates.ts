@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/components/auth/auth-provider'
-import type { Subscription } from '@/lib/schemas/user'
+import type { Subscription, BillingInterval } from '@/lib/schemas/user'
 import { FREE_POLICY_LIMIT, PREMIUM_PLAN } from '@/lib/subscription/constants'
 
 export type PolicyLimitResult = {
@@ -76,7 +76,23 @@ async function loadUserSubscription(uid: string): Promise<Subscription | null> {
     return null
   }
 
-  return subscription as Subscription
+  return {
+    plan: subscription.plan,
+    status: subscription.status,
+    ...(typeof subscription.provider === 'string'
+      ? { provider: subscription.provider }
+      : {}),
+    ...(parseBillingInterval(subscription.billingInterval)
+      ? { billingInterval: parseBillingInterval(subscription.billingInterval) }
+      : {}),
+    ...(typeof subscription.providerSubscriptionId === 'string'
+      ? { providerSubscriptionId: subscription.providerSubscriptionId }
+      : {}),
+  } as Subscription
+}
+
+function parseBillingInterval(value: unknown): BillingInterval | undefined {
+  return value === 'monthly' || value === 'annual' ? value : undefined
 }
 
 export function useUserSubscription() {

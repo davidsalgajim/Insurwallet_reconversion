@@ -1,6 +1,9 @@
 /** Premium monthly price in Colombian peso cents (29.900 COP). */
 export const PREMIUM_MONTHLY_AMOUNT_CENTS = 2_990_000
 
+/** Annual plan scaffold — 10 months price (2.990.000 × 10 COP). */
+export const PREMIUM_ANNUAL_AMOUNT_CENTS = 29_900_000
+
 export const PREMIUM_CURRENCY = 'COP' as const
 
 export function buildSubscriptionReference(uid: string): string {

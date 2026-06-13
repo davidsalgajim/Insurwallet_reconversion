@@ -3,6 +3,32 @@ import { z } from 'zod'
 export const PreferredLanguageSchema = z.enum(['es', 'en', 'pt'])
 export type PreferredLanguage = z.infer<typeof PreferredLanguageSchema>
 
+export const SupportedCurrencySchema = z.enum([
+  'COP',
+  'USD',
+  'MXN',
+  'BRL',
+  'CLP',
+  'PEN',
+  'ARS',
+  'EUR',
+])
+export type SupportedCurrency = z.infer<typeof SupportedCurrencySchema>
+
+export const SUPPORTED_CURRENCIES = SupportedCurrencySchema.options
+
+export const BillingIntervalSchema = z.enum(['monthly', 'annual'])
+export type BillingInterval = z.infer<typeof BillingIntervalSchema>
+
+export const UserPreferencesSchema = z.object({
+  currency: SupportedCurrencySchema,
+})
+export type UserPreferences = z.infer<typeof UserPreferencesSchema>
+
+export function defaultUserPreferences(): UserPreferences {
+  return { currency: 'COP' }
+}
+
 export const SubscriptionPlanSchema = z.enum(['free', 'premium'])
 export type SubscriptionPlan = z.infer<typeof SubscriptionPlanSchema>
 
@@ -18,9 +44,17 @@ export const SubscriptionSchema = z.object({
   plan: SubscriptionPlanSchema,
   provider: z.string().min(1).optional(),
   status: SubscriptionStatusSchema,
+  billingInterval: BillingIntervalSchema.optional(),
+  providerSubscriptionId: z.string().min(1).optional(),
   currentPeriodEnd: z.coerce.date().optional(),
 })
 export type Subscription = z.infer<typeof SubscriptionSchema>
+
+export const ProfileUpdateSchema = z.object({
+  displayName: z.string().min(1).max(120),
+  photoURL: z.string().url().optional(),
+})
+export type ProfileUpdate = z.infer<typeof ProfileUpdateSchema>
 
 export const NotificationPrefsSchema = z.object({
   expiry30: z.boolean(),

@@ -66,6 +66,14 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) && subscriptionUnchanged();
       allow delete: if isOwner(userId);
+
+      match /contacts/{contactId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /beneficiaries/{beneficiaryId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
     }
 
     function isShareOwner(share) {

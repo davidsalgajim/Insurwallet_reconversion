@@ -5,12 +5,14 @@ import { ArrowLeft } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { useAuth } from '@/components/auth/auth-provider'
+import { useUserPreferences } from '@/hooks/use-user-preferences'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import {
   PolicyBasicFields,
   policyDocumentToFormValues,
   type PolicyBasicFieldsValues,
 } from '@/components/policies/policy-basic-fields'
+import { BenefitsCatalogSuggestions } from '@/components/policies/benefits-catalog-suggestions'
 import { Button } from '@/components/ui/button'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { PolicyDocument } from '@/lib/firebase/policies'
@@ -24,6 +26,7 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
   const t = useTranslations('policies')
   const ta = useTranslations('common.actions')
   const { user, loading: authLoading } = useAuth()
+  const { currency: preferredCurrency } = useUserPreferences()
   const [values, setValues] = useState<PolicyBasicFieldsValues>(() =>
     policyDocumentToFormValues(policy)
   )
@@ -89,6 +92,20 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
         values={values}
         onChange={handleChange}
         showExtendedFields
+        defaultCurrency={preferredCurrency}
+      />
+
+      <BenefitsCatalogSuggestions
+        policyType={values.policyType}
+        coveragesText={values.coverages}
+        onAppend={(benefitLabel) => {
+          handleChange(
+            'coverages',
+            values.coverages.trim()
+              ? `${values.coverages.trim()}\n• ${benefitLabel}`
+              : `• ${benefitLabel}`
+          )
+        }}
       />
 
       {submitError ? (

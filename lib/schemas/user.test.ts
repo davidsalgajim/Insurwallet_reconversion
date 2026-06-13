@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   NotificationChannelsSchema,
+  UserPreferencesSchema,
   defaultNotificationChannels,
   defaultNotificationPrefs,
+  defaultUserPreferences,
 } from './user'
 
 describe('NotificationChannelsSchema', () => {
@@ -40,5 +42,17 @@ describe('notification defaults', () => {
   it('provides event preference defaults', () => {
     expect(defaultNotificationPrefs().expiry30).toBe(true)
     expect(defaultNotificationPrefs().events).toBe(false)
+  })
+})
+
+describe('UserPreferencesSchema', () => {
+  it('defaults to COP', () => {
+    expect(defaultUserPreferences()).toEqual({ currency: 'COP' })
+  })
+
+  it('accepts supported LATAM currencies', () => {
+    expect(UserPreferencesSchema.safeParse({ currency: 'MXN' }).success).toBe(
+      true
+    )
   })
 })
