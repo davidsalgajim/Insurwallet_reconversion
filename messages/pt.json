@@ -8,7 +8,7 @@
     "policies": "Apólices",
     "mariana": "MarIAna",
     "alerts": "Alertas",
-    "settings": "Perfil",
+    "settings": "Configurações",
     "signOut": "Sair",
     "getStarted": "Começar grátis",
     "localeSwitcherAria": "Selecionar idioma",
@@ -550,8 +550,8 @@
     "expiredDays": "Venceu há {count} dias"
   },
   "settings": {
-    "title": "Perfil",
-    "subtitle": "Administre sua conta, privacidade e preferências.",
+    "title": "Configurações",
+    "subtitle": "Administre sua conta, assinatura, contatos e preferências.",
     "sections": {
       "profile": "Perfil",
       "privacy": "Privacidade e dados",

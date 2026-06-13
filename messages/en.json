@@ -8,7 +8,7 @@
     "policies": "Policies",
     "mariana": "MarIAna",
     "alerts": "Alerts",
-    "settings": "Profile",
+    "settings": "Settings",
     "signOut": "Sign out",
     "getStarted": "Get started free",
     "localeSwitcherAria": "Select language",
@@ -550,8 +550,8 @@
     "expiredDays": "Expired {count} days ago"
   },
   "settings": {
-    "title": "Profile",
-    "subtitle": "Manage your account, privacy, and preferences.",
+    "title": "Settings",
+    "subtitle": "Manage your account, subscription, contacts, and preferences.",
     "sections": {
       "profile": "Profile",
       "privacy": "Privacy & data",
