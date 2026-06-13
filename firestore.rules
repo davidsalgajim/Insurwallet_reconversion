@@ -56,9 +56,10 @@ service cloud.firestore {
 
     // Clients cannot mutate subscription — only Cloud Functions (Admin SDK) after verified webhooks.
     function subscriptionUnchanged() {
-      return resource.data.keys().hasAny(['subscription'])
-        == request.resource.data.keys().hasAny(['subscription'])
-        && request.resource.data.subscription == resource.data.subscription;
+      let hadSub = resource.data.keys().hasAny(['subscription']);
+      let hasSub = request.resource.data.keys().hasAny(['subscription']);
+      return hadSub == hasSub
+        && (!hadSub || request.resource.data.subscription == resource.data.subscription);
     }
 
     match /users/{userId} {
