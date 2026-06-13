@@ -2,7 +2,7 @@
 
 Migración de InsurWallet (iOS nativa) a una web app moderna para LATAM.
 
-**Estado actual (jun 2026):** F0 ~90% · F1 ~85% · F2 ~90% (worker + revisión IA) · F3 ~85% (MarIAna + share) · F4 ~85% (Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Auth, CRUD, dashboard, upload→worker, settings hub, reglas en CI. Pendiente: deploy staging, App Check Enforce, backups iOS import.
+**Estado actual (jun 2026):** F0 ~90% · F1 ~90% · F2 ~90% (worker + revisión IA) · F3 ~85% (MarIAna + share) · F4 ~85% (legal, Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Auth, CRUD, paridad iOS en pólizas (tabs compartidas, beneficios, wizard manual), upload→worker, settings hub, páginas legales + consentimiento, reglas en CI. Pendiente: deploy staging, App Check Enforce, backups iOS import, revisión abogado/NIT.
 
 Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md). Plan de tareas: [`tasks/tasks-plan-reconversion-insurwallet.md`](tasks/tasks-plan-reconversion-insurwallet.md).
 
@@ -25,7 +25,7 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 | Fase | Descripción                                                 | Estado  |
 | ---- | ----------------------------------------------------------- | ------- |
 | F0   | Setup, Firebase, design system, CI, i18n, App Check         | ~90%    |
-| F1   | Auth, Firestore schema, CRUD pólizas, dashboard, upload PDF | ~85%    |
+| F1   | Auth, Firestore schema, CRUD pólizas, dashboard, upload PDF | ~90%    |
 | F2   | Pipeline de documentos + UI de revisión                     | ~90%    |
 | F3   | MarIAna multi-agente, compartir pólizas                     | ~85%    |
 | F4   | Pagos (Mercado Pago), notificaciones, GDPR                  | ~85%    |
@@ -34,10 +34,10 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 ## Implementado
 
 - **Marketing:** landing `/[locale]` rediseño editorial claro (body blanco, nav sticky, secciones features/services/testimonial) con hero navy enmarcado y preview de dashboard
-- **Auth:** login, registro, forgot-password, verify-email — email/password + Google; session cookie + middleware; UI navy + glass card; bloqueo staging vía `NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION`
+- **Auth:** login, registro, forgot-password, verify-email — email/password + Google; session cookie + middleware; UI navy + glass card; bloqueo staging vía `NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION`; consentimiento legal en registro (checkbox) y aviso en login; re-aceptación silenciosa si cambian versiones
 - **Env cliente:** `lib/env.ts` lee `NEXT_PUBLIC_*` con acceso estático (Next.js inline en bundle); evita fallbacks demo en staging
 - **App Check:** reCAPTCHA v3 en cliente (`lib/firebase/app-check.ts`); omitido con emuladores; modo Monitor en Firestore/Storage
-- **App:** dashboard (KPIs y vencimientos desde Firestore), lista/detalle/edición/borrado de pólizas, wizard manual + upload PDF (`/policies/new/upload` → Storage + documento en Firestore)
+- **App:** dashboard (KPIs y vencimientos desde Firestore), lista/detalle/edición/borrado de pólizas, tabs **Mis pólizas / Compartidas conmigo**, agregador `/policies/benefits`, wizard manual estructurado (coberturas, deducibles, beneficios, agente) + upload PDF (`/policies/new/upload` → Storage + documento en Firestore)
 - **Estados de póliza:** `computePolicyStatus` (active/expiring/expired) + scheduled Function diaria `refreshPolicyStatuses`
 - **Shell:** icon rail desktop + nav inferior móvil, topbar, dot-grid background
 - **Firebase:** `firestore.rules` + `storage.rules` con tests; emuladores configurados; proyecto staging `insurwallet-staging`
@@ -46,12 +46,14 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **PWA:** manifest + service worker shell (`public/sw.js`)
 - **Observability:** Sentry stub (no-op sin DSN)
 - **Configuración (settings):** `/settings` — perfil, moneda/preferencias, privacidad (export/delete cuenta), notificaciones; `/settings/contacts` — contactos de emergencia; `/settings/subscription` — plan y checkout **Mercado Pago**; `/settings/help` — ayuda
+- **Legal (F4):** páginas `/legal/terms`, `/legal/privacy`, `/legal/cookies`, `/legal/notice` (ES/EN/PT); datos centralizados en `lib/legal/company.ts`; versiones en `lib/legal/versions.ts`; API `/api/consents`; checklist pre go-live en [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md)
 - **Documentos (F2):** upload → job worker (`WORKER_URL`) → extracción Claude → pantalla de revisión split-view con confianza/bboxes
+- **MarIAna (F3, parcial):** chat streaming SSE, Tier 0 determinístico, 5 agentes especialistas, tools read-only con scope server-side; pendiente embeddings vectoriales completos y cost tracking
 - **Notificaciones (prefs):** canal email/push/ambos + tipos de aviso en Configuración; API `GET/PUT /api/notifications/prefs`; registro FCM si push activo — envío real email/push en F4 (ver [`docs/notifications.md`](docs/notifications.md))
 
 ## Pendiente (próximos hitos)
 
-- Deploy staging (checklist: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md))
+- Deploy staging (checklists: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · legal: [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md))
 - Deploy worker Cloud Run en staging/prod + OIDC (`WORKER_OIDC_AUDIENCE`)
 - MarIAna: embeddings vectoriales completos, cost tracking
 - Backups Firestore, import iOS, recibo email post-pago
@@ -165,15 +167,15 @@ En la raíz del repo (Next.js, server-only): `WORKER_URL=http://localhost:8080` 
 
 Plantilla completa: [`.env.example`](.env.example) (copiar a `.env.local`). Validación en `lib/env.ts` (cliente) y `lib/env-server.ts` (servidor).
 
-| Área             | Variables clave                                                                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Firebase cliente | `NEXT_PUBLIC_FIREBASE_*`, emuladores, verify-email, App Check site key                                                                                 |
-| Dev / App Check  | `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` o `FIREBASE_APPCHECK_DEBUG_TOKEN` registrado en consola                                                    |
-| Auth servidor    | `FIREBASE_SERVICE_ACCOUNT` o `GOOGLE_APPLICATION_CREDENTIALS` — sin ellas, **dev** guarda ID token verificado como cookie (ver tests `session-server`) |
-| Worker           | `WORKER_URL`, `INTERNAL_API_SECRET` (local), `WORKER_OIDC_AUDIENCE` (prod)                                                                             |
-| Claude           | `ANTHROPIC_API_KEY` en proceso worker y/o servidor MarIAna — Secret Manager en prod                                                                    |
-| Pagos            | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`                                                         |
-| Deploy           | [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · notificaciones: [`docs/notifications.md`](docs/notifications.md)                      |
+| Área             | Variables clave                                                                                                                                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Firebase cliente | `NEXT_PUBLIC_FIREBASE_*`, emuladores, verify-email, App Check site key                                                                                                                                                |
+| Dev / App Check  | `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` o `FIREBASE_APPCHECK_DEBUG_TOKEN` registrado en consola                                                                                                                   |
+| Auth servidor    | `FIREBASE_SERVICE_ACCOUNT` o `GOOGLE_APPLICATION_CREDENTIALS` — sin ellas, **dev** guarda ID token verificado como cookie (ver tests `session-server`)                                                                |
+| Worker           | `WORKER_URL`, `INTERNAL_API_SECRET` (local), `WORKER_OIDC_AUDIENCE` (prod)                                                                                                                                            |
+| Claude           | `ANTHROPIC_API_KEY` en proceso worker y/o servidor MarIAna — Secret Manager en prod                                                                                                                                   |
+| Pagos            | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`                                                                                                                        |
+| Deploy           | [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · legal: [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md) · notificaciones: [`docs/notifications.md`](docs/notifications.md) |
 
 ### Emuladores Firebase
 

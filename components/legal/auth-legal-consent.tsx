@@ -1,7 +1,6 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import type { ReactNode } from 'react'
 
 import { Link } from '@/i18n/navigation'
 import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/legal/versions'
@@ -45,11 +44,7 @@ export function RegisterLegalConsent({
           aria-describedby={error ? `${id}-error` : undefined}
         />
         <span className="text-muted-foreground">
-          <LegalConsentText
-            termsLabel={t('termsLink')}
-            privacyLabel={t('privacyLink')}
-            template={t('registerLabel')}
-          />
+          <LegalConsentRichText messageKey="registerLabel" />
         </span>
       </label>
       {error ? (
@@ -66,8 +61,6 @@ type LoginLegalNoticeProps = {
 }
 
 export function LoginLegalNotice({ className }: LoginLegalNoticeProps) {
-  const t = useTranslations('auth.legalConsent')
-
   return (
     <p
       className={cn(
@@ -75,63 +68,42 @@ export function LoginLegalNotice({ className }: LoginLegalNoticeProps) {
         className
       )}
     >
-      <LegalConsentText
-        termsLabel={t('termsLink')}
-        privacyLabel={t('privacyLink')}
-        template={t('loginNotice')}
-      />
+      <LegalConsentRichText messageKey="loginNotice" />
     </p>
   )
 }
 
-type LegalConsentTextProps = {
-  template: string
-  termsLabel: string
-  privacyLabel: string
+const legalLinkClassName = 'font-medium text-primary hover:underline'
+
+type LegalConsentRichTextProps = {
+  messageKey: 'registerLabel' | 'loginNotice'
 }
 
-function LegalConsentText({
-  template,
-  termsLabel,
-  privacyLabel,
-}: LegalConsentTextProps) {
-  const parts = template.split(/(\{terms\}|\{privacy\})/)
+function LegalConsentRichText({ messageKey }: LegalConsentRichTextProps) {
+  const t = useTranslations('auth.legalConsent')
 
-  return (
-    <>
-      {parts.map((part, index) => {
-        if (part === '{terms}') {
-          return (
-            <Link
-              key={`terms-${index}`}
-              href="/legal/terms"
-              className="font-medium text-primary hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {termsLabel}
-            </Link>
-          )
-        }
-
-        if (part === '{privacy}') {
-          return (
-            <Link
-              key={`privacy-${index}`}
-              href="/legal/privacy"
-              className="font-medium text-primary hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {privacyLabel}
-            </Link>
-          )
-        }
-
-        return <span key={`text-${index}`}>{part as ReactNode}</span>
-      })}
-    </>
-  )
+  return t.rich(messageKey, {
+    terms: () => (
+      <Link
+        href="/legal/terms"
+        className={legalLinkClassName}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {t('termsLink')}
+      </Link>
+    ),
+    privacy: () => (
+      <Link
+        href="/legal/privacy"
+        className={legalLinkClassName}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {t('privacyLink')}
+      </Link>
+    ),
+  })
 }
 
 export async function persistOnboardingLegalConsent(
