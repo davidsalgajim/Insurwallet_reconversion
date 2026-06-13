@@ -9,6 +9,8 @@ import {
   ConsentAuditLogSchema,
   type CloudAIConsentOutcome,
   type ConsentSource,
+  PRIVACY_VERSION,
+  TERMS_VERSION,
   UserConsentsSchema,
 } from '@/lib/schemas/consents'
 
@@ -128,5 +130,106 @@ export async function persistCookieConsent(uid: string): Promise<void> {
   })
 }
 
+export type PersistLegalConsentInput = {
+  uid: string
+  source: ConsentSource
+  acceptTerms?: boolean
+  acceptPrivacy?: boolean
+  ipHash?: string
+}
+
+function buildLegalConsentUpdate(
+  existingConsents: Record<string, unknown>,
+  now: Date,
+  input: PersistLegalConsentInput
+): Record<string, unknown> {
+  const next = { ...existingConsents }
+
+  if (input.acceptTerms) {
+    next.termsAcceptedAt = now
+    next.terms = now
+    next.termsVersion = TERMS_VERSION
+  }
+
+  if (input.acceptPrivacy) {
+    next.privacyAcceptedAt = now
+    next.privacy = now
+    next.privacyVersion = PRIVACY_VERSION
+  }
+
+  return next
+}
+
+function buildLegalAuditEntry(
+  input: PersistLegalConsentInput,
+  now: Date
+): Record<string, unknown> {
+  return {
+    action: 'consent.legal',
+    at: now,
+    source: input.source,
+    termsVersion: input.acceptTerms ? TERMS_VERSION : undefined,
+    privacyVersion: input.acceptPrivacy ? PRIVACY_VERSION : undefined,
+    ...(input.ipHash ? { ipHash: input.ipHash } : {}),
+  }
+}
+
+export async function persistLegalConsent(
+  input: PersistLegalConsentInput
+): Promise<void> {
+  if (!input.acceptTerms && !input.acceptPrivacy) {
+    return
+  }
+
+  const now = new Date()
+  const userData = (await readUserDocument(input.uid)) ?? {}
+  const existing = UserConsentsSchema.safeParse(userData.consents)
+  const currentConsents = existing.success ? existing.data : {}
+  const consents = buildLegalConsentUpdate(
+    currentConsents as Record<string, unknown>,
+    now,
+    input
+  )
+  const auditEntry = buildLegalAuditEntry(input, now)
+
+  if (!usesDevIdTokenSession()) {
+    const db = getAdminFirestore()
+    const batch = db.batch()
+    const userRef = db.collection('users').doc(input.uid)
+    batch.set(
+      userRef,
+      {
+        updatedAt: now,
+        consents,
+      },
+      { merge: true }
+    )
+    const auditRef = userRef.collection('auditLogs').doc()
+    batch.set(auditRef, auditEntry)
+    await batch.commit()
+    return
+  }
+
+  await mergeUserDocument(input.uid, {
+    updatedAt: now,
+    consents,
+  })
+
+  try {
+    const db = getAdminFirestore()
+    await db
+      .collection('users')
+      .doc(input.uid)
+      .collection('auditLogs')
+      .add(auditEntry)
+  } catch {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        '[consent] Legal audit log write skipped — Admin SDK unavailable in dev REST mode.'
+      )
+    }
+  }
+}
+
 /** @internal test helper */
-export { buildConsentUpdate, buildAuditEntry }
+export { buildConsentUpdate, buildAuditEntry, buildLegalConsentUpdate }

@@ -5,14 +5,23 @@ import {
   ConsentAuditLogSchema,
   ConsentPostBodySchema,
   getCloudAIConsentStatus,
+  getPrivacyAcceptedAt,
+  getTermsAcceptedAt,
   hasCloudAIConsent,
+  hasLegalConsent,
+  hasPrivacyConsent,
+  hasTermsConsent,
   isCloudAIDeclined,
+  needsLegalReacceptance,
+  PRIVACY_VERSION,
   resolveCloudAIOutcome,
+  TERMS_VERSION,
   UserConsentsSchema,
 } from '@/lib/schemas/consents'
 import {
   buildAuditEntry,
   buildConsentUpdate,
+  buildLegalConsentUpdate,
 } from '@/lib/server/consent-persist'
 
 describe('UserConsentsSchema', () => {
@@ -62,6 +71,16 @@ describe('ConsentPostBodySchema', () => {
   it('rejects empty body', () => {
     expect(ConsentPostBodySchema.safeParse({}).success).toBe(false)
   })
+
+  it('accepts terms and privacy onboarding payload', () => {
+    expect(
+      ConsentPostBodySchema.safeParse({
+        terms: true,
+        privacy: true,
+        source: 'onboarding',
+      }).success
+    ).toBe(true)
+  })
 })
 
 describe('resolveCloudAIOutcome', () => {
@@ -84,6 +103,40 @@ describe('ConsentAuditLogSchema', () => {
 
     expect(entry.action).toBe('consent.cloudAI')
     expect(entry.outcome).toBe('declined')
+  })
+})
+
+describe('legal consent helpers', () => {
+  const accepted = {
+    termsAcceptedAt: new Date('2026-06-13'),
+    privacyAcceptedAt: new Date('2026-06-13'),
+    termsVersion: TERMS_VERSION,
+    privacyVersion: PRIVACY_VERSION,
+  }
+
+  it('detects current legal consent', () => {
+    expect(hasTermsConsent(accepted)).toBe(true)
+    expect(hasPrivacyConsent(accepted)).toBe(true)
+    expect(hasLegalConsent(accepted)).toBe(true)
+    expect(needsLegalReacceptance(accepted)).toBe(false)
+  })
+
+  it('requires reacceptance when version changes', () => {
+    expect(
+      needsLegalReacceptance({
+        ...accepted,
+        termsVersion: '2025-01-01',
+      })
+    ).toBe(true)
+  })
+
+  it('migrates legacy terms/privacy timestamps', () => {
+    const legacy = {
+      terms: new Date('2026-01-01'),
+      privacy: new Date('2026-01-01'),
+    }
+    expect(hasTermsConsent(legacy)).toBe(false)
+    expect(getTermsAcceptedAt(legacy)).toBeInstanceOf(Date)
   })
 })
 
@@ -124,6 +177,23 @@ describe('consent-persist builders', () => {
       version: CLOUD_AI_CONSENT_VERSION,
       source: 'upload',
       ipHash: 'abc123',
+    })
+  })
+
+  it('builds legal consent update with versions', () => {
+    const now = new Date('2026-06-13T12:00:00.000Z')
+    const update = buildLegalConsentUpdate({}, now, {
+      uid: 'user-1',
+      source: 'onboarding',
+      acceptTerms: true,
+      acceptPrivacy: true,
+    })
+
+    expect(update).toMatchObject({
+      termsAcceptedAt: now,
+      privacyAcceptedAt: now,
+      termsVersion: TERMS_VERSION,
+      privacyVersion: PRIVACY_VERSION,
     })
   })
 })

@@ -204,9 +204,22 @@ Client init: `lib/firebase/app-check.ts` (skipped when `NEXT_PUBLIC_USE_FIREBASE
 
 ---
 
+## 9. Legal y cumplimiento (pre go-live)
+
+Antes de abrir registro público en producción, completar [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](PRODUCTION-LEGAL-CHECKLIST.md):
+
+- Datos empresa en `lib/legal/company.ts` (NIT, domicilio, representante legal)
+- Revisión abogado colombiano (Habeas Data, Términos, reembolsos Ley 1480)
+- Registro RNSD / inventario tratamiento SIC
+- DPAs con Anthropic, Google Cloud, Resend, Mercado Pago
+- Modal re-aceptación si cambian versiones legales sustancialmente
+- Beta: consentimiento documentado
+
+---
+
 ## Related docs
 
-- [`README.md`](../README.md) — local dev, emulators, App Check intro
+- [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](PRODUCTION-LEGAL-CHECKLIST.md) — legal y cumplimiento pre go-live
 - [`docs/security/pentest-checklist.md`](security/pentest-checklist.md) — offensive security (6.2)
 - [`tasks/tasks-plan-reconversion-insurwallet.md`](../tasks/tasks-plan-reconversion-insurwallet.md) — full task list
 - [`.env.example`](../.env.example) — variable template

@@ -12,6 +12,7 @@ import {
 import {
   persistCloudAIConsent,
   persistCookieConsent,
+  persistLegalConsent,
 } from '@/lib/server/consent-persist'
 
 export const runtime = 'nodejs'
@@ -76,6 +77,16 @@ export async function POST(request: Request) {
       uid: session.uid,
       outcome: cloudOutcome,
       source: parsed.data.source ?? 'settings',
+      ipHash,
+    })
+  }
+
+  if (parsed.data.terms || parsed.data.privacy) {
+    await persistLegalConsent({
+      uid: session.uid,
+      acceptTerms: parsed.data.terms === true,
+      acceptPrivacy: parsed.data.privacy === true,
+      source: parsed.data.source ?? 'onboarding',
       ipHash,
     })
   }

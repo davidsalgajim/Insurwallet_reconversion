@@ -12,6 +12,12 @@ import {
   authLabelClassName,
 } from '@/components/auth/auth-shell'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
+import {
+  ensureLegalConsentAfterLogin,
+  LoginLegalNotice,
+  persistOnboardingLegalConsent,
+  RegisterLegalConsent,
+} from '@/components/legal/auth-legal-consent'
 import { Button } from '@/components/ui/button'
 import { Link, useRouter } from '@/i18n/navigation'
 import {
@@ -39,16 +45,26 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
   const [errorKey, setErrorKey] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [legalAccepted, setLegalAccepted] = useState(false)
+  const [legalError, setLegalError] = useState(false)
 
   const destination = redirectTo || '/dashboard'
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorKey(null)
+
+    if (!legalAccepted) {
+      setLegalError(true)
+      return
+    }
+
+    setLegalError(false)
     setSubmitting(true)
 
     try {
       const user = await signUpWithEmail(email, password, displayName, locale)
+      await persistOnboardingLegalConsent('onboarding')
 
       if (isEmailVerificationRequired() && userNeedsEmailVerification(user)) {
         router.replace('/verify-email')
@@ -64,10 +80,18 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
 
   async function handleGoogleSignIn() {
     setErrorKey(null)
+
+    if (!legalAccepted) {
+      setLegalError(true)
+      return
+    }
+
+    setLegalError(false)
     setGoogleLoading(true)
 
     try {
       await signInWithGoogle(locale)
+      await persistOnboardingLegalConsent('onboarding')
       router.replace(destination)
     } catch (error) {
       setErrorKey(getAuthErrorMessage(error))
@@ -126,6 +150,16 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
               className={authInputClassName}
             />
           </div>
+          <RegisterLegalConsent
+            checked={legalAccepted}
+            onCheckedChange={(value) => {
+              setLegalAccepted(value)
+              if (value) {
+                setLegalError(false)
+              }
+            }}
+            error={legalError}
+          />
           {errorKey ? (
             <p className="text-sm text-destructive" role="alert">
               {t(`errors.${errorKey}`)}
@@ -135,7 +169,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
             type="submit"
             className="w-full rounded-[var(--radius-pill)] shadow-md shadow-primary/20"
             size="lg"
-            disabled={submitting}
+            disabled={submitting || !legalAccepted}
           >
             {submitting ? (
               <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
@@ -149,7 +183,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
         <GoogleSignInButton
           onGoogleClick={handleGoogleSignIn}
           googleLoading={googleLoading}
-          disabled={submitting}
+          disabled={submitting || !legalAccepted}
         />
 
         <AuthFooterText>

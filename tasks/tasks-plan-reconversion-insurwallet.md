@@ -135,7 +135,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 5.6 Notificaciones FCM web push: solicitud de permiso contextual, vencimientos 30/60/90, estado de procesamiento de documentos — **jun 2026:** registro token, prefs/canales, envío FCM Admin en `sendExpiryReminders` + push al job `ready`; permiso contextual al activar push en settings (no al cargar página)
   - [x] 5.7 Email transaccional (Resend): vencimientos, póliza compartida, recibo de pago, bienvenida — plantillas localizadas ES/EN/PT — **jun 2026:** Resend en Functions (vencimientos, bienvenida) + Next.js (share, welcome); recibo de pago pendiente webhook template
   - [x] 5.8 Scheduled Functions: chequeo diario de vencimientos + envío según `notificationPrefs` y `notificationChannels` — **jun 2026:** `sendExpiryReminders` lee prefs/canales + tokens FCM + envía email/push
-  - [x] 5.9 Cumplimiento legal: páginas Términos/Privacidad, consentimiento de cookies, consentimiento explícito para IA en nube, registro Habeas Data (Ley 1581 Colombia) — **jun 2026:** banner cookies + modal IA en upload + `users.consents`; páginas legal placeholder existentes
+  - [x] 5.9 Cumplimiento legal: políticas Términos/Privacidad/Cookies/Aviso Legal (ES principal, EN/PT), consentimiento registro (checkbox Habeas Data) + login (aviso), `users.consents` con versiones, banner cookies + modal IA en upload — **jun 2026:** documentos en `lib/legal/content/` + datos centralizados en `lib/legal/company.ts`; checklist pre-prod en [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](../docs/PRODUCTION-LEGAL-CHECKLIST.md); pendiente revisión abogado, NIT y RNSD
   - [x] 5.10 GDPR/portabilidad: exportación completa de datos del usuario (JSON + documentos) y eliminación de cuenta con borrado en cascada (Firestore + Storage) + audit log — **jun 2026:** export JSON con signed Storage URLs (7 días) + delete cascada + `accountAuditLogs`; Next.js y Cloud Functions alineados
   - [ ] 5.11 Backups: export programado de Firestore a Cloud Storage (diario, retención 30 días) + procedimiento de restauración documentado y probado
   - [ ] 5.12 Importación de usuarios iOS: parser del export cifrado de `DataExportImportService.swift` como vía de migración
@@ -153,7 +153,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [ ] 6.9 Landing pública con design-taste-frontend: hero, features, pricing, FAQ, SEO (metadata, OG, sitemap) + analytics de conversión
   - [ ] 6.10 `/impeccable audit` + polish final sobre toda la app + sesión de feedback de 5 usuarios reales (test de usabilidad moderado)
   - [ ] 6.11 Beta cerrada: invitar usuarios iOS existentes, importar sus datos, monitorear errores/costos 2 semanas, iterar
-  - [ ] 6.12 Revisión final con agentes (security-review completo del repo + Bugbot) y go/no-go de lanzamiento
+  - [ ] 6.12 Revisión final con agentes (security-review completo del repo + Bugbot) y go/no-go de lanzamiento — incluye [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](../docs/PRODUCTION-LEGAL-CHECKLIST.md) §7 beta legal
   - [x] 6.13 Producción App Check: checklist Enforce en README + `docs/PRODUCTION-CHECKLIST.md` §5; cliente en `lib/firebase/app-check.ts` — ejecutar Enforce en consola pendiente
 
 - [ ] 7.0 Transversal — Observabilidad, analytics y calidad de código continua (durante todas las fases)

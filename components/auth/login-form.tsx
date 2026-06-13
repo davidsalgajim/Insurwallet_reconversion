@@ -12,6 +12,10 @@ import {
   authLabelClassName,
 } from '@/components/auth/auth-shell'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
+import {
+  ensureLegalConsentAfterLogin,
+  LoginLegalNotice,
+} from '@/components/legal/auth-legal-consent'
 import { Button } from '@/components/ui/button'
 import { Link, useRouter } from '@/i18n/navigation'
 import {
@@ -59,6 +63,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         return
       }
 
+      await ensureLegalConsentAfterLogin()
       router.replace(destination)
     } catch (error) {
       setErrorKey(getAuthErrorMessage(error))
@@ -73,6 +78,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
 
     try {
       await signInWithGoogle(locale)
+      await ensureLegalConsentAfterLogin()
       router.replace(destination)
     } catch (error) {
       setErrorKey(getAuthErrorMessage(error))
@@ -151,6 +157,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         />
 
         <AuthFooterText>
+          <LoginLegalNotice className="mb-3" />
           {t('noAccount')}{' '}
           <Link
             href="/register"

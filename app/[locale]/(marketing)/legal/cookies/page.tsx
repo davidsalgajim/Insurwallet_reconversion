@@ -2,28 +2,25 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { LegalDocumentBody } from '@/components/legal/legal-document-body'
 import { LegalDocumentLayout } from '@/components/legal/legal-document-layout'
-import { getTermsContent } from '@/lib/legal/content/terms'
+import { getCookiesContent } from '@/lib/legal/content/cookies'
 import type { PreferredLanguage } from '@/lib/schemas/user'
 
 type Props = {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ from?: string }>
 }
 
-export default async function TermsPage({ params, searchParams }: Props) {
+export default async function CookiesPage({ params }: Props) {
   const { locale } = await params
-  const { from } = await searchParams
   setRequestLocale(locale)
   const t = await getTranslations('legal')
-  const fromSettings = from === 'settings'
-  const document = getTermsContent(locale as PreferredLanguage)
+  const document = getCookiesContent(locale as PreferredLanguage)
 
   return (
     <LegalDocumentLayout
       title={document.title}
       lastUpdated={t('lastUpdatedDate')}
-      backHref={fromSettings ? '/settings' : '/'}
-      backLabel={fromSettings ? t('backToSettings') : t('back')}
+      backHref="/"
+      backLabel={t('back')}
       updatedLabel={t('lastUpdatedLabel')}
     >
       <LegalDocumentBody document={document} />

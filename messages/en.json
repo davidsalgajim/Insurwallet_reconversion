@@ -124,6 +124,7 @@
     "footerCopyright": "© {year} InsurWallet. All rights reserved.",
     "footerTerms": "Terms of service",
     "footerPrivacy": "Privacy policy",
+    "footerCookies": "Cookies",
     "previewPortfolio": "Your portfolio",
     "previewSearch": "Search…",
     "previewStatActive": "Active",
@@ -175,6 +176,13 @@
       "popupClosed": "Sign-in was cancelled.",
       "genericError": "We could not complete the action. Try again.",
       "emailNotVerifiedYet": "We still don't see verification. Wait a moment and try again."
+    },
+    "legalConsent": {
+      "registerLabel": "I accept the {terms} and {privacy}, and authorize processing of my personal data under applicable data protection laws (including Colombia Law 1581/2012).",
+      "registerRequired": "You must accept the terms and privacy policy to continue.",
+      "loginNotice": "By continuing, you accept the {terms} and {privacy}.",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy"
     }
   },
   "policies": {
@@ -774,7 +782,8 @@
   "legal": {
     "cookies": {
       "title": "We use essential cookies",
-      "description": "They help with session, preferences, and security.",
+      "description": "They help with session, preferences, and security. See our",
+      "policyLink": "Cookie Policy",
       "privacyLink": "Privacy policy",
       "accept": "Accept",
       "dismiss": "Close"
@@ -796,7 +805,7 @@
     "back": "Back to home",
     "backToSettings": "Back to settings",
     "lastUpdatedLabel": "Last updated",
-    "lastUpdatedDate": "June 12, 2026",
+    "lastUpdatedDate": "June 13, 2026",
     "terms": {
       "title": "Terms of Service",
       "intro": "This document is a placeholder draft for InsurWallet. It will be replaced by legally reviewed terms before public launch.",

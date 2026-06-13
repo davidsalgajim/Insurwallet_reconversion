@@ -124,6 +124,7 @@
     "footerCopyright": "© {year} InsurWallet. Todos os direitos reservados.",
     "footerTerms": "Termos de serviço",
     "footerPrivacy": "Política de privacidade",
+    "footerCookies": "Cookies",
     "previewPortfolio": "Sua carteira",
     "previewSearch": "Buscar…",
     "previewStatActive": "Ativas",
@@ -175,6 +176,13 @@
       "popupClosed": "Login cancelado.",
       "genericError": "Não foi possível concluir a ação. Tente novamente.",
       "emailNotVerifiedYet": "Ainda não detectamos a verificação. Aguarde um momento e tente novamente."
+    },
+    "legalConsent": {
+      "registerLabel": "Aceito os {terms} e a {privacy}, e autorizo o tratamento dos meus dados pessoais conforme a legislação aplicável (incluindo Habeas Data — Colômbia).",
+      "registerRequired": "Você deve aceitar os termos e a política de privacidade para continuar.",
+      "loginNotice": "Ao continuar, você aceita os {terms} e a {privacy}.",
+      "termsLink": "Termos de Uso",
+      "privacyLink": "Política de Privacidade"
     }
   },
   "policies": {
@@ -774,7 +782,8 @@
   "legal": {
     "cookies": {
       "title": "Usamos cookies essenciais",
-      "description": "Eles ajudam na sessão, preferências e segurança.",
+      "description": "Eles ajudam na sessão, preferências e segurança. Consulte nossa",
+      "policyLink": "Política de Cookies",
       "privacyLink": "Política de privacidade",
       "accept": "Aceitar",
       "dismiss": "Fechar"
@@ -796,7 +805,7 @@
     "back": "Voltar ao início",
     "backToSettings": "Voltar às configurações",
     "lastUpdatedLabel": "Última atualização",
-    "lastUpdatedDate": "12 de junho de 2026",
+    "lastUpdatedDate": "13 de junho de 2026",
     "terms": {
       "title": "Termos e Condições",
       "intro": "Este documento é um rascunho placeholder para o InsurWallet. Será substituído por termos legais revisados antes do lançamento público.",
