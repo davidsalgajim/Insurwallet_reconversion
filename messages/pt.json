@@ -229,8 +229,13 @@
       "addBeneficiary": "Adicionar beneficiário",
       "beneficiariesEmpty": "Opcional: adicione beneficiários com nome e percentual.",
       "beneficiaryName": "Nome completo",
-      "beneficiaryPct": "Percentual (0-100)",
+      "beneficiaryNamePlaceholder": "Ex. Maria Silva",
+      "beneficiaryPctLabel": "% de benefício",
+      "beneficiaryPctPlaceholder": "50",
+      "beneficiaryPctHelper": "Valor entre 0 e 100",
+      "beneficiaryPctAriaLabel": "Percentual de benefício, valor entre 0 e 100",
       "beneficiaryObservations": "Observações (opcional)",
+      "beneficiaryObservationsPlaceholder": "Notas adicionais",
       "beneficiaryPctTotal": "Total atribuído: {pct}%",
       "beneficiaryPctWarning": "A soma ultrapassa 100%. Revise os percentuais antes de salvar."
     },
@@ -247,11 +252,11 @@
       "emptyDesc": "Quando alguém compartilhar uma apólice com você, ela aparecerá aqui."
     },
     "benefits": {
-      "link": "Ver benefícios"
+      "link": "Ver benefícios e assistências"
     },
     "benefitsPage": {
-      "title": "Benefícios",
-      "subtitle": "Todos os benefícios ativos da sua carteira",
+      "title": "Benefícios e assistências",
+      "subtitle": "Benefícios e assistências ativos na sua carteira",
       "backToPolicies": "Voltar às apólices",
       "totalBenefits": "Benefícios registrados",
       "policiesWithBenefits": "Apólices com benefícios",
@@ -525,9 +530,14 @@
       "delete": "Excluir",
       "save": "Salvar",
       "saving": "Salvando…",
-      "namePlaceholder": "Nome completo",
-      "pctPlaceholder": "Percentual (0-100)",
-      "notesPlaceholder": "Observações (opcional)"
+      "nameLabel": "Nome completo",
+      "namePlaceholder": "Ex. Maria Silva",
+      "pctLabel": "% de benefício",
+      "pctPlaceholder": "50",
+      "pctHelper": "Valor entre 0 e 100",
+      "pctAriaLabel": "Percentual de benefício, valor entre 0 e 100",
+      "notesLabel": "Observações (opcional)",
+      "notesPlaceholder": "Notas adicionais"
     }
   },
   "dashboard": {
@@ -553,7 +563,7 @@
     "noUpcomingRenewals": "Sem vencimentos próximos",
     "noUpcomingRenewalsDesc": "Suas apólices ativas não vencem nos próximos 90 dias.",
     "viewAllPolicies": "Ver todas as apólices",
-    "marianaPanelSubtitle": "Assistente de seguros com citações aos seus documentos",
+    "marianaPanelSubtitle": "Coberturas, assistências e contatos das suas apólices",
     "marianaQuestion1": "Estou coberto para uma viagem?",
     "marianaQuestion2": "Quando vence minha apólice de auto?",
     "marianaQuestion3": "Quem devo ligar em emergência?",
@@ -589,14 +599,15 @@
   },
   "mariana": {
     "title": "MarIAna",
-    "subtitle": "Assistente de seguros — somente leitura, com citações aos seus documentos.",
-    "badge": "Assistente com citações documentais",
+    "subtitle": "Assistente IA",
+    "avatarAlt": "Avatar da MarIAna, assistente virtual de seguros",
+    "badge": "Com base nos seus documentos",
     "emptyTitle": "Como posso ajudar hoje?",
-    "emptyDescription": "Pergunte sobre coberturas, vencimentos ou trâmites. As respostas se baseiam nas suas apólices salvas.",
+    "emptyDescription": "Coberturas, vencimentos, contatos e assistências das suas apólices. Oriento em acidentes, urgências ou incidentes em casa. Somente leitura — cito seus documentos quando aplicável.",
     "inputLabel": "Escreva sua pergunta",
     "inputPlaceholder": "Pergunte sobre suas apólices…",
     "sendAria": "Enviar mensagem",
-    "disclaimer": "A MarIAna não substitui assessoria jurídica nem a apólice original.",
+    "disclaimer": "Não é assessoria jurídica nem financeira. Não modifica suas apólices nem substitui sua seguradora.",
     "suggested1": "O que cobre minha apólice de saúde?",
     "suggested2": "Quando vence meu seguro de auto?",
     "suggested3": "Como reporto um sinistro?",

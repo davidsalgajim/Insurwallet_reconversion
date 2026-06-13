@@ -2,7 +2,7 @@
 
 Migración de InsurWallet (iOS nativa) a una web app moderna para LATAM.
 
-**Estado actual (jun 2026):** F0 ~90% · F1 ~90% · F2 ~90% (worker + revisión IA) · F3 ~85% (MarIAna + share) · F4 ~85% (legal, Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Auth, CRUD, paridad iOS en pólizas (tabs compartidas, beneficios, wizard manual), upload→worker, settings hub, páginas legales + consentimiento, reglas en CI. Pendiente: deploy staging, App Check Enforce, backups iOS import, revisión abogado/NIT.
+**Estado actual (jun 2026):** F0 ~90% · F1 ~92% · F2 ~90% (worker + revisión IA) · F3 ~90% (MarIAna situacional + share) · F4 ~85% (legal, Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Schema Zod unificado (manual, extracción Claude, tools MarIAna), compresión cliente a 2 MB, beneficiarios con % en wizard/edición, agregador **Beneficios y asistencias**, upload→worker, settings hub, páginas legales + consentimiento, reglas en CI. Pendiente: deploy staging, App Check Enforce, embeddings vectoriales completos, backups/iOS import, revisión abogado/NIT.
 
 Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md). Plan de tareas: [`tasks/tasks-plan-reconversion-insurwallet.md`](tasks/tasks-plan-reconversion-insurwallet.md).
 
@@ -27,7 +27,7 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 | F0   | Setup, Firebase, design system, CI, i18n, App Check         | ~90%    |
 | F1   | Auth, Firestore schema, CRUD pólizas, dashboard, upload PDF | ~90%    |
 | F2   | Pipeline de documentos + UI de revisión                     | ~90%    |
-| F3   | MarIAna multi-agente, compartir pólizas                     | ~85%    |
+| F3   | MarIAna multi-agente, compartir pólizas                     | ~90%    |
 | F4   | Pagos (Mercado Pago), notificaciones, GDPR                  | ~85%    |
 | F5   | Hardening, E2E, beta                                        | Parcial |
 
@@ -37,7 +37,8 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **Auth:** login, registro, forgot-password, verify-email — email/password + Google; session cookie + middleware; UI navy + glass card; bloqueo staging vía `NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION`; consentimiento legal en registro (checkbox) y aviso en login; re-aceptación silenciosa si cambian versiones
 - **Env cliente:** `lib/env.ts` lee `NEXT_PUBLIC_*` con acceso estático (Next.js inline en bundle); evita fallbacks demo en staging
 - **App Check:** reCAPTCHA v3 en cliente (`lib/firebase/app-check.ts`); omitido con emuladores; modo Monitor en Firestore/Storage
-- **App:** dashboard (KPIs y vencimientos desde Firestore), lista/detalle/edición/borrado de pólizas, tabs **Mis pólizas / Compartidas conmigo**, agregador `/policies/benefits`, wizard manual estructurado (coberturas, deducibles, beneficios, agente) + upload PDF (`/policies/new/upload` → Storage + documento en Firestore)
+- **App:** dashboard (KPIs y vencimientos desde Firestore), lista/detalle/edición/borrado de pólizas, tabs **Mis pólizas / Compartidas conmigo**, agregador **Beneficios y asistencias** (`/policies/benefits`), wizard manual estructurado (coberturas, deducibles, beneficios, beneficiarios con %, agente) + upload PDF con compresión cliente a **2 MB** (`/policies/new/upload` → Storage + documento en Firestore)
+- **Modelo de póliza unificado:** un schema Zod (`lib/schemas/policy.ts`, `beneficiary.ts`, `extraction.ts`) alimenta wizard manual, revisión post-Claude y tools read-only de MarIAna — paridad iOS en tipos, beneficiarios y campos estructurados
 - **Estados de póliza:** `computePolicyStatus` (active/expiring/expired) + scheduled Function diaria `refreshPolicyStatuses`
 - **Shell:** icon rail desktop + nav inferior móvil, topbar, dot-grid background
 - **Firebase:** `firestore.rules` + `storage.rules` con tests; emuladores configurados; proyecto staging `insurwallet-staging`
@@ -48,14 +49,16 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **Configuración (settings):** `/settings` — perfil, moneda/preferencias, privacidad (export/delete cuenta), notificaciones; `/settings/contacts` — contactos de emergencia; `/settings/subscription` — plan y checkout **Mercado Pago**; `/settings/help` — ayuda
 - **Legal (F4):** páginas `/legal/terms`, `/legal/privacy`, `/legal/cookies`, `/legal/notice` (ES/EN/PT); datos centralizados en `lib/legal/company.ts`; versiones en `lib/legal/versions.ts`; API `/api/consents`; checklist pre go-live en [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md)
 - **Documentos (F2):** upload → job worker (`WORKER_URL`) → extracción Claude → pantalla de revisión split-view con confianza/bboxes
-- **MarIAna (F3, parcial):** chat streaming SSE, Tier 0 determinístico, 5 agentes especialistas, tools read-only con scope server-side; pendiente embeddings vectoriales completos y cost tracking
+- **MarIAna (F3):** chat streaming SSE con avatar de marca, subtítulo **Asistente IA** (ES/EN/PT); Tier 0 determinístico; router situacional (`mariana/situational.ts`) + 5 agentes core + **10 especialistas por tipo de póliza**; tools read-only con prefetch de asistencias/beneficios; **120 evals estructurales** (router/tools/prompts, sin LLM) — ver [`mariana/evals/README.md`](mariana/evals/README.md); pendiente embeddings vectoriales completos y cost tracking
+- **Layout raíz:** `<html>`/`<body>` únicos en `app/layout.tsx` (locale + fuentes); `[locale]/layout.tsx` solo proveedores — evita anidación inválida en App Router
 - **Notificaciones (prefs):** canal email/push/ambos + tipos de aviso en Configuración; API `GET/PUT /api/notifications/prefs`; registro FCM si push activo — envío real email/push en F4 (ver [`docs/notifications.md`](docs/notifications.md))
 
 ## Pendiente (próximos hitos)
 
 - Deploy staging (checklists: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · legal: [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md))
 - Deploy worker Cloud Run en staging/prod + OIDC (`WORKER_OIDC_AUDIENCE`)
-- MarIAna: embeddings vectoriales completos, cost tracking
+- MarIAna: embeddings vectoriales completos, cost tracking (4.10)
+- Ejecutar evals estructurales en CI local: `npm run test -- mariana/evals`
 - Backups Firestore, import iOS, recibo email post-pago
 - App Check **Enforce** en Firebase Console (checklist documentado en 6.13)
 
@@ -115,7 +118,7 @@ lib/                   # firebase/, schemas/, env.ts, utils/
 messages/              # es.json, en.json, pt.json
 functions/             # Cloud Functions (scheduled status, scaffold)
 worker/                # Pipeline documentos Cloud Run (ver worker/README.md)
-mariana/               # Orquestador chat (F3)
+mariana/               # Orquestador chat (F3) + evals estructurales
 e2e/                   # Playwright (F5)
 tasks/                 # Task list de implementación
 docs/                  # Plan maestro

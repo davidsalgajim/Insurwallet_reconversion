@@ -4,6 +4,8 @@ import { Plus, Trash2 } from 'lucide-react'
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
+import { BeneficiaryPctField } from '@/components/policies/beneficiary-pct-field'
+import { policyFieldClassName } from '@/components/policies/policy-form-styles'
 import { Button } from '@/components/ui/button'
 
 type BeneficiaryRow = {
@@ -20,7 +22,7 @@ type BeneficiariesPanelProps = {
 
 const EMPTY_FORM = {
   name: '',
-  pct: 100,
+  pct: 0,
   notes: '',
 }
 
@@ -179,39 +181,48 @@ export function BeneficiariesPanel({
           onSubmit={(event) => void handleSubmit(event)}
           className="space-y-3 rounded-[var(--radius-inner)] border border-border/60 bg-white/50 p-4"
         >
-          <input
-            required
-            value={form.name}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, name: event.target.value }))
-            }
-            placeholder={t('namePlaceholder')}
-            className="w-full rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
-          />
-          <input
-            required
-            type="number"
-            min={0}
-            max={100}
+          <div className="space-y-2">
+            <label htmlFor="beneficiary-name" className="text-sm font-medium">
+              {t('nameLabel')}
+            </label>
+            <input
+              id="beneficiary-name"
+              required
+              value={form.name}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, name: event.target.value }))
+              }
+              placeholder={t('namePlaceholder')}
+              className={policyFieldClassName}
+            />
+          </div>
+          <BeneficiaryPctField
+            id="beneficiary-pct"
             value={form.pct}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                pct: Number(event.target.value),
-              }))
-            }
+            onChange={(pct) => setForm((current) => ({ ...current, pct }))}
+            label={t('pctLabel')}
             placeholder={t('pctPlaceholder')}
-            className="w-full rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
+            helperText={t('pctHelper')}
+            ariaLabel={t('pctAriaLabel')}
           />
-          <textarea
-            rows={2}
-            value={form.notes}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, notes: event.target.value }))
-            }
-            placeholder={t('notesPlaceholder')}
-            className="w-full rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
-          />
+          <div className="space-y-2">
+            <label htmlFor="beneficiary-notes" className="text-sm font-medium">
+              {t('notesLabel')}
+            </label>
+            <textarea
+              id="beneficiary-notes"
+              rows={2}
+              value={form.notes}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  notes: event.target.value,
+                }))
+              }
+              placeholder={t('notesPlaceholder')}
+              className={policyFieldClassName}
+            />
+          </div>
           <Button
             type="submit"
             variant="ink"

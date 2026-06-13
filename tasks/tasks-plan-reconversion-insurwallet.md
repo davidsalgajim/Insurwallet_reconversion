@@ -47,8 +47,10 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 
 ### MarIAna (Cloud Run — endpoint de chat)
 
-- `mariana/router.ts` - Tier 0 determinístico + clasificador de intención (Haiku) + tests.
-- `mariana/agents/` - System prompts y tools de los 5 especialistas + tests.
+- `mariana/router.ts` - Tier 0 determinístico + clasificador de intención (Haiku) + routing situacional + tests.
+- `mariana/agents/` - System prompts de 5 agentes core + `specialists/` (10 tipos de póliza) + tests.
+- `mariana/situational.ts` - Detección de intents situacionales (accidente, viaje, dental, etc.) + tests.
+- `mariana/evals/` - 120 escenarios estructurales (router/tools/prompts) — ver README en carpeta.
 - `mariana/tools.ts` - Tools read-only con scope server-side por uid + tests.
 - `mariana/guardrails.ts` - Scope-check, rate limiting, límites de tokens + tests.
 
@@ -89,7 +91,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 2.3 `firestore.rules` (owner, sharedWith read, subcolecciones documents/auditLogs) + 19 tests — ejecutar con emulador (requiere JDK 21+; `firebase-tools` ≥15)
   - [x] 2.4 `storage.rules` (mime PDF/imágenes, máx 20MB, owner) + 6 tests emulator-ready
   - [x] 2.5 `firestore.indexes.json` (ownerUid+status, ownerUid+endDate, sharedWith+endDate)
-  - [x] 2.6 Wizard paso 1 + paso 2 manual ampliado (tipo, vigencias, prima, agente, coberturas/deducibles/beneficios estructurados, beneficiarios manuales) + upload PDF — revisión IA (pasos 3-4) pendientes F2; catálogo beneficios sugeridos solo en edición (fase posterior en wizard manual)
+  - [x] 2.6 Wizard paso 1 + paso 2 manual ampliado (tipo, vigencias, prima, agente, coberturas/deducibles/beneficios estructurados, beneficiarios manuales con % acumulado) + upload PDF con compresión cliente 2 MB — revisión IA (pasos 3-4) en F2; catálogo beneficios sugeridos en edición
   - [x] 2.7 Lista de pólizas con tabs Mis pólizas / Compartidas conmigo (`listSharedPoliciesForUser`, `usePolicies`) + pantalla `/policies/benefits` + detalle `/policies/[id]` con lectura compartida
   - [x] 2.8 Dashboard con KPIs y vencimientos reales desde Firestore (`dashboard-summary.tsx`)
   - [x] 2.9 Edición y borrado de pólizas con confirmación + `auditLogs` — detalle `/policies/[id]`, edit `/policies/[id]/edit`
@@ -118,11 +120,11 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 4.2 Implementar Tier 0 determinístico: intents frecuentes (vencimientos, primas, contactos) resueltos con query Firestore + plantilla localizada <300ms, sin LLM — TDD del matcher de intents
   - [x] 4.3 Implementar router con Haiku: clasificación de intención + extracción de entidades (qué póliza, qué tema) con contexto mínimo (solo metadatos de pólizas)
   - [x] 4.4 Implementar tools read-only con scope server-side por uid (`get_policies_summary`, `search_document_chunks`, `get_coverage_details`, `get_contacts`) — los tools jamás aceptan IDs arbitrarios del cliente; tests de autorización
-  - [x] 4.5 Implementar los 5 agentes especialistas (Documental con citas a documento+página, Coberturas, Vencimientos, Aseguradoras, Emergencias con bypass por keywords) como system prompts + prompt caching — **hecho jun 2026:** prompts 5 agentes + `cache_control: ephemeral` en system blocks estáticos
+  - [x] 4.5 Implementar agentes especialistas como system prompts + prompt caching — **hecho jun 2026:** 5 agentes core (Documental, Coberturas, Vencimientos, Aseguradoras, Emergencias) + **10 especialistas situacionales por `PolicyType`** en `mariana/agents/specialists/`; routing situacional en `mariana/situational.ts`; `cache_control: ephemeral` en system blocks estáticos
   - [x] 4.6 Guardrails: scope-check de respuesta (solo seguros), rate limiting por uid, límite de tokens por sesión, texto de documentos siempre en `<document_data>` — tests adversariales básicos
-  - [x] 4.7 UI de chat: streaming, historial con rolling summary, citas clicables que abren el documento en la página fuente, sugerencias de preguntas iniciales — **hecho jun 2026:** streaming SSE + citas + rolling summary determinístico en cliente/API
+  - [x] 4.7 UI de chat: streaming, historial con rolling summary, citas clicables que abren el documento en la página fuente, sugerencias de preguntas iniciales — **hecho jun 2026:** streaming SSE + citas + rolling summary + avatar de marca + copy subtítulo «Asistente IA» (ES/EN/PT)
   - [x] 4.8 Compartir pólizas: generación de token (hash en Firestore, expiración), email al destinatario, página `share/[token]` con aceptación, permisos view/view_download, revocación — tests de reglas para acceso compartido — **hecho jun 2026:** API shares + Resend email + revocación UI + permisos; tests unitarios email/share
-  - [x] 4.9 Gestión de beneficiarios y beneficios (CRUD en detalle de póliza) con catálogo de beneficios comunes por tipo de seguro — **hecho jun 2026:** CRUD beneficiaries + catálogo sugerido en edición de póliza; wizard manual sin sugerencias (fase posterior)
+  - [x] 4.9 Gestión de beneficiarios y beneficios (CRUD en detalle de póliza) con catálogo de beneficios comunes por tipo de seguro — **hecho jun 2026:** CRUD beneficiaries + campo % acumulado (`beneficiary-pct-field`) en wizard/edición + catálogo sugerido en edición
   - [ ] 4.10 Tracking de costos LLM por usuario/sesión (tokens in/out por modelo) hacia analytics — base para decisiones de pricing
   - [ ] 4.11 Revisión con agentes (security-reviewer enfocado en los tools y el scope + typescript-reviewer + Bugbot) y commit de cierre
 
@@ -167,6 +169,10 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 ### Pendientes explícitos post-cierre backend/UI (jun 2026)
 
 - [x] **Settings hub (jun 2026):** `/settings` (perfil, moneda, privacidad/GDPR, notificaciones), `/settings/contacts`, `/settings/subscription` (Mercado Pago), `/settings/help`
+
+- [x] **Modelo unificado de póliza (jun 2026):** schema Zod único manual/extracción/MarIAna (`lib/schemas/policy.ts`, `beneficiary.ts`, `extraction.ts`); compresión cliente PDF/imagen a 2 MB (`lib/utils/document-compression.ts`); storage.rules alineado
+- [x] **MarIAna situacional + evals (jun 2026):** `mariana/situational.ts`, 10 especialistas por tipo, prefetch asistencias/beneficios, 120 evals estructurales en `mariana/evals/` (Vitest, sin LLM)
+- [x] **Root layout App Router (jun 2026):** `<html>`/`<body>` únicos en `app/layout.tsx`; `[locale]/layout.tsx` solo proveedores i18n/auth
 
 - [x] **Extracción real:** OpenDataLoader → quality gate → Surya/MarkItDown → Claude tool-use (3.3–3.8) — **jun 2026:** pipeline + Docker ODL + bboxes; Surya prod real pendiente
 - [x] **Visor PDF avanzado:** resaltado de bboxes por campo en revisión (3.12) — pdf.js overlay; datos bbox dependen de ODL en worker

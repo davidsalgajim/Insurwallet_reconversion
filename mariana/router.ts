@@ -1,7 +1,12 @@
+import {
+  matchSituationalIntent,
+  usesAssistancePrefetch,
+} from '@/mariana/situational'
 import type {
   MarianaAgentId,
   PolicyMetadata,
   RouteDecision,
+  SituationalIntent,
   Tier0Intent,
 } from '@/mariana/types'
 
@@ -14,6 +19,10 @@ const EMERGENCY_KEYWORDS = [
   'theft',
   'claim',
   'emergency',
+  'estrell',
+  'choque',
+  'collision',
+  'crash',
 ] as const
 
 const TIER0_PATTERNS: ReadonlyArray<{
@@ -60,7 +69,8 @@ const AGENT_PATTERNS: ReadonlyArray<{
   {
     agent: 'coverage',
     patterns: [
-      /\b(cubre|cobertura|cubierto|beneficio|deducible|am\s+i\s+covered|coverage)\b/i,
+      /\b(cubre|cobertura|cubierto|beneficios?|deducible|am\s+i\s+covered|coverage)\b/i,
+      /\b(asistencias?|gr[uú]a|roadside|repatriaci[oó]n)\b/i,
     ],
   },
   {
@@ -78,40 +88,61 @@ export function matchEmergencyKeywords(message: string): boolean {
   return EMERGENCY_KEYWORDS.some((keyword) => normalized.includes(keyword))
 }
 
-export function matchTier0Intent(message: string): Tier0Intent | null {
-  for (const { intent, patterns } of TIER0_PATTERNS) {
-    if (patterns.some((pattern) => pattern.test(message))) {
-      return intent
-    }
-  }
-  return null
-}
+export { matchSituationalIntent } from '@/mariana/situational'
 
 function extractPolicyHint(
   message: string,
-  policies: PolicyMetadata[]
+  policies: PolicyMetadata[],
+  policyTypes?: string[]
 ): string | undefined {
   const normalized = message.toLowerCase()
-  const match = policies.find((policy) => {
+  const scoped = policyTypes?.length
+    ? policies.filter((policy) =>
+        policyTypes.includes(policy.policyType.toLowerCase())
+      )
+    : policies
+
+  const match = scoped.find((policy) => {
     const type = policy.policyType.toLowerCase()
     const insurer = policy.insurerName.toLowerCase()
     return normalized.includes(type) || normalized.includes(insurer)
   })
-  return match?.id
+
+  return match?.id ?? scoped[0]?.id
+}
+
+function buildSituationalRoute(
+  situationalIntent: SituationalIntent,
+  policyTypes: string[],
+  message: string,
+  policies: PolicyMetadata[],
+  agent: MarianaAgentId
+): RouteDecision {
+  return {
+    agent,
+    confidence: agent === 'emergency' ? 0.95 : 0.92,
+    entities: {
+      situationalIntent,
+      policyTypes,
+      policyHint: extractPolicyHint(message, policies, policyTypes),
+      topic: agent === 'emergency' ? 'emergency' : 'coverage',
+    },
+  }
+}
+
+function matchAgent(message: string): MarianaAgentId | null {
+  for (const { agent, patterns } of AGENT_PATTERNS) {
+    if (patterns.some((pattern) => pattern.test(message))) {
+      return agent
+    }
+  }
+  return null
 }
 
 export function routeMessage(
   message: string,
   policies: PolicyMetadata[] = []
 ): RouteDecision {
-  if (matchEmergencyKeywords(message)) {
-    return {
-      agent: 'emergency',
-      confidence: 0.95,
-      entities: { policyHint: extractPolicyHint(message, policies) },
-    }
-  }
-
   const tier0Intent = matchTier0Intent(message)
   if (tier0Intent) {
     return {
@@ -122,17 +153,71 @@ export function routeMessage(
     }
   }
 
-  for (const { agent, patterns } of AGENT_PATTERNS) {
-    if (patterns.some((pattern) => pattern.test(message))) {
-      return {
-        agent,
-        confidence: 0.75,
-        entities: {
-          policyHint: extractPolicyHint(message, policies),
-          topic: agent,
-        },
-      }
+  if (/\b(clausulado|fine\s+print|condiciones\s+generales)\b/i.test(message)) {
+    return {
+      agent: 'documental',
+      confidence: 0.8,
+      entities: {
+        policyHint: extractPolicyHint(message, policies),
+        topic: 'documental',
+      },
     }
+  }
+
+  const situational = matchSituationalIntent(message)
+
+  if (situational?.intent === 'emergency_accident') {
+    return buildSituationalRoute(
+      situational.intent,
+      situational.policyTypes,
+      message,
+      policies,
+      'emergency'
+    )
+  }
+
+  if (situational && situational.agent === 'coverage') {
+    return buildSituationalRoute(
+      situational.intent,
+      situational.policyTypes,
+      message,
+      policies,
+      'coverage'
+    )
+  }
+
+  const documentalMatch = matchAgent(message)
+  if (documentalMatch === 'documental') {
+    return {
+      agent: 'documental',
+      confidence: 0.75,
+      entities: {
+        policyHint: extractPolicyHint(message, policies),
+        topic: 'documental',
+      },
+    }
+  }
+
+  const agentMatch = matchAgent(message)
+  if (agentMatch) {
+    return {
+      agent: agentMatch,
+      confidence: 0.75,
+      entities: {
+        policyHint: extractPolicyHint(message, policies),
+        topic: agentMatch,
+      },
+    }
+  }
+
+  if (matchEmergencyKeywords(message)) {
+    return buildSituationalRoute(
+      'emergency_accident',
+      ['auto'],
+      message,
+      policies,
+      'emergency'
+    )
   }
 
   return {
@@ -140,6 +225,15 @@ export function routeMessage(
     confidence: 0.5,
     entities: { policyHint: extractPolicyHint(message, policies) },
   }
+}
+
+export function matchTier0Intent(message: string): Tier0Intent | null {
+  for (const { intent, patterns } of TIER0_PATTERNS) {
+    if (patterns.some((pattern) => pattern.test(message))) {
+      return intent
+    }
+  }
+  return null
 }
 
 export function buildTier0Placeholder(
@@ -171,3 +265,5 @@ export function buildTier0Placeholder(
 
   return templates[intent][locale] ?? templates[intent].es
 }
+
+export { usesAssistancePrefetch }

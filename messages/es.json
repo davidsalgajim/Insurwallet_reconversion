@@ -229,8 +229,13 @@
       "addBeneficiary": "Agregar beneficiario",
       "beneficiariesEmpty": "Opcional: agrega beneficiarios con nombre y porcentaje.",
       "beneficiaryName": "Nombre completo",
-      "beneficiaryPct": "Porcentaje (0-100)",
+      "beneficiaryNamePlaceholder": "Ej. María García López",
+      "beneficiaryPctLabel": "% de beneficio",
+      "beneficiaryPctPlaceholder": "50",
+      "beneficiaryPctHelper": "Valor entre 0 y 100",
+      "beneficiaryPctAriaLabel": "Porcentaje de beneficio, valor entre 0 y 100",
       "beneficiaryObservations": "Observaciones (opcional)",
+      "beneficiaryObservationsPlaceholder": "Notas adicionales",
       "beneficiaryPctTotal": "Total asignado: {pct}%",
       "beneficiaryPctWarning": "La suma supera 100%. Revisa los porcentajes antes de guardar."
     },
@@ -247,11 +252,11 @@
       "emptyDesc": "Cuando alguien comparta una póliza contigo, aparecerá aquí."
     },
     "benefits": {
-      "link": "Ver beneficios"
+      "link": "Ver beneficios y asistencias"
     },
     "benefitsPage": {
-      "title": "Beneficios",
-      "subtitle": "Todos los beneficios activos de tu cartera",
+      "title": "Beneficios y asistencias",
+      "subtitle": "Beneficios y asistencias activos en tu cartera",
       "backToPolicies": "Volver a pólizas",
       "totalBenefits": "Beneficios registrados",
       "policiesWithBenefits": "Pólizas con beneficios",
@@ -525,9 +530,14 @@
       "delete": "Eliminar",
       "save": "Guardar",
       "saving": "Guardando…",
-      "namePlaceholder": "Nombre completo",
-      "pctPlaceholder": "Porcentaje (0-100)",
-      "notesPlaceholder": "Observaciones (opcional)"
+      "nameLabel": "Nombre completo",
+      "namePlaceholder": "Ej. María García López",
+      "pctLabel": "% de beneficio",
+      "pctPlaceholder": "50",
+      "pctHelper": "Valor entre 0 y 100",
+      "pctAriaLabel": "Porcentaje de beneficio, valor entre 0 y 100",
+      "notesLabel": "Observaciones (opcional)",
+      "notesPlaceholder": "Notas adicionales"
     }
   },
   "dashboard": {
@@ -553,7 +563,7 @@
     "noUpcomingRenewals": "Sin vencimientos próximos",
     "noUpcomingRenewalsDesc": "Tus pólizas activas no vencen en los próximos 90 días.",
     "viewAllPolicies": "Ver todas las pólizas",
-    "marianaPanelSubtitle": "Asistente de seguros con citas a tus documentos",
+    "marianaPanelSubtitle": "Coberturas, asistencias y contactos de tus pólizas",
     "marianaQuestion1": "¿Estoy cubierto para un viaje?",
     "marianaQuestion2": "¿Cuándo vence mi póliza de auto?",
     "marianaQuestion3": "¿A quién llamo en emergencia?",
@@ -589,14 +599,15 @@
   },
   "mariana": {
     "title": "MarIAna",
-    "subtitle": "Asistente de seguros — solo lectura, con citas a tus documentos.",
-    "badge": "Asistente con citas documentales",
+    "subtitle": "Asistente IA",
+    "avatarAlt": "Avatar de MarIAna, asistente virtual de seguros",
+    "badge": "Basado en tus documentos",
     "emptyTitle": "¿En qué puedo ayudarte hoy?",
-    "emptyDescription": "Pregunta sobre coberturas, vencimientos o trámites. Las respuestas se basan en tus pólizas guardadas.",
+    "emptyDescription": "Coberturas, vencimientos, contactos y asistencias de tus pólizas. Te oriento ante accidentes, urgencias o incidentes en el hogar. Solo lectura — cito tus documentos cuando aplica.",
     "inputLabel": "Escribe tu pregunta",
     "inputPlaceholder": "Pregunta sobre tus pólizas…",
     "sendAria": "Enviar mensaje",
-    "disclaimer": "MarIAna no reemplaza asesoría legal ni la póliza original.",
+    "disclaimer": "No es asesoría legal ni financiera. No modifica tus pólizas ni sustituye a tu asegurador.",
     "suggested1": "¿Qué cubre mi póliza de salud?",
     "suggested2": "¿Cuándo vence mi seguro de auto?",
     "suggested3": "¿Cómo reporto un siniestro?",

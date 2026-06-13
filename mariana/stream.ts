@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 
 import type { MarianaPolicyContext } from '@/lib/server/mariana-context'
 import { prefetchToolsForAgent } from '@/lib/server/mariana-tools'
-import { getAgentSystemPrompt } from '@/mariana/agents'
+import { getAgentSystemPromptWithSpecialist } from '@/mariana/agents'
 import { buildCachedSystemBlocks } from '@/mariana/agents/prompt-cache'
 import { classifyWithHaiku } from '@/mariana/haiku-router'
 import {
@@ -86,9 +86,16 @@ function buildToolContextBlock(
 
 function emergencyTemplate(
   policies: MarianaPolicyContext[],
-  locale: 'es' | 'en' | 'pt'
+  locale: 'es' | 'en' | 'pt',
+  policyTypes?: string[]
 ): string {
-  const contact = policies[0]?.agent
+  const scoped = policyTypes?.length
+    ? policies.filter((policy) =>
+        policyTypes.includes(policy.policyType.toLowerCase())
+      )
+    : policies
+  const contact = scoped[0]?.agent ?? policies[0]?.agent
+  const insurer = scoped[0]?.insurerName ?? policies[0]?.insurerName
   const templates: Record<'es' | 'en' | 'pt', string> = {
     es: `Entiendo que puede tratarse de una emergencia. MarIAna es de solo lectura y no gestiona siniestros.
 
@@ -97,7 +104,9 @@ Pasos inmediatos:
 2. Llama a emergencias locales si hay lesionados.
 3. Contacta a tu aseguradora lo antes posible.
 
-Contacto registrado: ${contact?.name ?? 'tu agente'} — ${contact?.phone ?? 'teléfono en la póliza'} — ${contact?.email ?? ''}`,
+${scoped.length === 0 ? 'No encontré una póliza del tipo relevante en tu cartera. ' : ''}¿En qué ciudad ocurrió? Con eso puedo orientarte mejor.
+
+Contacto registrado (${insurer ?? 'aseguradora'}): ${contact?.name ?? 'tu agente'} — ${contact?.phone ?? 'teléfono en la póliza'} — ${contact?.email ?? ''}`,
     en: `This may be an emergency. MarIAna is read-only and cannot file claims.
 
 Immediate steps:
@@ -105,7 +114,9 @@ Immediate steps:
 2. Call local emergency services if needed.
 3. Contact your insurer as soon as possible.
 
-Registered contact: ${contact?.name ?? 'your agent'} — ${contact?.phone ?? 'phone on policy'} — ${contact?.email ?? ''}`,
+${scoped.length === 0 ? 'I did not find a matching policy type in your portfolio. ' : ''}Which city did this happen in? That helps me guide you better.
+
+Registered contact (${insurer ?? 'insurer'}): ${contact?.name ?? 'your agent'} — ${contact?.phone ?? 'phone on policy'} — ${contact?.email ?? ''}`,
     pt: `Pode ser uma emergência. A MarIAna é somente leitura e não registra sinistros.
 
 Passos imediatos:
@@ -113,7 +124,9 @@ Passos imediatos:
 2. Ligue para serviços de emergência se necessário.
 3. Contate sua seguradora o quanto antes.
 
-Contato registrado: ${contact?.name ?? 'seu agente'} — ${contact?.phone ?? 'telefone na apólice'} — ${contact?.email ?? ''}`,
+${scoped.length === 0 ? 'Não encontrei uma apólice do tipo relevante na sua carteira. ' : ''}Em qual cidade ocorreu? Isso me ajuda a orientar melhor.
+
+Contato registrado (${insurer ?? 'seguradora'}): ${contact?.name ?? 'seu agente'} — ${contact?.phone ?? 'telefone na apólice'} — ${contact?.email ?? ''}`,
   }
   return templates[locale]
 }
@@ -141,8 +154,16 @@ async function streamSpecialist(
 ): Promise<AsyncGenerator<MarianaChatChunk>> {
   async function* generator(): AsyncGenerator<MarianaChatChunk> {
     const systemPrompt =
-      getAgentSystemPrompt(decision.agent, input.locale) ??
-      getAgentSystemPrompt('documental', input.locale)!
+      getAgentSystemPromptWithSpecialist({
+        agentId: decision.agent,
+        locale: input.locale,
+        situationalIntent: decision.entities.situationalIntent,
+        policyTypes: decision.entities.policyTypes,
+      }) ??
+      getAgentSystemPromptWithSpecialist({
+        agentId: 'documental',
+        locale: input.locale,
+      })!
 
     const toolResults = await prefetchToolsForAgent({
       agent: decision.agent,
@@ -151,6 +172,7 @@ async function streamSpecialist(
       context: input.toolContext,
       policies: input.policies,
       metadata: input.metadata,
+      decision,
     })
 
     const citations = extractCitationsFromTools(
@@ -279,7 +301,17 @@ export async function* streamMarianaResponse(
   }
 
   if (decision.agent === 'emergency') {
-    const text = emergencyTemplate(input.policies, input.locale)
+    if (input.apiKey && input.cloudAiConsented !== false) {
+      const specialist = await streamSpecialist(decision, input)
+      yield* specialist
+      return
+    }
+
+    const text = emergencyTemplate(
+      input.policies,
+      input.locale,
+      decision.entities.policyTypes
+    )
     yield { type: 'delta', content: text, agent: 'emergency' }
     yield { type: 'done', agent: 'emergency' }
     return

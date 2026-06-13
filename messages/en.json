@@ -229,8 +229,13 @@
       "addBeneficiary": "Add beneficiary",
       "beneficiariesEmpty": "Optional: add beneficiaries with name and percentage.",
       "beneficiaryName": "Full name",
-      "beneficiaryPct": "Percentage (0-100)",
+      "beneficiaryNamePlaceholder": "e.g. Jane Doe",
+      "beneficiaryPctLabel": "Benefit %",
+      "beneficiaryPctPlaceholder": "50",
+      "beneficiaryPctHelper": "Value between 0 and 100",
+      "beneficiaryPctAriaLabel": "Benefit percentage, value between 0 and 100",
       "beneficiaryObservations": "Notes (optional)",
+      "beneficiaryObservationsPlaceholder": "Additional notes",
       "beneficiaryPctTotal": "Total allocated: {pct}%",
       "beneficiaryPctWarning": "Total exceeds 100%. Review percentages before saving."
     },
@@ -247,11 +252,11 @@
       "emptyDesc": "When someone shares a policy with you, it will appear here."
     },
     "benefits": {
-      "link": "View benefits"
+      "link": "View benefits & assistance"
     },
     "benefitsPage": {
-      "title": "Benefits",
-      "subtitle": "All active benefits across your portfolio",
+      "title": "Benefits & assistance",
+      "subtitle": "Active benefits and assistance across your portfolio",
       "backToPolicies": "Back to policies",
       "totalBenefits": "Registered benefits",
       "policiesWithBenefits": "Policies with benefits",
@@ -525,9 +530,14 @@
       "delete": "Delete",
       "save": "Save",
       "saving": "Saving…",
-      "namePlaceholder": "Full name",
-      "pctPlaceholder": "Percentage (0-100)",
-      "notesPlaceholder": "Notes (optional)"
+      "nameLabel": "Full name",
+      "namePlaceholder": "e.g. Jane Doe",
+      "pctLabel": "Benefit %",
+      "pctPlaceholder": "50",
+      "pctHelper": "Value between 0 and 100",
+      "pctAriaLabel": "Benefit percentage, value between 0 and 100",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Additional notes"
     }
   },
   "dashboard": {
@@ -553,7 +563,7 @@
     "noUpcomingRenewals": "No upcoming renewals",
     "noUpcomingRenewalsDesc": "Your active policies do not expire in the next 90 days.",
     "viewAllPolicies": "View all policies",
-    "marianaPanelSubtitle": "Insurance assistant with citations to your documents",
+    "marianaPanelSubtitle": "Coverages, assistance, and contacts from your policies",
     "marianaQuestion1": "Am I covered for a trip?",
     "marianaQuestion2": "When does my auto policy expire?",
     "marianaQuestion3": "Who do I call in an emergency?",
@@ -589,14 +599,15 @@
   },
   "mariana": {
     "title": "MarIAna",
-    "subtitle": "Insurance assistant — read-only, with citations to your documents.",
-    "badge": "Assistant with document citations",
+    "subtitle": "AI Assistant",
+    "avatarAlt": "MarIAna avatar, virtual insurance assistant",
+    "badge": "Based on your documents",
     "emptyTitle": "How can I help you today?",
-    "emptyDescription": "Ask about coverages, renewals, or procedures. Answers are based on your saved policies.",
+    "emptyDescription": "Coverages, renewals, contacts, and assistance from your policies. I guide you through accidents, health emergencies, or home incidents. Read-only — I cite your documents when relevant.",
     "inputLabel": "Type your question",
     "inputPlaceholder": "Ask about your policies…",
     "sendAria": "Send message",
-    "disclaimer": "MarIAna does not replace legal advice or your original policy.",
+    "disclaimer": "Not legal or financial advice. Does not modify your policies or replace your insurer.",
     "suggested1": "What does my health policy cover?",
     "suggested2": "When does my auto insurance expire?",
     "suggested3": "How do I report a claim?",

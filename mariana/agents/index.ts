@@ -15,7 +15,13 @@ import {
   buildInsurersPrompt,
   INSURERS_AGENT_ID,
 } from '@/mariana/agents/insurers'
-import type { MarianaAgentId } from '@/mariana/types'
+import {
+  getSpecialistPromptForIntent,
+  getSpecialistPromptForPolicyType,
+} from '@/mariana/agents/specialists'
+import { primaryPolicyTypeForIntent } from '@/mariana/situational'
+import { PolicyTypeSchema, type PolicyType } from '@/lib/schemas/policy'
+import type { MarianaAgentId, SituationalIntent } from '@/mariana/types'
 
 const AGENT_PROMPT_BUILDERS: Partial<
   Record<MarianaAgentId, (locale: string) => string>
@@ -35,4 +41,48 @@ export function getAgentSystemPrompt(
   return builder ? builder(locale) : null
 }
 
-export { buildCoveragePrompt, buildDocumentalPrompt }
+export function getAgentSystemPromptWithSpecialist(input: {
+  agentId: MarianaAgentId
+  locale: string
+  situationalIntent?: SituationalIntent
+  policyTypes?: string[]
+}): string | null {
+  const base = getAgentSystemPrompt(input.agentId, input.locale)
+  if (!base) {
+    return null
+  }
+
+  const specialistPolicyType = resolveSpecialistPolicyType(input)
+  if (!specialistPolicyType) {
+    return base
+  }
+
+  const specialist = getSpecialistPromptForPolicyType(
+    specialistPolicyType,
+    input.locale
+  )
+  return `${base}\n\n---\nType-specific guidance:\n${specialist}`
+}
+
+function resolveSpecialistPolicyType(input: {
+  situationalIntent?: SituationalIntent
+  policyTypes?: string[]
+}): PolicyType | null {
+  if (input.situationalIntent) {
+    return primaryPolicyTypeForIntent(input.situationalIntent)
+  }
+
+  const candidate = input.policyTypes?.[0]
+  if (!candidate) {
+    return null
+  }
+
+  const parsed = PolicyTypeSchema.safeParse(candidate)
+  return parsed.success ? parsed.data : null
+}
+
+export {
+  buildCoveragePrompt,
+  buildDocumentalPrompt,
+  getSpecialistPromptForIntent,
+}

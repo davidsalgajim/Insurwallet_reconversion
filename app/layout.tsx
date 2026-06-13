@@ -1,4 +1,9 @@
 import type { Metadata } from 'next'
+import { getLocale } from 'next-intl/server'
+
+import { dmSans } from '@/lib/fonts'
+import { cn } from '@/lib/utils/cn'
+
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -17,8 +22,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return children
+  const locale = await getLocale()
+
+  return (
+    <html lang={locale} className={cn('h-full antialiased', dmSans.variable)}>
+      <body className={cn('min-h-full font-sans', dmSans.className)}>
+        {children}
+      </body>
+    </html>
+  )
 }

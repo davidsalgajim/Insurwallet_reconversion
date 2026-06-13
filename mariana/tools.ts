@@ -2,6 +2,9 @@ import type { PolicyMetadata } from '@/mariana/types'
 
 export const MARIANA_TOOL_NAMES = [
   'get_policies_summary',
+  'get_policies_by_type',
+  'get_coverage_for_event',
+  'get_benefits_assistances',
   'search_document_chunks',
   'get_coverage_details',
   'get_contacts',
@@ -19,6 +22,7 @@ export type ToolCall = {
   name: MarianaToolName
   policyId?: string
   query?: string
+  policyTypes?: string[]
 }
 
 export type ToolResult = {
@@ -44,6 +48,13 @@ export function assertPolicyAccess(
   }
 }
 
+function filterPoliciesForContext(
+  context: ToolContext,
+  policies: PolicyMetadata[]
+): PolicyMetadata[] {
+  return policies.filter((policy) => allowedPolicyIds(context).has(policy.id))
+}
+
 export function executeTool(
   call: ToolCall,
   context: ToolContext,
@@ -55,14 +66,51 @@ export function executeTool(
 
   assertPolicyAccess(context, call.policyId)
 
+  const scopedPolicies = filterPoliciesForContext(context, policies)
+
   switch (call.name) {
     case 'get_policies_summary':
       return {
         name: call.name,
         readOnly: true,
-        data: policies.filter((policy) =>
-          allowedPolicyIds(context).has(policy.id)
-        ),
+        data: scopedPolicies,
+      }
+    case 'get_policies_by_type': {
+      const types = call.policyTypes?.map((type) => type.toLowerCase()) ?? []
+      const filtered =
+        types.length === 0
+          ? scopedPolicies
+          : scopedPolicies.filter((policy) =>
+              types.includes(policy.policyType.toLowerCase())
+            )
+      return {
+        name: call.name,
+        readOnly: true,
+        data: {
+          policyTypes: call.policyTypes ?? [],
+          policies: filtered,
+        },
+      }
+    }
+    case 'get_coverage_for_event':
+      return {
+        name: call.name,
+        readOnly: true,
+        data: {
+          query: call.query ?? '',
+          policyTypes: call.policyTypes ?? [],
+          matches: [],
+        },
+      }
+    case 'get_benefits_assistances':
+      return {
+        name: call.name,
+        readOnly: true,
+        data: {
+          query: call.query ?? '',
+          policyTypes: call.policyTypes ?? [],
+          benefits: [],
+        },
       }
     case 'search_document_chunks':
       return {

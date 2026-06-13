@@ -1,10 +1,11 @@
 'use client'
 
-import { ExternalLink, MessageSquareText, Send } from 'lucide-react'
+import { ExternalLink, Send } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useRef, useState } from 'react'
 
 import { useAuth } from '@/components/auth/auth-provider'
+import { MarianaAvatar } from '@/components/brand/mariana-avatar'
 import { Link } from '@/i18n/navigation'
 import { incrementMarianaQueryCount } from '@/lib/utils/mariana-stats'
 import { buildConversationContext } from '@/mariana/rolling-summary'
@@ -228,9 +229,11 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
       >
         {!hasMessages ? (
           <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <div className="icon-circle mb-5 size-16 stat-icon-accent border-0">
-              <MessageSquareText className="size-7" strokeWidth={1.5} />
-            </div>
+            <MarianaAvatar
+              size={72}
+              priority
+              className="mb-5 ring-2 ring-accent/30 shadow-[var(--shadow-soft)]"
+            />
             <span className="pill-badge mb-3 bg-accent/10 text-[#0a6b66]">
               {t('badge')}
             </span>
@@ -261,23 +264,35 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
               <li
                 key={message.id}
                 className={cn(
-                  'max-w-[85%] rounded-[var(--radius-card)] px-4 py-3 text-sm leading-relaxed',
+                  'flex max-w-[85%] gap-2.5',
                   message.role === 'user'
-                    ? 'ml-auto bg-primary text-primary-foreground'
-                    : 'mr-auto border border-border/60 bg-white/70 text-foreground'
+                    ? 'ml-auto flex-row-reverse'
+                    : 'mr-auto'
                 )}
               >
-                <span className="sr-only">
-                  {message.role === 'user'
-                    ? t('userLabel')
-                    : t('assistantLabel')}
-                </span>
-                <div className="whitespace-pre-wrap">
-                  {message.content || (isStreaming ? t('streaming') : '')}
-                </div>
-                {message.role === 'assistant' && message.citations ? (
-                  <CitationLinks citations={message.citations} t={t} />
+                {message.role === 'assistant' ? (
+                  <MarianaAvatar size={32} className="mt-0.5 shrink-0" />
                 ) : null}
+                <div
+                  className={cn(
+                    'rounded-[var(--radius-card)] px-4 py-3 text-sm leading-relaxed',
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'border border-border/60 bg-white/70 text-foreground'
+                  )}
+                >
+                  <span className="sr-only">
+                    {message.role === 'user'
+                      ? t('userLabel')
+                      : t('assistantLabel')}
+                  </span>
+                  <div className="whitespace-pre-wrap">
+                    {message.content || (isStreaming ? t('streaming') : '')}
+                  </div>
+                  {message.role === 'assistant' && message.citations ? (
+                    <CitationLinks citations={message.citations} t={t} />
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>

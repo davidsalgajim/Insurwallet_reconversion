@@ -25,6 +25,22 @@ const policies = [
     beneficiaryCount: 0,
     benefitCount: 0,
   },
+  {
+    id: 'policy-2',
+    policyNumber: 'POL-002',
+    insurerName: 'Demo Health',
+    policyType: 'health',
+    holderName: 'Jane',
+    startDate: '2025-01-01',
+    endDate: '2026-01-01',
+    premium: 2000,
+    currency: 'COP',
+    paymentFrequency: 'annual',
+    coverageCount: 0,
+    deductibleCount: 0,
+    beneficiaryCount: 0,
+    benefitCount: 0,
+  },
 ]
 
 describe('assertPolicyAccess', () => {
@@ -51,6 +67,22 @@ describe('executeTool', () => {
     expect(result.data).toEqual(policies)
   })
 
+  it('filters policies by type', () => {
+    const result = executeTool(
+      {
+        name: 'get_policies_by_type',
+        policyTypes: ['auto'],
+      },
+      context,
+      policies
+    )
+
+    expect(result.data).toEqual({
+      policyTypes: ['auto'],
+      policies: [policies[0]],
+    })
+  })
+
   it('returns empty chunk search stub', () => {
     const result = executeTool(
       {
@@ -74,5 +106,23 @@ describe('executeTool', () => {
         context
       )
     ).toThrow('Unauthorized policy access')
+  })
+
+  it('does not leak policies outside uid scope in summaries', () => {
+    const outsiderPolicies = [
+      ...policies,
+      {
+        ...policies[0]!,
+        id: 'policy-attacker',
+      },
+    ]
+
+    const result = executeTool(
+      { name: 'get_policies_summary' },
+      context,
+      outsiderPolicies
+    )
+
+    expect(result.data).toEqual(policies)
   })
 })

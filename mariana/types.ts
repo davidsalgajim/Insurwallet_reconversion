@@ -18,6 +18,21 @@ export const TIER0_INTENTS = [
 
 export type Tier0Intent = (typeof TIER0_INTENTS)[number]
 
+export const SITUATIONAL_INTENTS = [
+  'life_event',
+  'health_event',
+  'emergency_accident',
+  'home_assistance',
+  'travel_disruption',
+  'pet_incident',
+  'funeral_need',
+  'dental_procedure',
+  'business_incident',
+  'general_incident',
+] as const
+
+export type SituationalIntent = (typeof SITUATIONAL_INTENTS)[number]
+
 export type PolicyMetadata = {
   id: string
   policyNumber: string
@@ -42,6 +57,8 @@ export type RouteDecision = {
   entities: {
     policyHint?: string
     topic?: string
+    situationalIntent?: SituationalIntent
+    policyTypes?: string[]
   }
 }
 
