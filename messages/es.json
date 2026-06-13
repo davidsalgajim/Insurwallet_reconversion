@@ -289,9 +289,10 @@
       "sectionTitle": "Documento de la póliza",
       "sectionDesc": "Sube el PDF de tu póliza. Extraeremos los datos con IA; tú revisarás y confirmarás antes de guardar.",
       "dropzoneTitle": "Arrastra tu PDF aquí",
-      "dropzoneHint": "Solo PDF, máximo {maxSize} MB. También puedes hacer clic para elegir un archivo.",
-      "dropzoneAria": "Zona para subir PDF de póliza",
+      "dropzoneHint": "PDF o foto (JPG/PNG), máximo {maxSize} MB. También puedes hacer clic para elegir un archivo.",
+      "dropzoneAria": "Zona para subir PDF o foto de póliza",
       "browseFiles": "Elegir archivo",
+      "takePhoto": "Tomar foto",
       "removeFile": "Quitar archivo",
       "startUpload": "Subir y procesar",
       "validating": "Validando…",
@@ -303,7 +304,7 @@
       "errors": {
         "emptyFile": "El archivo está vacío.",
         "tooLarge": "El archivo supera el límite de 20 MB.",
-        "invalidType": "Solo se permiten archivos PDF.",
+        "invalidType": "Solo se permiten PDF o imágenes JPG/PNG/WebP.",
         "invalidPdf": "El archivo no parece ser un PDF válido.",
         "uploadFailed": "No se pudo subir el documento. Intenta de nuevo."
       },
@@ -330,6 +331,7 @@
       "documentPanelHint": "Revisa el documento original junto a los datos extraídos.",
       "pdfLoading": "Cargando documento…",
       "pdfLoadError": "No se pudo cargar el PDF. Intenta de nuevo más tarde.",
+      "bboxPageHint": "Resaltado en página {page}",
       "noDocument": "No hay documento asociado a esta póliza.",
       "fieldsPanel": "Datos extraídos",
       "fieldsPanelHint": "Edita cualquier campo antes de confirmar. Los badges indican confianza de la IA.",
@@ -378,6 +380,37 @@
         "accepted": "Aceptado",
         "revoked": "Revocado",
         "expired": "Expirado"
+      }
+    },
+    "benefitsCatalog": {
+      "title": "Beneficios sugeridos",
+      "description": "Agrega coberturas comunes para este tipo de póliza con un clic.",
+      "items": {
+        "deathBenefit": "Muerte natural",
+        "accidentalDeath": "Muerte accidental",
+        "disability": "Invalidez",
+        "funeral": "Gastos funerarios",
+        "hospitalization": "Hospitalización",
+        "specialists": "Consulta especialistas",
+        "medications": "Medicamentos",
+        "maternity": "Maternidad",
+        "dental": "Odontología",
+        "collision": "Colisión",
+        "theft": "Robo total",
+        "thirdParty": "Daños a terceros",
+        "roadside": "Asistencia vial",
+        "glass": "Vidrios",
+        "fire": "Incendio",
+        "waterDamage": "Daños por agua",
+        "civilLiability": "Responsabilidad civil",
+        "contents": "Contenidos",
+        "medicalAbroad": "Asistencia médica en el exterior",
+        "tripCancellation": "Cancelación de viaje",
+        "baggage": "Equipaje",
+        "repatriation": "Repatriación",
+        "generalCoverage": "Cobertura general",
+        "deductible": "Deducible",
+        "exclusions": "Exclusiones"
       }
     },
     "beneficiaries": {
@@ -524,7 +557,10 @@
       "privacy": "Privacidad y datos",
       "preferences": "Preferencias",
       "subscription": "Suscripción",
-      "notifications": "Notificaciones push"
+      "contacts": "Contactos y beneficiarios",
+      "notifications": "Notificaciones",
+      "legal": "Legal y consentimientos",
+      "support": "Ayuda y soporte"
     },
     "items": {
       "personalData": "Datos personales",
@@ -533,6 +569,8 @@
       "privacyHint": "Consentimiento y tratamiento de datos",
       "subscription": "Plan Premium",
       "subscriptionHint": "Pago, facturación y beneficios",
+      "contacts": "Contactos y beneficiarios",
+      "contactsHint": "Agentes, aseguradoras y beneficiarios globales",
       "export": "Exportar mis datos",
       "exportHint": "Descarga en formato portable",
       "deleteAccount": "Eliminar cuenta",
@@ -541,6 +579,103 @@
       "notificationsHint": "Vencimientos y alertas",
       "language": "Idioma",
       "languageHint": "Elige el idioma de la interfaz"
+    },
+    "profile": {
+      "unnamed": "Sin nombre",
+      "noEmail": "Sin correo",
+      "edit": "Editar nombre",
+      "changePhoto": "Cambiar foto de perfil",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "cancel": "Cancelar",
+      "saved": "Perfil actualizado.",
+      "saveError": "No se pudo actualizar el perfil.",
+      "photoSaved": "Foto actualizada.",
+      "photoError": "No se pudo subir la foto."
+    },
+    "currency": {
+      "label": "Moneda principal",
+      "hint": "Se usa como predeterminada al crear o editar pólizas",
+      "saved": "Moneda guardada.",
+      "saveError": "No se pudo guardar la moneda."
+    },
+    "legal": {
+      "privacy": "Política de privacidad",
+      "privacyHint": "Cómo tratamos tus datos",
+      "terms": "Términos y condiciones",
+      "termsHint": "Uso del servicio y suscripción",
+      "aiConsent": "IA en la nube",
+      "aiConsentGranted": "Consentimiento otorgado. Puedes volver a autorizar si lo revocaste.",
+      "aiConsentMissing": "Requerido para extracción PDF y MarIAna en nube.",
+      "aiConsentSaved": "Consentimiento de IA guardado.",
+      "aiConsentError": "No se pudo guardar el consentimiento.",
+      "loading": "Cargando…"
+    },
+    "support": {
+      "email": "Contactar soporte",
+      "helpCenter": "Centro de ayuda",
+      "helpCenterHint": "Preguntas frecuentes",
+      "docs": "Documentación",
+      "docsHint": "Guías y referencia externa"
+    },
+    "version": {
+      "label": "InsurWallet v{version}"
+    },
+    "contacts": {
+      "title": "Contactos y beneficiarios",
+      "subtitle": "Administra contactos de seguros y beneficiarios globales.",
+      "insuranceTitle": "Contactos de seguros",
+      "insuranceHint": "Agentes, aseguradoras y líneas de emergencia",
+      "beneficiariesTitle": "Beneficiarios globales",
+      "beneficiariesHint": "Referencia rápida independiente de cada póliza",
+      "addContact": "Agregar contacto",
+      "namePlaceholder": "Nombre del contacto",
+      "phonePlaceholder": "Teléfono",
+      "emailPlaceholder": "Correo",
+      "save": "Guardar contacto",
+      "saving": "Guardando…",
+      "delete": "Eliminar",
+      "loading": "Cargando…",
+      "loadError": "No se pudieron cargar los contactos.",
+      "saveError": "No se pudo guardar el contacto.",
+      "deleteError": "No se pudo eliminar el contacto.",
+      "emptyContacts": "Aún no tienes contactos guardados.",
+      "emptyBeneficiaries": "Aún no tienes beneficiarios globales.",
+      "backToSettings": "Volver a configuración",
+      "types": {
+        "agent": "Agente / asesor",
+        "insurer": "Aseguradora",
+        "broker": "Corredor",
+        "emergency": "Emergencias",
+        "other": "Otro"
+      }
+    },
+    "help": {
+      "title": "Centro de ayuda",
+      "subtitle": "Respuestas rápidas sobre InsurWallet.",
+      "backToSettings": "Volver a configuración",
+      "faq": {
+        "policies": {
+          "question": "¿Cómo agrego una póliza?",
+          "answer": "Desde el dashboard elige Nueva póliza. Puedes cargar un PDF con IA o ingresar los datos manualmente."
+        },
+        "ai": {
+          "question": "¿Qué datos envía la IA a la nube?",
+          "answer": "Solo el contenido del PDF o tu pregunta a MarIAna, con tu consentimiento explícito. Puedes revisarlo en Configuración → Legal."
+        },
+        "subscription": {
+          "question": "¿Cómo funciona Premium?",
+          "answer": "El plan gratuito incluye hasta 3 pólizas. Premium desbloquea pólizas ilimitadas, MarIAna y extracción en nube."
+        },
+        "privacy": {
+          "question": "¿Puedo exportar o borrar mis datos?",
+          "answer": "Sí. En Configuración → Privacidad y datos puedes exportar tu información o solicitar eliminar la cuenta."
+        },
+        "account": {
+          "question": "¿Cómo cambio mi nombre o foto?",
+          "answer": "En Configuración → Perfil edita tu nombre o sube una nueva foto de perfil."
+        }
+      }
     },
     "exporting": "Exportando…",
     "exportError": "No se pudo iniciar la exportación. Intenta de nuevo.",
@@ -601,6 +736,17 @@
       "planBadge": "Premium",
       "planName": "InsurWallet Premium",
       "perMonth": "mes",
+      "perYear": "año",
+      "billingInterval": "Ciclo de facturación",
+      "monthly": "Mensual",
+      "annual": "Anual",
+      "cancel": "Cancelar suscripción",
+      "canceling": "Cancelando…",
+      "cancelSuccess": "Suscripción cancelada. Conservarás acceso hasta el fin del período pagado.",
+      "cancelError": "No se pudo cancelar la suscripción.",
+      "intervalSaved": "Preferencia de facturación guardada.",
+      "intervalError": "No se pudo actualizar el ciclo de facturación.",
+      "annualScaffoldNote": "Plan anual registrado. El checkout anual en Mercado Pago estará disponible pronto; por ahora se cobra mensual.",
       "features": {
         "unlimitedPolicies": "Pólizas ilimitadas",
         "mariana": "MarIAna — asistente con IA",

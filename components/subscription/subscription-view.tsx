@@ -7,14 +7,32 @@ import { useLocale, useTranslations } from 'next-intl'
 
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { useUserSubscription } from '@/lib/subscription/gates'
-import {
-  formatPremiumPrice,
-  startPremiumCheckout,
-} from '@/lib/subscription/checkout'
+import { startPremiumCheckout } from '@/lib/subscription/checkout'
 import { getClientFeatureFlags } from '@/lib/feature-flags'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
+import type { BillingInterval } from '@/lib/schemas/user'
+import {
+  PREMIUM_ANNUAL_AMOUNT_CENTS,
+  PREMIUM_MONTHLY_AMOUNT_CENTS,
+} from '@/lib/payments/constants'
 import { cn } from '@/lib/utils/cn'
+
+function formatIntervalPrice(
+  locale: string,
+  interval: BillingInterval
+): string {
+  const cents =
+    interval === 'annual'
+      ? PREMIUM_ANNUAL_AMOUNT_CENTS
+      : PREMIUM_MONTHLY_AMOUNT_CENTS
+  const amount = cents / 100
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
 
 export function SubscriptionView() {
   const t = useTranslations('subscription.page')
@@ -22,7 +40,12 @@ export function SubscriptionView() {
   const searchParams = useSearchParams()
   const { subscription, loading, refresh } = useUserSubscription()
   const [checkingOut, setCheckingOut] = useState(false)
+  const [canceling, setCanceling] = useState(false)
+  const [savingInterval, setSavingInterval] = useState(false)
+  const [billingIntervalOverride, setBillingIntervalOverride] =
+    useState<BillingInterval | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const flags = getClientFeatureFlags()
   const returned = searchParams.get('status') === 'return'
 
@@ -46,6 +69,71 @@ export function SubscriptionView() {
       await refresh()
     }
   }
+
+  async function handleCancel() {
+    setCanceling(true)
+    setError(null)
+    setStatusMessage(null)
+
+    try {
+      const response = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: string
+        } | null
+        throw new Error(body?.error ?? t('cancelError'))
+      }
+      setStatusMessage(t('cancelSuccess'))
+      await refresh()
+    } catch (cancelError) {
+      setError(
+        cancelError instanceof Error ? cancelError.message : t('cancelError')
+      )
+    } finally {
+      setCanceling(false)
+    }
+  }
+
+  async function handleBillingIntervalChange(next: BillingInterval) {
+    setBillingIntervalOverride(next)
+    setSavingInterval(true)
+    setError(null)
+    setStatusMessage(null)
+
+    try {
+      const response = await fetch('/api/subscription/billing-interval', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billingInterval: next }),
+      })
+      if (!response.ok) {
+        throw new Error(t('intervalError'))
+      }
+      const body = (await response.json()) as {
+        annualCheckoutAvailable: boolean
+      }
+      setStatusMessage(
+        next === 'annual' && !body.annualCheckoutAvailable
+          ? t('annualScaffoldNote')
+          : t('intervalSaved')
+      )
+      await refresh()
+    } catch (intervalError) {
+      setError(
+        intervalError instanceof Error
+          ? intervalError.message
+          : t('intervalError')
+      )
+      setBillingIntervalOverride(null)
+    } finally {
+      setSavingInterval(false)
+    }
+  }
+
+  const billingInterval =
+    billingIntervalOverride ?? subscription?.billingInterval ?? 'monthly'
 
   const features = [
     t('features.unlimitedPolicies'),
@@ -77,6 +165,15 @@ export function SubscriptionView() {
           </div>
         ) : null}
 
+        {statusMessage ? (
+          <div
+            className="rounded-[var(--radius-inner)] border border-border bg-white/80 px-4 py-3 text-sm text-muted-foreground"
+            role="status"
+          >
+            {statusMessage}
+          </div>
+        ) : null}
+
         <section className="glass-panel overflow-hidden">
           <div className="border-b border-border/60 bg-primary/5 px-6 py-5">
             <div className="flex items-start gap-3">
@@ -91,10 +188,13 @@ export function SubscriptionView() {
                   {t('planName')}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {formatPremiumPrice(locale)}
+                  {formatIntervalPrice(locale, billingInterval)}
                   <span className="text-muted-foreground">
                     {' '}
-                    / {t('perMonth')}
+                    /{' '}
+                    {billingInterval === 'annual'
+                      ? t('perYear')
+                      : t('perMonth')}
                   </span>
                 </p>
               </div>
@@ -102,6 +202,34 @@ export function SubscriptionView() {
           </div>
 
           <div className="space-y-5 p-6">
+            <div>
+              <p className="mb-2 text-sm font-medium">{t('billingInterval')}</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {(['monthly', 'annual'] as const).map((interval) => (
+                  <button
+                    key={interval}
+                    type="button"
+                    disabled={savingInterval || loading}
+                    onClick={() => void handleBillingIntervalChange(interval)}
+                    className={cn(
+                      'rounded-xl border px-3 py-3 text-left text-sm transition',
+                      billingInterval === interval
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border/60 bg-white/50 hover:bg-white/70'
+                    )}
+                  >
+                    <span className="font-medium">
+                      {interval === 'monthly' ? t('monthly') : t('annual')}
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {formatIntervalPrice(locale, interval)} /{' '}
+                      {interval === 'monthly' ? t('perMonth') : t('perYear')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <ul className="space-y-2.5">
               {features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2.5 text-sm">
@@ -122,7 +250,7 @@ export function SubscriptionView() {
                   : t('freeMessage')}
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
                 className="rounded-[var(--radius-pill)]"
@@ -135,6 +263,17 @@ export function SubscriptionView() {
                     ? t('alreadyPremium')
                     : t('cta')}
               </Button>
+              {isPremium ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="rounded-[var(--radius-pill)]"
+                  disabled={canceling}
+                  onClick={() => void handleCancel()}
+                >
+                  {canceling ? t('canceling') : t('cancel')}
+                </Button>
+              ) : null}
               <Button
                 asChild
                 variant="secondary"

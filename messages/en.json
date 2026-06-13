@@ -289,9 +289,10 @@
       "sectionTitle": "Policy document",
       "sectionDesc": "Upload your policy PDF. We will extract data with AI; you review and confirm before saving.",
       "dropzoneTitle": "Drop your PDF here",
-      "dropzoneHint": "PDF only, up to {maxSize} MB. You can also click to choose a file.",
-      "dropzoneAria": "Policy PDF upload area",
+      "dropzoneHint": "PDF or photo (JPG/PNG), up to {maxSize} MB. You can also click to choose a file.",
+      "dropzoneAria": "Policy PDF or photo upload area",
       "browseFiles": "Choose file",
+      "takePhoto": "Take photo",
       "removeFile": "Remove file",
       "startUpload": "Upload and process",
       "validating": "Validating…",
@@ -303,7 +304,7 @@
       "errors": {
         "emptyFile": "The file is empty.",
         "tooLarge": "The file exceeds the 20 MB limit.",
-        "invalidType": "Only PDF files are allowed.",
+        "invalidType": "Only PDF or JPG/PNG/WebP images are allowed.",
         "invalidPdf": "The file does not appear to be a valid PDF.",
         "uploadFailed": "Could not upload the document. Try again."
       },
@@ -330,6 +331,7 @@
       "documentPanelHint": "Review the original document alongside extracted data.",
       "pdfLoading": "Loading document…",
       "pdfLoadError": "Could not load the PDF. Try again later.",
+      "bboxPageHint": "Highlight on page {page}",
       "noDocument": "No document is attached to this policy.",
       "fieldsPanel": "Extracted data",
       "fieldsPanelHint": "Edit any field before confirming. Badges show AI confidence.",
@@ -378,6 +380,37 @@
         "accepted": "Accepted",
         "revoked": "Revoked",
         "expired": "Expired"
+      }
+    },
+    "benefitsCatalog": {
+      "title": "Suggested benefits",
+      "description": "Add common coverages for this policy type with one click.",
+      "items": {
+        "deathBenefit": "Natural death",
+        "accidentalDeath": "Accidental death",
+        "disability": "Disability",
+        "funeral": "Funeral expenses",
+        "hospitalization": "Hospitalization",
+        "specialists": "Specialist visits",
+        "medications": "Medications",
+        "maternity": "Maternity",
+        "dental": "Dental",
+        "collision": "Collision",
+        "theft": "Total theft",
+        "thirdParty": "Third-party liability",
+        "roadside": "Roadside assistance",
+        "glass": "Glass coverage",
+        "fire": "Fire",
+        "waterDamage": "Water damage",
+        "civilLiability": "Civil liability",
+        "contents": "Contents",
+        "medicalAbroad": "Medical assistance abroad",
+        "tripCancellation": "Trip cancellation",
+        "baggage": "Baggage",
+        "repatriation": "Repatriation",
+        "generalCoverage": "General coverage",
+        "deductible": "Deductible",
+        "exclusions": "Exclusions"
       }
     },
     "beneficiaries": {
@@ -524,7 +557,10 @@
       "privacy": "Privacy & data",
       "preferences": "Preferences",
       "subscription": "Subscription",
-      "notifications": "Push notifications"
+      "contacts": "Contacts & beneficiaries",
+      "notifications": "Notifications",
+      "legal": "Legal & consent",
+      "support": "Help & support"
     },
     "items": {
       "personalData": "Personal details",
@@ -533,6 +569,8 @@
       "privacyHint": "Consent and data processing",
       "subscription": "Premium plan",
       "subscriptionHint": "Billing and benefits",
+      "contacts": "Contacts & beneficiaries",
+      "contactsHint": "Agents, insurers, and global beneficiaries",
       "export": "Export my data",
       "exportHint": "Download in a portable format",
       "deleteAccount": "Delete account",
@@ -541,6 +579,103 @@
       "notificationsHint": "Renewals and alerts",
       "language": "Language",
       "languageHint": "Choose the interface language"
+    },
+    "profile": {
+      "unnamed": "Unnamed",
+      "noEmail": "No email",
+      "edit": "Edit name",
+      "changePhoto": "Change profile photo",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "saved": "Profile updated.",
+      "saveError": "Could not update profile.",
+      "photoSaved": "Photo updated.",
+      "photoError": "Could not upload photo."
+    },
+    "currency": {
+      "label": "Primary currency",
+      "hint": "Used as default when creating or editing policies",
+      "saved": "Currency saved.",
+      "saveError": "Could not save currency."
+    },
+    "legal": {
+      "privacy": "Privacy policy",
+      "privacyHint": "How we handle your data",
+      "terms": "Terms of service",
+      "termsHint": "Service use and subscription",
+      "aiConsent": "Cloud AI",
+      "aiConsentGranted": "Consent granted. You can re-authorize if you revoked it.",
+      "aiConsentMissing": "Required for PDF extraction and cloud MarIAna.",
+      "aiConsentSaved": "AI consent saved.",
+      "aiConsentError": "Could not save consent.",
+      "loading": "Loading…"
+    },
+    "support": {
+      "email": "Contact support",
+      "helpCenter": "Help center",
+      "helpCenterHint": "Frequently asked questions",
+      "docs": "Documentation",
+      "docsHint": "External guides and reference"
+    },
+    "version": {
+      "label": "InsurWallet v{version}"
+    },
+    "contacts": {
+      "title": "Contacts & beneficiaries",
+      "subtitle": "Manage insurance contacts and global beneficiaries.",
+      "insuranceTitle": "Insurance contacts",
+      "insuranceHint": "Agents, insurers, and emergency lines",
+      "beneficiariesTitle": "Global beneficiaries",
+      "beneficiariesHint": "Quick reference independent of each policy",
+      "addContact": "Add contact",
+      "namePlaceholder": "Contact name",
+      "phonePlaceholder": "Phone",
+      "emailPlaceholder": "Email",
+      "save": "Save contact",
+      "saving": "Saving…",
+      "delete": "Delete",
+      "loading": "Loading…",
+      "loadError": "Could not load contacts.",
+      "saveError": "Could not save contact.",
+      "deleteError": "Could not delete contact.",
+      "emptyContacts": "You have no saved contacts yet.",
+      "emptyBeneficiaries": "You have no global beneficiaries yet.",
+      "backToSettings": "Back to settings",
+      "types": {
+        "agent": "Agent / advisor",
+        "insurer": "Insurer",
+        "broker": "Broker",
+        "emergency": "Emergency",
+        "other": "Other"
+      }
+    },
+    "help": {
+      "title": "Help center",
+      "subtitle": "Quick answers about InsurWallet.",
+      "backToSettings": "Back to settings",
+      "faq": {
+        "policies": {
+          "question": "How do I add a policy?",
+          "answer": "From the dashboard choose New policy. Upload a PDF with AI or enter details manually."
+        },
+        "ai": {
+          "question": "What data does cloud AI process?",
+          "answer": "Only PDF content or your MarIAna question, with your explicit consent. Review it under Settings → Legal."
+        },
+        "subscription": {
+          "question": "How does Premium work?",
+          "answer": "The free plan includes up to 3 policies. Premium unlocks unlimited policies, MarIAna, and cloud extraction."
+        },
+        "privacy": {
+          "question": "Can I export or delete my data?",
+          "answer": "Yes. Under Settings → Privacy & data you can export your information or request account deletion."
+        },
+        "account": {
+          "question": "How do I change my name or photo?",
+          "answer": "Under Settings → Profile edit your name or upload a new profile photo."
+        }
+      }
     },
     "exporting": "Exporting…",
     "exportError": "We could not start the export. Please try again.",
@@ -601,6 +736,17 @@
       "planBadge": "Premium",
       "planName": "InsurWallet Premium",
       "perMonth": "month",
+      "perYear": "year",
+      "billingInterval": "Billing cycle",
+      "monthly": "Monthly",
+      "annual": "Annual",
+      "cancel": "Cancel subscription",
+      "canceling": "Canceling…",
+      "cancelSuccess": "Subscription canceled. You keep access until the paid period ends.",
+      "cancelError": "Could not cancel subscription.",
+      "intervalSaved": "Billing preference saved.",
+      "intervalError": "Could not update billing cycle.",
+      "annualScaffoldNote": "Annual plan preference saved. Annual Mercado Pago checkout is coming soon; monthly billing applies for now.",
       "features": {
         "unlimitedPolicies": "Unlimited policies",
         "mariana": "MarIAna — AI assistant",
