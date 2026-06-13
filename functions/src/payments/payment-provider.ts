@@ -1,14 +1,15 @@
 /**
- * Payment provider abstraction — Wompi (Colombia) first; Mercado Pago later.
+ * Payment provider abstraction — Mercado Pago (Colombia) primary; Wompi deprecated.
  * Subscription writes go through Admin SDK (Firestore rules block client writes).
  */
 
 import {
-  createWompiPaymentLink,
-  getWompiConfigFromEnv,
-  parseWompiWebhookEvent,
-  WompiError,
-} from './wompi'
+  cancelMercadoPagoPreapproval,
+  createMercadoPagoPreapproval,
+  getMercadoPagoConfigFromEnv,
+  MercadoPagoError,
+  parseMercadoPagoWebhookEvent,
+} from './mercadopago'
 
 export type CheckoutLineItem = {
   name: string
@@ -41,6 +42,7 @@ export type WebhookEvent = {
   uid?: string
   subscriptionPlan?: 'premium'
   subscriptionStatus?: 'active' | 'canceled' | 'past_due'
+  providerSubscriptionId?: string
   raw: unknown
 }
 
@@ -61,7 +63,8 @@ export interface PaymentProvider {
 
   parseWebhook(
     rawBody: string,
-    headers: Record<string, string | undefined>
+    headers: Record<string, string | undefined>,
+    query?: Record<string, string | undefined>
   ): Promise<WebhookEvent>
 
   cancelSubscription(
@@ -69,8 +72,8 @@ export interface PaymentProvider {
   ): Promise<CancelSubscriptionResult>
 }
 
-export class WompiPaymentProvider implements PaymentProvider {
-  readonly name = 'wompi'
+export class MercadoPagoPaymentProvider implements PaymentProvider {
+  readonly name = 'mercadopago'
 
   async createCheckout(
     input: CreateCheckoutInput
@@ -80,12 +83,15 @@ export class WompiPaymentProvider implements PaymentProvider {
       0
     )
 
-    const result = await createWompiPaymentLink(getWompiConfigFromEnv(), {
-      uid: input.uid,
-      email: input.email,
-      returnUrl: input.returnUrl,
-      amountInCents: total,
-    })
+    const result = await createMercadoPagoPreapproval(
+      getMercadoPagoConfigFromEnv(),
+      {
+        uid: input.uid,
+        email: input.email,
+        returnUrl: input.returnUrl,
+        amountInCents: total,
+      }
+    )
 
     return {
       checkoutId: result.checkoutId,
@@ -98,10 +104,16 @@ export class WompiPaymentProvider implements PaymentProvider {
 
   async parseWebhook(
     rawBody: string,
-    headers: Record<string, string | undefined>
+    headers: Record<string, string | undefined>,
+    query: Record<string, string | undefined> = {}
   ): Promise<WebhookEvent> {
-    const config = getWompiConfigFromEnv()
-    const event = parseWompiWebhookEvent(rawBody, headers, config.eventsSecret)
+    const config = getMercadoPagoConfigFromEnv()
+    const event = await parseMercadoPagoWebhookEvent(
+      rawBody,
+      headers,
+      query,
+      config
+    )
 
     return {
       ...event,
@@ -110,12 +122,16 @@ export class WompiPaymentProvider implements PaymentProvider {
   }
 
   async cancelSubscription(
-    _input: CancelSubscriptionInput
+    input: CancelSubscriptionInput
   ): Promise<CancelSubscriptionResult> {
-    void _input
+    const result = await cancelMercadoPagoPreapproval(
+      getMercadoPagoConfigFromEnv(),
+      input.providerSubscriptionId
+    )
+
     return {
-      canceledAt: new Date(),
-      effectiveEnd: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      canceledAt: result.canceledAt,
+      effectiveEnd: result.canceledAt,
     }
   }
 }
@@ -135,8 +151,12 @@ export class PaymentProviderError extends Error {
   }
 }
 
-export function mapWompiError(error: unknown): PaymentProviderError {
-  if (error instanceof WompiError) {
+export function mapPaymentProviderError(error: unknown): PaymentProviderError {
+  if (error instanceof PaymentProviderError) {
+    return error
+  }
+
+  if (error instanceof MercadoPagoError) {
     return new PaymentProviderError(error.code, error.message)
   }
 
@@ -144,9 +164,15 @@ export function mapWompiError(error: unknown): PaymentProviderError {
     return new PaymentProviderError('provider_unavailable', error.message)
   }
 
-  return new PaymentProviderError('provider_unavailable', 'Unknown Wompi error')
+  return new PaymentProviderError(
+    'provider_unavailable',
+    'Unknown payment provider error'
+  )
 }
 
+/** @deprecated Use mapPaymentProviderError */
+export const mapWompiError = mapPaymentProviderError
+
 export function getDefaultPaymentProvider(): PaymentProvider {
-  return new WompiPaymentProvider()
+  return new MercadoPagoPaymentProvider()
 }

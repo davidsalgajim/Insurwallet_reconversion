@@ -7,7 +7,11 @@ import { adminFirestoreUnavailableResponse } from '@/lib/firebase/admin-required
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { getFeatureFlags } from '@/lib/feature-flags'
 import { PREMIUM_MONTHLY_AMOUNT_CENTS } from '@/lib/payments/constants'
-import { createWompiPaymentLink, WompiError } from '@/lib/payments/wompi'
+import {
+  createMercadoPagoPreapproval,
+  getMercadoPagoConfigFromEnv,
+  MercadoPagoError,
+} from '@/lib/payments/mercadopago'
 
 export const runtime = 'nodejs'
 
@@ -48,12 +52,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const checkout = await createWompiPaymentLink(
-      {
-        privateKey: process.env.WOMPI_PRIVATE_KEY ?? '',
-        eventsSecret: process.env.WOMPI_EVENTS_SECRET ?? '',
-        apiBaseUrl: process.env.WOMPI_API_BASE_URL,
-      },
+    const checkout = await createMercadoPagoPreapproval(
+      getMercadoPagoConfigFromEnv(),
       {
         uid: session.uid,
         email: session.email,
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       .doc(checkout.checkoutId)
       .set({
         uid: session.uid,
-        provider: 'wompi',
+        provider: 'mercadopago',
         reference: checkout.reference,
         status: 'pending',
         createdAt: FieldValue.serverTimestamp(),
@@ -77,11 +77,11 @@ export async function POST(request: Request) {
     return NextResponse.json({
       checkoutId: checkout.checkoutId,
       checkoutUrl: checkout.checkoutUrl,
-      provider: 'wompi',
+      provider: 'mercadopago',
       expiresAt: checkout.expiresAt.toISOString(),
     })
   } catch (error) {
-    if (error instanceof WompiError) {
+    if (error instanceof MercadoPagoError) {
       return NextResponse.json(
         { error: error.message, code: error.code },
         {

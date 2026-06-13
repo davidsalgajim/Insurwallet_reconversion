@@ -18,7 +18,7 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 | Tests reglas        | Firebase emulators + `@firebase/rules-unit-testing`                         |
 | Backend planificado | Cloud Functions (Node), Cloud Run (worker Python, MarIAna)                  |
 | Documentos (F2)     | OpenDataLoader PDF, Surya OCR, MarkItDown, Claude API                       |
-| Pagos (F4)          | Wompi / Mercado Pago (adapter)                                              |
+| Pagos (F4)          | Mercado Pago (Colombia); Wompi deprecated                                   |
 
 ## Fases
 

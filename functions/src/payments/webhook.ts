@@ -1,15 +1,35 @@
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
-import { onRequest } from 'firebase-functions/v2/https'
+import { onRequest, type Request } from 'firebase-functions/v2/https'
+import type { Response } from 'express'
 import { logger } from 'firebase-functions/v2'
 
 import {
   getDefaultPaymentProvider,
-  mapWompiError,
+  mapPaymentProviderError,
   PaymentProviderError,
   type WebhookEvent,
 } from './payment-provider'
 
 const PROCESSED_EVENTS_COLLECTION = 'paymentWebhookEvents'
+
+function normaliseQuery(
+  query: Record<string, unknown> | undefined
+): Record<string, string | undefined> {
+  if (!query) {
+    return {}
+  }
+
+  const result: Record<string, string | undefined> = {}
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value === 'string') {
+      result[key] = value
+    } else if (Array.isArray(value) && typeof value[0] === 'string') {
+      result[key] = value[0]
+    }
+  }
+
+  return result
+}
 
 async function isEventProcessed(eventId: string): Promise<boolean> {
   const db = getFirestore()
@@ -52,6 +72,7 @@ async function applySubscriptionFromEvent(event: WebhookEvent): Promise<void> {
           plan: event.subscriptionPlan,
           status: event.subscriptionStatus,
           provider: event.provider,
+          providerSubscriptionId: event.providerSubscriptionId,
           currentPeriodEnd: FieldValue.serverTimestamp(),
         },
       },
@@ -59,7 +80,49 @@ async function applySubscriptionFromEvent(event: WebhookEvent): Promise<void> {
     )
 }
 
-export const wompiPaymentWebhook = onRequest(
+async function handlePaymentWebhook(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const rawBody =
+    typeof req.rawBody === 'string'
+      ? req.rawBody
+      : (req.rawBody?.toString('utf8') ?? JSON.stringify(req.body ?? {}))
+
+  const provider = getDefaultPaymentProvider()
+
+  let event: WebhookEvent
+  try {
+    event = await provider.parseWebhook(
+      rawBody,
+      req.headers as Record<string, string>,
+      normaliseQuery(req.query as Record<string, unknown>)
+    )
+  } catch (error) {
+    const providerError =
+      error instanceof PaymentProviderError
+        ? error
+        : mapPaymentProviderError(error)
+
+    logger.warn('payment webhook rejected', { code: providerError.code })
+    res.status(providerError.code === 'invalid_signature' ? 401 : 400).json({
+      error: providerError.code,
+    })
+    return
+  }
+
+  if (await isEventProcessed(event.id)) {
+    res.status(200).json({ status: 'already_processed', eventId: event.id })
+    return
+  }
+
+  await applySubscriptionFromEvent(event)
+  await markEventProcessed(event)
+
+  res.status(200).json({ status: 'ok', eventId: event.id })
+}
+
+export const mercadoPagoPaymentWebhook = onRequest(
   { cors: false, invoker: 'public' },
   async (req, res) => {
     if (req.method !== 'POST') {
@@ -67,43 +130,9 @@ export const wompiPaymentWebhook = onRequest(
       return
     }
 
-    const rawBody =
-      typeof req.rawBody === 'string'
-        ? req.rawBody
-        : (req.rawBody?.toString('utf8') ?? JSON.stringify(req.body ?? {}))
-
-    const provider = getDefaultPaymentProvider()
-
-    let event: WebhookEvent
-    try {
-      event = await provider.parseWebhook(
-        rawBody,
-        req.headers as Record<string, string>
-      )
-    } catch (error) {
-      const providerError =
-        error instanceof PaymentProviderError ? error : mapWompiError(error)
-
-      if (providerError instanceof PaymentProviderError) {
-        logger.warn('payment webhook rejected', { code: providerError.code })
-        res
-          .status(providerError.code === 'invalid_signature' ? 401 : 400)
-          .json({
-            error: providerError.code,
-          })
-        return
-      }
-      throw error
-    }
-
-    if (await isEventProcessed(event.id)) {
-      res.status(200).json({ status: 'already_processed', eventId: event.id })
-      return
-    }
-
-    await applySubscriptionFromEvent(event)
-    await markEventProcessed(event)
-
-    res.status(200).json({ status: 'ok', eventId: event.id })
+    await handlePaymentWebhook(req, res)
   }
 )
+
+/** @deprecated Use mercadoPagoPaymentWebhook — kept for existing deploy URLs */
+export const wompiPaymentWebhook = mercadoPagoPaymentWebhook

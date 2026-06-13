@@ -581,7 +581,7 @@
       "title": "Desbloqueie todo o InsurWallet",
       "close": "Fechar",
       "cta": "Ver planos Premium",
-      "redirecting": "Redirecionando para Wompi…",
+      "redirecting": "Redirecionando para Mercado Pago…",
       "dismiss": "Agora não",
       "reasons": {
         "policyLimit": "O plano gratuito inclui até {limit} apólices. Atualize para adicionar mais.",
@@ -597,7 +597,7 @@
     },
     "page": {
       "title": "Assinatura",
-      "subtitle": "Gerencie seu plano e pagamento com Wompi.",
+      "subtitle": "Gerencie seu plano e pagamento com Mercado Pago.",
       "planBadge": "Premium",
       "planName": "InsurWallet Premium",
       "perMonth": "mês",
@@ -610,14 +610,14 @@
       "loading": "Carregando status da assinatura…",
       "activeMessage": "Seu plano Premium está ativo.",
       "freeMessage": "Você está no plano gratuito (até 3 apólices).",
-      "cta": "Pagar com Wompi",
+      "cta": "Pagar com Mercado Pago",
       "alreadyPremium": "Plano ativo",
-      "redirecting": "Redirecionando para Wompi…",
+      "redirecting": "Redirecionando para Mercado Pago…",
       "backToSettings": "Voltar às configurações",
       "returnMessage": "Se você concluiu o pagamento, o Premium será ativado em alguns minutos.",
-      "checkoutError": "Não foi possível iniciar o pagamento. Verifique a configuração do Wompi.",
+      "checkoutError": "Não foi possível iniciar o pagamento. Verifique a configuração do Mercado Pago.",
       "paymentsDisabled": "Pagamentos desativados neste ambiente.",
-      "sandboxNote": "Use chaves sandbox do Wompi para testes (cartão, Nequi, PSE)."
+      "sandboxNote": "Use credenciais de teste do Mercado Pago para pagamentos sandbox (cartão, PSE, Nequi)."
     }
   },
   "legal": {

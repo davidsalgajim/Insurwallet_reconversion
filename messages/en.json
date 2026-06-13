@@ -581,7 +581,7 @@
       "title": "Unlock all of InsurWallet",
       "close": "Close",
       "cta": "View Premium plans",
-      "redirecting": "Redirecting to Wompi…",
+      "redirecting": "Redirecting to Mercado Pago…",
       "dismiss": "Not now",
       "reasons": {
         "policyLimit": "The free plan includes up to {limit} policies. Upgrade to add more.",
@@ -597,7 +597,7 @@
     },
     "page": {
       "title": "Subscription",
-      "subtitle": "Manage your plan and Wompi checkout.",
+      "subtitle": "Manage your plan and Mercado Pago checkout.",
       "planBadge": "Premium",
       "planName": "InsurWallet Premium",
       "perMonth": "month",
@@ -610,14 +610,14 @@
       "loading": "Loading subscription status…",
       "activeMessage": "Your Premium plan is active.",
       "freeMessage": "You are on the free plan (up to 3 policies).",
-      "cta": "Pay with Wompi",
+      "cta": "Pay with Mercado Pago",
       "alreadyPremium": "Active plan",
-      "redirecting": "Redirecting to Wompi…",
+      "redirecting": "Redirecting to Mercado Pago…",
       "backToSettings": "Back to settings",
       "returnMessage": "If you completed payment, Premium will activate within a few minutes.",
-      "checkoutError": "Could not start checkout. Check Wompi configuration.",
+      "checkoutError": "Could not start checkout. Check Mercado Pago configuration.",
       "paymentsDisabled": "Payments are disabled in this environment.",
-      "sandboxNote": "Use Wompi sandbox keys for testing (card, Nequi, PSE)."
+      "sandboxNote": "Use Mercado Pago test credentials for sandbox payments (card, PSE, Nequi)."
     }
   },
   "legal": {

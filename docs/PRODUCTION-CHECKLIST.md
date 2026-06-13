@@ -37,19 +37,21 @@ Use this document before **staging** or **production** deploy. It complements th
 | `SENTRY_DSN`                                                   | Optional | Server Sentry (falls back to `NEXT_PUBLIC_SENTRY_DSN`) |
 | `ANTHROPIC_API_KEY`                                            | F2/F3    | **Secret Manager** in prod — not plain env             |
 | `RESEND_API_KEY`                                               | F4       | Transactional email                                    |
-| `WOMPI_*` / `MERCADOPAGO_*`                                    | F4       | Payment provider secrets                               |
+| `MERCADOPAGO_*` (primary) / `WOMPI_*` (legacy)                 | F4       | Payment provider secrets                               |
 | `POSTHOG_KEY`                                                  | Optional | Product analytics                                      |
 
-> **Rule:** Claude, Wompi/MP, Resend, and service account JSON → **Google Secret Manager** in staging/prod. Reference from Vercel/Firebase via secret bindings — never commit to git.
+> **Rule:** Claude, Mercado Pago/Wompi, Resend, and service account JSON → **Google Secret Manager** in staging/prod. Reference from Vercel/Firebase via secret bindings — never commit to git.
 
 ### 1.3 Cloud Functions (`functions/`)
 
-| Secret / env                      | Purpose                |
-| --------------------------------- | ---------------------- |
-| Service account (default runtime) | Admin SDK              |
-| `RESEND_API_KEY`                  | Email (F4)             |
-| `WOMPI_*`                         | Payment webhooks (F4)  |
-| `SENTRY_DSN`                      | Functions errors (7.1) |
+| Secret / env                      | Purpose                           |
+| --------------------------------- | --------------------------------- |
+| Service account (default runtime) | Admin SDK                         |
+| `RESEND_API_KEY`                  | Email (F4)                        |
+| `MERCADOPAGO_ACCESS_TOKEN`        | Checkout + webhook resource fetch |
+| `MERCADOPAGO_WEBHOOK_SECRET`      | Webhook signature (`x-signature`) |
+| `WOMPI_*` (deprecated)            | Legacy Wompi adapter              |
+| `SENTRY_DSN`                      | Functions errors (7.1)            |
 
 Deploy: `firebase deploy --only functions`
 

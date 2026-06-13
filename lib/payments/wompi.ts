@@ -1,3 +1,4 @@
+/** @deprecated Wompi is no longer the primary provider — use `mercadopago.ts`. */
 import { createHash } from 'node:crypto'
 
 import {

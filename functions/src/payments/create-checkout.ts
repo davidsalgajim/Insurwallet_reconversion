@@ -2,8 +2,11 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { logger } from 'firebase-functions/v2'
 
-import { getDefaultPaymentProvider, mapWompiError } from './payment-provider'
-import { PREMIUM_MONTHLY_AMOUNT_CENTS } from './wompi'
+import {
+  getDefaultPaymentProvider,
+  mapPaymentProviderError,
+} from './payment-provider'
+import { PREMIUM_MONTHLY_AMOUNT_CENTS } from './mercadopago'
 
 function parseCheckoutInput(data: unknown): {
   returnUrl: string
@@ -70,6 +73,7 @@ export const createCheckout = onCall(async (request) => {
     logger.info('checkout created', {
       uid: request.auth.uid,
       checkoutId: checkout.checkoutId,
+      provider: provider.name,
     })
 
     return {
@@ -79,7 +83,7 @@ export const createCheckout = onCall(async (request) => {
       expiresAt: checkout.expiresAt.toISOString(),
     }
   } catch (error) {
-    const mapped = mapWompiError(error)
+    const mapped = mapPaymentProviderError(error)
     logger.error('checkout failed', {
       code: mapped.code,
       uid: request.auth.uid,
