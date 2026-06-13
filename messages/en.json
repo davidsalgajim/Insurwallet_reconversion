@@ -306,7 +306,10 @@
         "tooLarge": "The file exceeds the 20 MB limit.",
         "invalidType": "Only PDF or JPG/PNG/WebP images are allowed.",
         "invalidPdf": "The file does not appear to be a valid PDF.",
-        "uploadFailed": "Could not upload the document. Try again."
+        "uploadFailed": "Could not upload the document. Try again.",
+        "consentDeclined": "You declined cloud AI processing. Automatic PDF extraction is not available.",
+        "consentDeclinedHint": "You can change your preference in",
+        "consentSettingsLink": "Settings → Legal"
       },
       "processing": {
         "title": "Processing status",
@@ -605,9 +608,11 @@
       "terms": "Terms of service",
       "termsHint": "Service use and subscription",
       "aiConsent": "Cloud AI",
-      "aiConsentGranted": "Consent granted. You can re-authorize if you revoked it.",
-      "aiConsentMissing": "Required for PDF extraction and cloud MarIAna.",
+      "aiConsentGranted": "Accepted — PDF extraction and cloud MarIAna enabled.",
+      "aiConsentDeclined": "Declined — local features only (Tier 0).",
+      "aiConsentMissing": "Not set — required for cloud PDF extraction.",
       "aiConsentSaved": "AI consent saved.",
+      "aiConsentDeclinedSaved": "Preference saved: cloud AI disabled.",
       "aiConsentError": "Could not save consent.",
       "loading": "Loading…"
     },
@@ -776,10 +781,17 @@
     },
     "cloudAi": {
       "title": "Cloud AI processing",
-      "description": "To extract data from your PDF, the document will be sent securely to our AI services (Claude). Continue only if you accept this processing.",
+      "description": "To extract data from your PDF and get advanced MarIAna answers, your document or question will be sent securely to our AI services (Claude).",
+      "consequences": "If you decline, you can still use InsurWallet with manual data entry and MarIAna Tier 0 (local responses without cloud AI). Automatic PDF extraction and advanced answers will be blocked.",
       "privacyLink": "Learn more in privacy",
       "accept": "I agree and continue",
-      "cancel": "Cancel"
+      "decline": "Decline",
+      "cancel": "Cancel",
+      "changeNotice": "Current status: {status}. You can change your choice.",
+      "status": {
+        "accepted": "accepted",
+        "declined": "declined"
+      }
     },
     "back": "Back to home",
     "backToSettings": "Back to settings",

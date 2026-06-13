@@ -5,17 +5,22 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
+import type { CloudAIConsentStatus } from '@/lib/schemas/consents'
 import { cn } from '@/lib/utils/cn'
 
 type CloudAIConsentModalProps = {
   open: boolean
+  currentStatus?: CloudAIConsentStatus
   onAccept: () => void
+  onDecline: () => void
   onCancel: () => void
 }
 
 export function CloudAIConsentModal({
   open,
+  currentStatus = null,
   onAccept,
+  onDecline,
   onCancel,
 }: CloudAIConsentModalProps) {
   const t = useTranslations('legal.cloudAi')
@@ -44,6 +49,16 @@ export function CloudAIConsentModal({
               {t('description')}
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
+              {t('consequences')}
+            </p>
+            {currentStatus ? (
+              <p className="text-sm font-medium text-foreground">
+                {t('changeNotice', {
+                  status: t(`status.${currentStatus}`),
+                })}
+              </p>
+            ) : null}
+            <p className="text-sm leading-relaxed text-muted-foreground">
               <Link
                 href="/legal/privacy"
                 className="font-medium text-primary hover:underline"
@@ -62,6 +77,14 @@ export function CloudAIConsentModal({
             onClick={onCancel}
           >
             {t('cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={cn('rounded-[var(--radius-pill)]')}
+            onClick={onDecline}
+          >
+            {t('decline')}
           </Button>
           <Button
             type="button"

@@ -1,19 +1,31 @@
+import { createHash } from 'node:crypto'
+
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
+import { readUserDocument } from '@/lib/firebase/user-doc-server'
 import {
-  mergeUserDocument,
-  readUserDocument,
-} from '@/lib/firebase/user-doc-server'
-import { UserConsentsSchema } from '@/lib/schemas/consents'
+  ConsentPostBodySchema,
+  resolveCloudAIOutcome,
+  UserConsentsSchema,
+} from '@/lib/schemas/consents'
+import {
+  persistCloudAIConsent,
+  persistCookieConsent,
+} from '@/lib/server/consent-persist'
 
 export const runtime = 'nodejs'
 
-const consentSchema = z.object({
-  cookies: z.boolean().optional(),
-  cloudAI: z.boolean().optional(),
-})
+function hashClientIp(request: Request): string | undefined {
+  const forwarded = request.headers.get('x-forwarded-for')
+  const ip =
+    forwarded?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip')
+  if (!ip) {
+    return undefined
+  }
+
+  return createHash('sha256').update(ip).digest('hex').slice(0, 16)
+}
 
 export async function GET() {
   const session = await requireSession()
@@ -44,7 +56,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const parsed = consentSchema.safeParse(body)
+  const parsed = ConsentPostBodySchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'Invalid consent payload' },
@@ -52,25 +64,27 @@ export async function POST(request: Request) {
     )
   }
 
-  const userData = await readUserDocument(session.uid)
-  const now = new Date()
-  const existing = UserConsentsSchema.safeParse(userData?.consents)
-  const currentConsents = existing.success ? existing.data : {}
-
-  const update: Record<string, unknown> = {
-    updatedAt: now,
-    consents: { ...currentConsents },
-  }
+  const ipHash = hashClientIp(request)
 
   if (parsed.data.cookies) {
-    ;(update.consents as Record<string, unknown>).cookies = now
+    await persistCookieConsent(session.uid)
   }
 
-  if (parsed.data.cloudAI) {
-    ;(update.consents as Record<string, unknown>).cloudAI = now
+  const cloudOutcome = resolveCloudAIOutcome(parsed.data)
+  if (cloudOutcome) {
+    await persistCloudAIConsent({
+      uid: session.uid,
+      outcome: cloudOutcome,
+      source: parsed.data.source ?? 'settings',
+      ipHash,
+    })
   }
 
-  await mergeUserDocument(session.uid, update)
+  const userData = await readUserDocument(session.uid)
+  const consents = UserConsentsSchema.safeParse(userData?.consents)
 
-  return NextResponse.json({ status: 'ok' })
+  return NextResponse.json({
+    status: 'ok',
+    consents: consents.success ? consents.data : {},
+  })
 }

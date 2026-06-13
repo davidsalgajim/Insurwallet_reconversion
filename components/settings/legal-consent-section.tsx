@@ -6,8 +6,11 @@ import { useTranslations } from 'next-intl'
 
 import { CloudAIConsentModal } from '@/components/legal/cloud-ai-consent-modal'
 import { Link } from '@/i18n/navigation'
-import { hasCloudAIConsent } from '@/lib/schemas/consents'
-import type { UserConsents } from '@/lib/schemas/consents'
+import {
+  getCloudAIConsentStatus,
+  type CloudAIConsentOutcome,
+  type UserConsents,
+} from '@/lib/schemas/consents'
 import { cn } from '@/lib/utils/cn'
 
 import {
@@ -39,22 +42,33 @@ export function LegalConsentSection() {
     })()
   }, [])
 
-  async function grantCloudAI() {
+  async function saveCloudAI(outcome: CloudAIConsentOutcome) {
     const response = await fetch('/api/consents', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cloudAI: true }),
+      body: JSON.stringify({ consent: outcome, source: 'settings' }),
     })
 
     if (!response.ok) {
       throw new Error('consent_failed')
     }
 
-    setConsents((current) => ({ ...current, cloudAI: new Date() }))
-    setMessage(t('aiConsentSaved'))
+    const body = (await response.json()) as { consents: UserConsents }
+    setConsents(body.consents)
+    setMessage(
+      outcome === 'accepted' ? t('aiConsentSaved') : t('aiConsentDeclinedSaved')
+    )
   }
 
-  const aiGranted = hasCloudAIConsent(consents)
+  const consentStatus = getCloudAIConsentStatus(consents)
+
+  const statusHint = loading
+    ? t('loading')
+    : consentStatus === 'accepted'
+      ? t('aiConsentGranted')
+      : consentStatus === 'declined'
+        ? t('aiConsentDeclined')
+        : t('aiConsentMissing')
 
   const items = [
     {
@@ -111,12 +125,14 @@ export function LegalConsentSection() {
             </span>
             <span className={settingsTextBlockClass}>
               <span className={settingsLabelClass}>{t('aiConsent')}</span>
-              <span className={settingsHintClass}>
-                {loading
-                  ? t('loading')
-                  : aiGranted
-                    ? t('aiConsentGranted')
-                    : t('aiConsentMissing')}
+              <span
+                className={cn(
+                  settingsHintClass,
+                  consentStatus === 'accepted' && 'text-success',
+                  consentStatus === 'declined' && 'text-warning'
+                )}
+              >
+                {statusHint}
               </span>
               {message ? (
                 <span className={cn(settingsHintClass, 'text-primary')}>
@@ -130,9 +146,15 @@ export function LegalConsentSection() {
 
       <CloudAIConsentModal
         open={consentOpen}
+        currentStatus={consentStatus}
         onCancel={() => setConsentOpen(false)}
         onAccept={() => {
-          void grantCloudAI()
+          void saveCloudAI('accepted')
+            .then(() => setConsentOpen(false))
+            .catch(() => setMessage(t('aiConsentError')))
+        }}
+        onDecline={() => {
+          void saveCloudAI('declined')
             .then(() => setConsentOpen(false))
             .catch(() => setMessage(t('aiConsentError')))
         }}

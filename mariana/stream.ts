@@ -26,6 +26,7 @@ type StreamInput = {
   message: string
   locale: 'es' | 'en' | 'pt'
   apiKey?: string
+  cloudAiConsented?: boolean
   policies: MarianaPolicyContext[]
   metadata: PolicyMetadata[]
   toolContext: ToolContext
@@ -235,11 +236,27 @@ async function streamSpecialist(
 export async function* streamMarianaResponse(
   input: StreamInput
 ): AsyncGenerator<MarianaChatChunk> {
+  const cloudBlocked = input.cloudAiConsented === false
   const decision = await resolveRoute(
     input.message,
     input.metadata,
-    input.apiKey
+    cloudBlocked ? undefined : input.apiKey
   )
+
+  if (
+    cloudBlocked &&
+    decision.agent !== 'tier0' &&
+    decision.agent !== 'emergency'
+  ) {
+    const refusal: Record<'es' | 'en' | 'pt', string> = {
+      es: 'Has rechazado el procesamiento con IA en la nube. MarIAna solo puede responder con datos locales (Tier 0) y emergencias. Puedes cambiar tu preferencia en Configuración → Legal.',
+      en: 'You declined cloud AI processing. MarIAna can only answer with local data (Tier 0) and emergencies. Change your preference in Settings → Legal.',
+      pt: 'Você recusou o processamento com IA na nuvem. A MarIAna só pode responder com dados locais (Tier 0) e emergências. Altere sua preferência em Configurações → Legal.',
+    }
+    yield { type: 'delta', content: refusal[input.locale], agent: 'tier0' }
+    yield { type: 'done', agent: 'tier0' }
+    return
+  }
 
   if (decision.agent === 'tier0' && decision.tier0Intent) {
     const text = buildTier0Response(

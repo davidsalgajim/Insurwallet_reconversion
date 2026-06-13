@@ -306,7 +306,10 @@
         "tooLarge": "El archivo supera el límite de 20 MB.",
         "invalidType": "Solo se permiten PDF o imágenes JPG/PNG/WebP.",
         "invalidPdf": "El archivo no parece ser un PDF válido.",
-        "uploadFailed": "No se pudo subir el documento. Intenta de nuevo."
+        "uploadFailed": "No se pudo subir el documento. Intenta de nuevo.",
+        "consentDeclined": "Rechazaste el procesamiento con IA en la nube. La extracción automática de PDF no está disponible.",
+        "consentDeclinedHint": "Puedes cambiar tu preferencia en",
+        "consentSettingsLink": "Configuración → Legal"
       },
       "processing": {
         "title": "Estado del procesamiento",
@@ -605,9 +608,11 @@
       "terms": "Términos y condiciones",
       "termsHint": "Uso del servicio y suscripción",
       "aiConsent": "IA en la nube",
-      "aiConsentGranted": "Consentimiento otorgado. Puedes volver a autorizar si lo revocaste.",
-      "aiConsentMissing": "Requerido para extracción PDF y MarIAna en nube.",
+      "aiConsentGranted": "Aceptado — extracción PDF y MarIAna en nube habilitados.",
+      "aiConsentDeclined": "Rechazado — solo funciones locales (Tier 0).",
+      "aiConsentMissing": "Sin definir — requerido para extracción PDF en nube.",
       "aiConsentSaved": "Consentimiento de IA guardado.",
+      "aiConsentDeclinedSaved": "Preferencia guardada: IA en nube desactivada.",
       "aiConsentError": "No se pudo guardar el consentimiento.",
       "loading": "Cargando…"
     },
@@ -776,10 +781,17 @@
     },
     "cloudAi": {
       "title": "Procesamiento con IA en la nube",
-      "description": "Para extraer datos de tu PDF, el documento se enviará de forma segura a nuestros servicios de IA (Claude). Solo continúa si aceptas este tratamiento.",
+      "description": "Para extraer datos de tu PDF y responder con MarIAna avanzada, el documento o tu pregunta se enviarán de forma segura a nuestros servicios de IA (Claude).",
+      "consequences": "Si no aceptas, podrás usar InsurWallet con datos manuales y MarIAna Tier 0 (respuestas locales sin IA en nube). La extracción automática de PDF y las respuestas avanzadas quedarán bloqueadas.",
       "privacyLink": "Más en privacidad",
       "accept": "Acepto y continuar",
-      "cancel": "Cancelar"
+      "decline": "No aceptar",
+      "cancel": "Cancelar",
+      "changeNotice": "Estado actual: {status}. Puedes cambiar tu elección.",
+      "status": {
+        "accepted": "aceptado",
+        "declined": "rechazado"
+      }
     },
     "back": "Volver al inicio",
     "backToSettings": "Volver a configuración",

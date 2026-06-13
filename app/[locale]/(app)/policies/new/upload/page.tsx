@@ -12,6 +12,7 @@ import { DocumentProcessingListener } from '@/components/policies/document-proce
 import { PdfUploadZone } from '@/components/policies/pdf-upload-zone'
 import { PolicyWizardProgress } from '@/components/policies/policy-wizard-progress'
 import { Button } from '@/components/ui/button'
+import { Link } from '@/i18n/navigation'
 import {
   createDraftPolicyForUpload,
   registerUploadedDocument,
@@ -27,8 +28,10 @@ export default function UploadPolicyPage() {
   const { user, loading: authLoading } = useAuth()
   const {
     hasConsent,
+    isDeclined,
     loading: consentLoading,
     grantCloudAIConsent,
+    declineCloudAIConsent,
   } = useCloudAIConsent()
   const [consentOpen, setConsentOpen] = useState(false)
 
@@ -117,6 +120,12 @@ export default function UploadPolicyPage() {
   function handleUpload() {
     if (!selectedFile || !user) return
 
+    if (!consentLoading && isDeclined) {
+      setErrorMessage(t('errors.consentDeclined'))
+      setPhase('error')
+      return
+    }
+
     if (!consentLoading && !hasConsent) {
       setConsentOpen(true)
       return
@@ -126,9 +135,16 @@ export default function UploadPolicyPage() {
   }
 
   async function handleConsentAccept() {
-    await grantCloudAIConsent()
+    await grantCloudAIConsent({ source: 'upload' })
     setConsentOpen(false)
     await performUpload()
+  }
+
+  async function handleConsentDecline() {
+    await declineCloudAIConsent({ source: 'upload' })
+    setConsentOpen(false)
+    setErrorMessage(t('errors.consentDeclined'))
+    setPhase('error')
   }
 
   return (
@@ -136,6 +152,7 @@ export default function UploadPolicyPage() {
       <CloudAIConsentModal
         open={consentOpen}
         onAccept={() => void handleConsentAccept()}
+        onDecline={() => void handleConsentDecline()}
         onCancel={() => setConsentOpen(false)}
       />
       <AppTopbar title={t('title')} subtitle={t('subtitle')} />
@@ -222,6 +239,18 @@ export default function UploadPolicyPage() {
 
           {!authLoading && !user ? (
             <p className="text-sm text-muted-foreground">{t('authRequired')}</p>
+          ) : null}
+
+          {errorMessage && isDeclined ? (
+            <p className="text-sm text-muted-foreground">
+              {t('errors.consentDeclinedHint')}{' '}
+              <Link
+                href="/settings"
+                className="font-medium text-primary hover:underline"
+              >
+                {t('errors.consentSettingsLink')}
+              </Link>
+            </p>
           ) : null}
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

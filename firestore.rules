@@ -74,6 +74,13 @@ service cloud.firestore {
       match /beneficiaries/{beneficiaryId} {
         allow read, create, update, delete: if isOwner(userId);
       }
+
+      // Append-only audit trail for sensitive user actions (consent, export, delete).
+      // Writes via Admin SDK / API routes only — clients cannot create or mutate logs.
+      match /auditLogs/{logId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
     }
 
     function isShareOwner(share) {

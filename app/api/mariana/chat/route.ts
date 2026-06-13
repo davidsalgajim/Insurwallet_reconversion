@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { getApiSession } from '@/lib/firebase/api-auth'
+import { readUserDocument } from '@/lib/firebase/user-doc-server'
 import { getFeatureFlags } from '@/lib/feature-flags'
 import { loadMarianaPolicyContext } from '@/lib/server/mariana-context'
 import { getServerEnv } from '@/lib/server/env-server'
+import { isCloudAIDeclined, UserConsentsSchema } from '@/lib/schemas/consents'
 import {
   checkRateLimit,
   checkSessionTokenLimit,
@@ -82,6 +84,11 @@ export async function POST(request: Request) {
   }
 
   const policyContext = await loadMarianaPolicyContext(session.uid)
+  const userData = await readUserDocument(session.uid)
+  const consents = UserConsentsSchema.safeParse(userData?.consents)
+  const cloudAiDeclined = isCloudAIDeclined(
+    consents.success ? consents.data : null
+  )
   const { ANTHROPIC_API_KEY } = getServerEnv()
 
   const encoder = new TextEncoder()
@@ -92,6 +99,7 @@ export async function POST(request: Request) {
           message,
           locale,
           apiKey: ANTHROPIC_API_KEY,
+          cloudAiConsented: !cloudAiDeclined,
           policies: policyContext.allPolicies,
           metadata: policyContext.metadata,
           toolContext: policyContext.toolContext,

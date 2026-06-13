@@ -7,13 +7,42 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import {
+  getCloudAIConsentStatus,
   hasCloudAIConsent,
   hasCookieConsent,
+  isCloudAIDeclined,
+  type CloudAIConsentOutcome,
+  type ConsentSource,
   type UserConsents,
 } from '@/lib/schemas/consents'
 import { cn } from '@/lib/utils/cn'
 
 const CONSENT_STORAGE_KEY = 'iw_cookie_consent'
+
+type PostConsentOptions = {
+  source?: ConsentSource
+}
+
+async function postCloudAIConsent(
+  outcome: CloudAIConsentOutcome,
+  options?: PostConsentOptions
+): Promise<UserConsents> {
+  const response = await fetch('/api/consents', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      consent: outcome,
+      source: options?.source ?? 'settings',
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('consent_failed')
+  }
+
+  const body = (await response.json()) as { consents?: UserConsents }
+  return body.consents ?? {}
+}
 
 export function CookieConsentBanner() {
   const t = useTranslations('legal.cookies')
@@ -136,23 +165,39 @@ export function useCloudAIConsent() {
     }
   }, [user])
 
-  const grantCloudAIConsent = useCallback(async () => {
-    await fetch('/api/consents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cloudAI: true }),
-    })
+  const setCloudAIConsent = useCallback(
+    async (outcome: CloudAIConsentOutcome, options?: PostConsentOptions) => {
+      const updated = await postCloudAIConsent(outcome, options)
+      setConsents(updated)
+    },
+    []
+  )
 
-    setConsents((current) => ({
-      ...current,
-      cloudAI: new Date(),
-    }))
-  }, [])
+  const grantCloudAIConsent = useCallback(
+    async (options?: PostConsentOptions) => {
+      await setCloudAIConsent('accepted', options)
+    },
+    [setCloudAIConsent]
+  )
+
+  const declineCloudAIConsent = useCallback(
+    async (options?: PostConsentOptions) => {
+      await setCloudAIConsent('declined', options)
+    },
+    [setCloudAIConsent]
+  )
+
+  const resolvedConsents = user ? consents : null
 
   return {
     loading: Boolean(user) && loading,
-    hasConsent: hasCloudAIConsent(user ? consents : null),
-    hasCookieConsent: hasCookieConsent(user ? consents : null),
+    consents: resolvedConsents,
+    consentStatus: getCloudAIConsentStatus(resolvedConsents),
+    hasConsent: hasCloudAIConsent(resolvedConsents),
+    isDeclined: isCloudAIDeclined(resolvedConsents),
+    hasCookieConsent: hasCookieConsent(resolvedConsents),
     grantCloudAIConsent,
+    declineCloudAIConsent,
+    setCloudAIConsent,
   }
 }

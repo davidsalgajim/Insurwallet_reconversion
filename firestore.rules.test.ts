@@ -190,6 +190,35 @@ describe.runIf(RUN_RULES_TESTS)('firestore.rules', () => {
         })
       )
     })
+
+    it('allows owner to read user auditLogs but not write them', async () => {
+      await seedUser(OWNER_UID)
+
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const adminDb = context.firestore()
+        await setDoc(doc(adminDb, 'users', OWNER_UID, 'auditLogs', 'log-1'), {
+          action: 'consent.cloudAI',
+          outcome: 'accepted',
+          at: new Date().toISOString(),
+          version: '2026-06-01',
+          source: 'settings',
+        })
+      })
+
+      const ownerDb = dbFor(OWNER_UID)
+      await assertSucceeds(
+        getDoc(doc(ownerDb, 'users', OWNER_UID, 'auditLogs', 'log-1'))
+      )
+      await assertFails(
+        setDoc(doc(ownerDb, 'users', OWNER_UID, 'auditLogs', 'log-2'), {
+          action: 'consent.cloudAI',
+          outcome: 'declined',
+          at: new Date().toISOString(),
+          version: '2026-06-01',
+          source: 'settings',
+        })
+      )
+    })
   })
 
   describe('policies/{policyId}', () => {
