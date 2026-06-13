@@ -8,6 +8,7 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { Link } from '@/i18n/navigation'
 import { incrementMarianaQueryCount } from '@/lib/utils/mariana-stats'
 import { buildConversationContext } from '@/mariana/rolling-summary'
+import type { ChatTurn } from '@/mariana/rolling-summary'
 import type { MarianaCitation } from '@/mariana/types'
 import { cn } from '@/lib/utils/cn'
 
@@ -97,17 +98,20 @@ export function MarianaChat({ suggestedQuestions }: MarianaChatProps) {
       }
       const assistantId = crypto.randomUUID()
 
-      setMessages((prev) => [
-        ...prev,
-        userMessage,
-        { id: assistantId, role: 'assistant', content: '', citations: [] },
-      ])
-
-      try {
-        const priorTurns = messages.map((entry) => ({
+      let priorTurns: ChatTurn[] = []
+      setMessages((prev) => {
+        priorTurns = prev.map((entry) => ({
           role: entry.role,
           content: entry.content,
         }))
+        return [
+          ...prev,
+          userMessage,
+          { id: assistantId, role: 'assistant', content: '', citations: [] },
+        ]
+      })
+
+      try {
         const { rollingSummary, recentTurns } =
           buildConversationContext(priorTurns)
 
