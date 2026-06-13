@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   BeneficiaryEntrySchema,
+  BenefitEntrySchema,
   CoverageEntrySchema,
   DeductibleEntrySchema,
   PolicySchema,
@@ -39,6 +40,8 @@ const validPolicy = {
       pct: 100,
     },
   ],
+  benefitEntries: [{ name: 'Hospitalización', category: 'Salud' }],
+  hasNoExpiration: false,
   sharedWith: [],
   status: 'active',
   createdAt: new Date('2025-01-01'),
@@ -85,6 +88,16 @@ describe('Policy schemas', () => {
         idNumber: '9876543210',
         relationship: 'child',
         pct: 50,
+      }).success
+    ).toBe(true)
+  })
+
+  it('validates benefit entries', () => {
+    expect(
+      BenefitEntrySchema.safeParse({
+        name: 'Hospitalización',
+        description: 'Cobertura hospitalaria',
+        category: 'Salud',
       }).success
     ).toBe(true)
   })

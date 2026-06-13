@@ -89,8 +89,8 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 2.3 `firestore.rules` (owner, sharedWith read, subcolecciones documents/auditLogs) + 19 tests — ejecutar con emulador (requiere JDK 21+; `firebase-tools` ≥15)
   - [x] 2.4 `storage.rules` (mime PDF/imágenes, máx 20MB, owner) + 6 tests emulator-ready
   - [x] 2.5 `firestore.indexes.json` (ownerUid+status, ownerUid+endDate, sharedWith+endDate)
-  - [x] 2.6 Wizard paso 1 + paso 2 manual + upload PDF (`/policies/new/upload`, Storage, validación Zod, estados) — revisión IA (pasos 3-4) pendientes F2
-  - [x] 2.7 Lista de pólizas conectada a Firestore (`usePolicies`, `PoliciesList`) + detalle `/policies/[id]` (`PolicyDetailView`, edit/delete)
+  - [x] 2.6 Wizard paso 1 + paso 2 manual ampliado (tipo, vigencias, prima, agente, coberturas/deducibles/beneficios estructurados) + upload PDF — revisión IA (pasos 3-4) pendientes F2
+  - [x] 2.7 Lista de pólizas con tabs Mis pólizas / Compartidas conmigo (`listSharedPoliciesForUser`, `usePolicies`) + pantalla `/policies/benefits` + detalle `/policies/[id]` con lectura compartida
   - [x] 2.8 Dashboard con KPIs y vencimientos reales desde Firestore (`dashboard-summary.tsx`)
   - [x] 2.9 Edición y borrado de pólizas con confirmación + `auditLogs` — detalle `/policies/[id]`, edit `/policies/[id]/edit`
   - [x] 2.10 Estados computed de póliza (active/expiring/expired) como helper puro con tests + Scheduled Function diaria que actualiza `status`

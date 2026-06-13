@@ -6,24 +6,36 @@ import { useTranslations } from 'next-intl'
 import { useAuth } from '@/components/auth/auth-provider'
 import type { PolicyDocument } from '@/lib/firebase/policies'
 
-async function loadPoliciesForUid(uid: string): Promise<PolicyDocument[]> {
-  const [{ db }, { listPoliciesForUser }] = await Promise.all([
-    import('@/lib/firebase/client'),
-    import('@/lib/firebase/policies'),
+async function loadPoliciesForUid(uid: string): Promise<{
+  ownedPolicies: PolicyDocument[]
+  sharedPolicies: PolicyDocument[]
+}> {
+  const [{ db }, { listPoliciesForUser, listSharedPoliciesForUser }] =
+    await Promise.all([
+      import('@/lib/firebase/client'),
+      import('@/lib/firebase/policies'),
+    ])
+
+  const [ownedPolicies, sharedPolicies] = await Promise.all([
+    listPoliciesForUser(db, uid),
+    listSharedPoliciesForUser(db, uid),
   ])
-  return listPoliciesForUser(db, uid)
+
+  return { ownedPolicies, sharedPolicies }
 }
 
 export function usePolicies() {
   const t = useTranslations('policies.errors')
   const { user, loading: authLoading } = useAuth()
-  const [policies, setPolicies] = useState<PolicyDocument[]>([])
+  const [ownedPolicies, setOwnedPolicies] = useState<PolicyDocument[]>([])
+  const [sharedPolicies, setSharedPolicies] = useState<PolicyDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     if (!user) {
-      setPolicies([])
+      setOwnedPolicies([])
+      setSharedPolicies([])
       setLoading(false)
       setError(null)
       return
@@ -34,10 +46,12 @@ export function usePolicies() {
 
     try {
       const nextPolicies = await loadPoliciesForUid(user.uid)
-      setPolicies(nextPolicies)
+      setOwnedPolicies(nextPolicies.ownedPolicies)
+      setSharedPolicies(nextPolicies.sharedPolicies)
     } catch {
       setError(t('loadFailed'))
-      setPolicies([])
+      setOwnedPolicies([])
+      setSharedPolicies([])
     } finally {
       setLoading(false)
     }
@@ -50,7 +64,8 @@ export function usePolicies() {
 
     if (!user) {
       queueMicrotask(() => {
-        setPolicies([])
+        setOwnedPolicies([])
+        setSharedPolicies([])
         setLoading(false)
         setError(null)
       })
@@ -69,13 +84,15 @@ export function usePolicies() {
     loadPoliciesForUid(user.uid)
       .then((nextPolicies) => {
         if (!cancelled) {
-          setPolicies(nextPolicies)
+          setOwnedPolicies(nextPolicies.ownedPolicies)
+          setSharedPolicies(nextPolicies.sharedPolicies)
         }
       })
       .catch(() => {
         if (!cancelled) {
           setError(t('loadFailed'))
-          setPolicies([])
+          setOwnedPolicies([])
+          setSharedPolicies([])
         }
       })
       .finally(() => {
@@ -90,7 +107,9 @@ export function usePolicies() {
   }, [authLoading, t, user])
 
   return {
-    policies,
+    policies: ownedPolicies,
+    ownedPolicies,
+    sharedPolicies,
     loading: authLoading || loading,
     error,
     refresh,

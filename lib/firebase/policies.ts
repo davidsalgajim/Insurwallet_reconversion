@@ -19,11 +19,18 @@ import {
   type PolicyAuditAction,
 } from '@/lib/schemas/policy-audit'
 import {
+  BenefitEntrySchema,
+  BeneficiaryEntrySchema,
+  CoverageEntrySchema,
+  DeductibleEntrySchema,
   PaymentFrequencySchema,
+  PolicyAgentSchema,
   PolicySchema,
   PolicyTypeSchema,
   type Policy,
+  type PolicyAgent,
 } from '@/lib/schemas/policy'
+import { resolveEndDateForStorage } from '@/lib/utils/policy-dates'
 import { computePolicyStatus } from '@/lib/utils/policy-status'
 
 export type PolicyDocument = Policy & { id: string }
@@ -34,15 +41,22 @@ export const CreatePolicyInputSchema = z.object({
   policyNumber: z.string().min(1),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
+  hasNoExpiration: z.boolean().optional(),
   policyType: PolicyTypeSchema.optional(),
   holderName: z.string().min(1).optional(),
   premium: z.number().nonnegative().optional(),
   currency: z.string().length(3).optional(),
   paymentFrequency: PaymentFrequencySchema.optional(),
   coverages: z.string().optional(),
+  beneficiaries: z.string().optional(),
   exclusions: z.string().optional(),
   waitingPeriods: z.string().optional(),
   notes: z.string().optional(),
+  agent: PolicyAgentSchema.partial().optional(),
+  coverageEntries: z.array(CoverageEntrySchema).optional(),
+  deductibleEntries: z.array(DeductibleEntrySchema).optional(),
+  beneficiaryEntries: z.array(BeneficiaryEntrySchema).optional(),
+  benefitEntries: z.array(BenefitEntrySchema).optional(),
 })
 
 export type CreatePolicyInput = z.infer<typeof CreatePolicyInputSchema>
@@ -114,11 +128,21 @@ function assertPolicyOwner(policy: Policy, actorUid: string): void {
   }
 }
 
+function resolveAgent(agent?: Partial<PolicyAgent>): PolicyAgent {
+  return PolicyAgentSchema.parse({
+    name: agent?.name?.trim() || DEFAULT_AGENT.name,
+    phone: agent?.phone?.trim() || DEFAULT_AGENT.phone,
+    email: agent?.email?.trim() || DEFAULT_AGENT.email,
+  })
+}
+
 export function buildPolicyFromInput(
   input: CreatePolicyInput,
   now: Date = new Date()
 ): Policy {
   const parsed = CreatePolicyInputSchema.parse(input)
+  const hasNoExpiration = parsed.hasNoExpiration ?? false
+  const endDate = resolveEndDateForStorage(parsed.endDate, hasNoExpiration)
 
   return {
     ownerUid: parsed.ownerUid,
@@ -127,20 +151,28 @@ export function buildPolicyFromInput(
     policyType: parsed.policyType ?? 'other',
     holderName: parsed.holderName ?? parsed.insurerName,
     startDate: parsed.startDate,
-    endDate: parsed.endDate,
+    endDate,
+    hasNoExpiration,
     premium: parsed.premium ?? 0,
     currency: parsed.currency ?? 'COP',
     paymentFrequency: parsed.paymentFrequency ?? 'annual',
     coverages: parsed.coverages,
+    beneficiaries: parsed.beneficiaries,
     exclusions: parsed.exclusions,
     waitingPeriods: parsed.waitingPeriods,
     notes: parsed.notes,
-    agent: DEFAULT_AGENT,
-    coverageEntries: [],
-    deductibleEntries: [],
-    beneficiaryEntries: [],
+    agent: resolveAgent(parsed.agent),
+    coverageEntries: parsed.coverageEntries ?? [],
+    deductibleEntries: parsed.deductibleEntries ?? [],
+    beneficiaryEntries: parsed.beneficiaryEntries ?? [],
+    benefitEntries: parsed.benefitEntries ?? [],
     sharedWith: [],
-    status: computePolicyStatus(parsed.startDate, parsed.endDate, now),
+    status: computePolicyStatus(
+      parsed.startDate,
+      endDate,
+      now,
+      hasNoExpiration
+    ),
     createdAt: now,
     updatedAt: now,
   }
@@ -195,7 +227,12 @@ export function parsePolicyDocument(
   return {
     id,
     ...parsed,
-    status: computePolicyStatus(parsed.startDate, parsed.endDate, now),
+    status: computePolicyStatus(
+      parsed.startDate,
+      parsed.endDate,
+      now,
+      parsed.hasNoExpiration
+    ),
   }
 }
 
@@ -206,14 +243,20 @@ export function mergePolicyUpdate(
 ): Policy {
   const parsed = UpdatePolicyInputSchema.parse(input)
   const startDate = parsed.startDate ?? existing.startDate
-  const endDate = parsed.endDate ?? existing.endDate
+  const hasNoExpiration = parsed.hasNoExpiration ?? existing.hasNoExpiration
+  const endDate = resolveEndDateForStorage(
+    parsed.endDate ?? existing.endDate,
+    hasNoExpiration
+  )
 
   return {
     ...existing,
     ...parsed,
     startDate,
     endDate,
-    status: computePolicyStatus(startDate, endDate, now),
+    hasNoExpiration,
+    agent: parsed.agent ? resolveAgent(parsed.agent) : existing.agent,
+    status: computePolicyStatus(startDate, endDate, now, hasNoExpiration),
     updatedAt: now,
   }
 }
@@ -238,6 +281,24 @@ export async function listPoliciesForUser(
   const policiesQuery = query(
     collection(db, POLICIES_COLLECTION),
     where('ownerUid', '==', ownerUid)
+  )
+  const snapshot = await getDocs(policiesQuery)
+
+  return snapshot.docs.map((policyDoc) =>
+    parsePolicyDocument(
+      policyDoc.id,
+      policyDoc.data() as Record<string, unknown>
+    )
+  )
+}
+
+export async function listSharedPoliciesForUser(
+  db: Firestore,
+  uid: string
+): Promise<PolicyDocument[]> {
+  const policiesQuery = query(
+    collection(db, POLICIES_COLLECTION),
+    where('sharedWith', 'array-contains', uid)
   )
   const snapshot = await getDocs(policiesQuery)
 

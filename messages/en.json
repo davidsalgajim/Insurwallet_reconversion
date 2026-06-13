@@ -222,7 +222,65 @@
     "manual": {
       "title": "New policy",
       "stepSubtitle": "Step 2 of 4 — basic insurance details",
-      "signInHint": "Sign in to save this policy to your portfolio."
+      "stepSubtitleExtended": "Step 2 of 4 — complete your policy details",
+      "signInHint": "Sign in to save this policy to your portfolio.",
+      "dateError": "End date must be on or after the start date."
+    },
+    "tabs": {
+      "aria": "Policy sections",
+      "owned": "My policies",
+      "sharedWithMe": "Shared with me"
+    },
+    "sharedWithMe": {
+      "badge": "Shared",
+      "sharedAccess": "Read-only access shared with you",
+      "noExpiration": "No expiration",
+      "emptyTitle": "No shared policies yet",
+      "emptyDesc": "When someone shares a policy with you, it will appear here."
+    },
+    "benefits": {
+      "link": "View benefits"
+    },
+    "benefitsPage": {
+      "title": "Benefits",
+      "subtitle": "All active benefits across your portfolio",
+      "backToPolicies": "Back to policies",
+      "totalBenefits": "Registered benefits",
+      "policiesWithBenefits": "Policies with benefits",
+      "searchPlaceholder": "Search benefit or insurer",
+      "generalCategory": "General",
+      "emptyTitle": "No benefits yet",
+      "emptyDesc": "Add benefits when creating or editing a policy manually.",
+      "noResultsTitle": "No results",
+      "noResultsDesc": "Try a different search term."
+    },
+    "structured": {
+      "coveragesTitle": "Structured coverages",
+      "coveragesEmpty": "Add coverage amounts if you know them.",
+      "addCoverage": "Add coverage",
+      "coverageNamePlaceholder": "Coverage name",
+      "deductiblesTitle": "Deductibles",
+      "deductiblesEmpty": "Record deductibles by incident type.",
+      "addDeductible": "Add deductible",
+      "deductibleIncidentPlaceholder": "Incident type",
+      "benefitsTitle": "Additional benefits",
+      "benefitsEmpty": "Record included assistance or perks.",
+      "addBenefit": "Add benefit",
+      "benefitNamePlaceholder": "Benefit name",
+      "benefitQuantityPlaceholder": "Quantity",
+      "benefitDescriptionPlaceholder": "Benefit description",
+      "amountPlaceholder": "Amount",
+      "removeRow": "Remove row"
+    },
+    "agent": {
+      "title": "Agent or advisor",
+      "description": "Contact details for who sold or manages the policy.",
+      "name": "Name",
+      "namePlaceholder": "Agent name",
+      "phone": "Phone",
+      "phonePlaceholder": "+1 555 000 0000",
+      "email": "Email",
+      "emailPlaceholder": "agent@insurer.com"
     },
     "detail": {
       "title": "Policy details",
@@ -269,7 +327,10 @@
       "waitingPeriods": "Waiting periods",
       "waitingPeriodsPlaceholder": "Applicable waiting periods",
       "notes": "Notes",
-      "notesPlaceholder": "Additional notes"
+      "notesPlaceholder": "Additional notes",
+      "noExpiration": "No expiration date",
+      "beneficiariesNotes": "Beneficiaries (notes)",
+      "beneficiariesNotesPlaceholder": "Free-text beneficiary summary"
     },
     "types": {
       "life": "Life",

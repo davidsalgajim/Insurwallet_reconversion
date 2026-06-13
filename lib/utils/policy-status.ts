@@ -18,8 +18,13 @@ export function daysUntilPolicyEnd(
 export function computePolicyStatus(
   _startDate: Date,
   endDate: Date,
-  now: Date = new Date()
+  now: Date = new Date(),
+  hasNoExpiration = false
 ): PolicyStatus {
+  if (hasNoExpiration) {
+    return 'active'
+  }
+
   if (now > endDate) {
     return 'expired'
   }
@@ -34,8 +39,13 @@ export function computePolicyStatus(
 }
 
 export function resolvePolicyStatus<T extends PolicyStatusInput>(
-  policy: T,
+  policy: T & { hasNoExpiration?: boolean },
   now: Date = new Date()
 ): PolicyStatus {
-  return computePolicyStatus(policy.startDate, policy.endDate, now)
+  return computePolicyStatus(
+    policy.startDate,
+    policy.endDate,
+    now,
+    policy.hasNoExpiration
+  )
 }

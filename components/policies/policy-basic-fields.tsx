@@ -20,10 +20,12 @@ export type PolicyBasicFieldsValues = {
   holderName: string
   startDate: string
   endDate: string
+  hasNoExpiration: boolean
   premium: string
   currency: string
   paymentFrequency: PaymentFrequency
   coverages: string
+  beneficiaries: string
   exclusions: string
   waitingPeriods: string
   notes: string
@@ -144,13 +146,26 @@ export function PolicyBasicFields({
             id="endDate"
             name="endDate"
             type="date"
-            required
+            required={!values.hasNoExpiration}
+            disabled={values.hasNoExpiration}
             value={values.endDate}
             onChange={(event) => onChange('endDate', event.target.value)}
             className={policyFieldClassName}
           />
         </div>
       </div>
+
+      <label className="flex items-center gap-3 text-sm font-medium">
+        <input
+          type="checkbox"
+          checked={values.hasNoExpiration}
+          onChange={(event) =>
+            onChange('hasNoExpiration', event.target.checked)
+          }
+          className="size-4 rounded border-border text-primary focus:ring-primary/20"
+        />
+        {t('noExpiration')}
+      </label>
 
       {showExtendedFields ? (
         <>
@@ -292,10 +307,12 @@ export function policyDocumentToFormValues(
     holderName: policy.holderName,
     startDate: toDateInputValue(policy.startDate),
     endDate: toDateInputValue(policy.endDate),
+    hasNoExpiration: policy.hasNoExpiration,
     premium: String(policy.premium),
     currency: policy.currency,
     paymentFrequency: policy.paymentFrequency,
     coverages: policy.coverages ?? '',
+    beneficiaries: policy.beneficiaries ?? '',
     exclusions: policy.exclusions ?? '',
     waitingPeriods: policy.waitingPeriods ?? '',
     notes: policy.notes ?? '',

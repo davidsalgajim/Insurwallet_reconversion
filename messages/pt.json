@@ -222,7 +222,65 @@
     "manual": {
       "title": "Nova apólice",
       "stepSubtitle": "Passo 2 de 4 — dados básicos do seguro",
-      "signInHint": "Entre para salvar esta apólice na sua carteira."
+      "stepSubtitleExtended": "Passo 2 de 4 — complete os dados da apólice",
+      "signInHint": "Entre para salvar esta apólice na sua carteira.",
+      "dateError": "A data de fim deve ser igual ou posterior ao início."
+    },
+    "tabs": {
+      "aria": "Seções de apólices",
+      "owned": "Minhas apólices",
+      "sharedWithMe": "Compartilhadas comigo"
+    },
+    "sharedWithMe": {
+      "badge": "Compartilhada",
+      "sharedAccess": "Acesso somente leitura compartilhado com você",
+      "noExpiration": "Sem vencimento",
+      "emptyTitle": "Nenhuma apólice compartilhada",
+      "emptyDesc": "Quando alguém compartilhar uma apólice com você, ela aparecerá aqui."
+    },
+    "benefits": {
+      "link": "Ver benefícios"
+    },
+    "benefitsPage": {
+      "title": "Benefícios",
+      "subtitle": "Todos os benefícios ativos da sua carteira",
+      "backToPolicies": "Voltar às apólices",
+      "totalBenefits": "Benefícios registrados",
+      "policiesWithBenefits": "Apólices com benefícios",
+      "searchPlaceholder": "Buscar benefício ou seguradora",
+      "generalCategory": "Geral",
+      "emptyTitle": "Ainda não há benefícios",
+      "emptyDesc": "Adicione benefícios ao criar ou editar uma apólice manualmente.",
+      "noResultsTitle": "Sem resultados",
+      "noResultsDesc": "Tente outro termo de busca."
+    },
+    "structured": {
+      "coveragesTitle": "Coberturas estruturadas",
+      "coveragesEmpty": "Adicione valores por cobertura se souber.",
+      "addCoverage": "Adicionar cobertura",
+      "coverageNamePlaceholder": "Nome da cobertura",
+      "deductiblesTitle": "Franquias",
+      "deductiblesEmpty": "Registre franquias por tipo de sinistro.",
+      "addDeductible": "Adicionar franquia",
+      "deductibleIncidentPlaceholder": "Tipo de sinistro",
+      "benefitsTitle": "Benefícios adicionais",
+      "benefitsEmpty": "Registre assistências ou benefícios incluídos.",
+      "addBenefit": "Adicionar benefício",
+      "benefitNamePlaceholder": "Nome do benefício",
+      "benefitQuantityPlaceholder": "Quantidade",
+      "benefitDescriptionPlaceholder": "Descrição do benefício",
+      "amountPlaceholder": "Valor",
+      "removeRow": "Remover linha"
+    },
+    "agent": {
+      "title": "Agente ou assessor",
+      "description": "Dados de contato de quem vendeu ou gerencia a apólice.",
+      "name": "Nome",
+      "namePlaceholder": "Nome do agente",
+      "phone": "Telefone",
+      "phonePlaceholder": "+55 11 90000 0000",
+      "email": "E-mail",
+      "emailPlaceholder": "agente@seguradora.com"
     },
     "detail": {
       "title": "Detalhes da apólice",
@@ -269,7 +327,10 @@
       "waitingPeriods": "Períodos de carência",
       "waitingPeriodsPlaceholder": "Carências aplicáveis",
       "notes": "Notas",
-      "notesPlaceholder": "Observações adicionais"
+      "notesPlaceholder": "Observações adicionais",
+      "noExpiration": "Sem data de vencimento",
+      "beneficiariesNotes": "Beneficiários (notas)",
+      "beneficiariesNotesPlaceholder": "Resumo de beneficiários em texto livre"
     },
     "types": {
       "life": "Vida",

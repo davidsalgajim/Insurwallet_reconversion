@@ -85,7 +85,7 @@ export function PolicyDetailView() {
     status: statusLabel,
   } = usePolicyLabels()
   const { user } = useAuth()
-  const { policy, loading, error, isOwner } = usePolicy(policyId)
+  const { policy, loading, error, isOwner, isShared } = usePolicy(policyId)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [shareRefreshKey, setShareRefreshKey] = useState(0)
@@ -164,6 +164,11 @@ export function PolicyDetailView() {
                   <span className="pill-badge bg-primary/10 text-primary">
                     {policyType(policy.policyType)}
                   </span>
+                  {isShared ? (
+                    <span className="pill-badge bg-[var(--primitive-cyan)]/10 text-[var(--primitive-cyan)]">
+                      {t('sharedWithMe.badge')}
+                    </span>
+                  ) : null}
                 </div>
                 <p className="font-mono text-sm text-muted-foreground">
                   {policy.policyNumber}
@@ -222,7 +227,11 @@ export function PolicyDetailView() {
               />
               <DetailField
                 label={t('detail.validity')}
-                value={`${formatPolicyDate(policy.startDate, locale)} — ${formatPolicyDate(policy.endDate, locale)}`}
+                value={
+                  policy.hasNoExpiration
+                    ? t('sharedWithMe.noExpiration')
+                    : `${formatPolicyDate(policy.startDate, locale)} — ${formatPolicyDate(policy.endDate, locale)}`
+                }
               />
             </dl>
 
@@ -296,10 +305,40 @@ export function PolicyDetailView() {
             {policy.notes ? (
               <DetailTextBlock label={tf('notes')} value={policy.notes} />
             ) : null}
+            {policy.beneficiaries ? (
+              <DetailTextBlock
+                label={tf('beneficiariesNotes')}
+                value={policy.beneficiaries}
+              />
+            ) : null}
+            {policy.benefitEntries.length > 0 ? (
+              <div className="space-y-2 border-t border-border/60 pt-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t('benefitsPage.title')}
+                </h3>
+                <ul className="space-y-2">
+                  {policy.benefitEntries.map((benefit, index) => (
+                    <li
+                      key={`${benefit.name}-${index}`}
+                      className="rounded-[var(--radius-inner)] border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+                    >
+                      <p className="font-medium">{benefit.name}</p>
+                      {benefit.description ? (
+                        <p className="mt-1 text-muted-foreground">
+                          {benefit.description}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             {!policy.coverages &&
             !policy.exclusions &&
             !policy.waitingPeriods &&
-            !policy.notes ? (
+            !policy.notes &&
+            !policy.beneficiaries &&
+            policy.benefitEntries.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {t('detail.noExtraDetails')}
               </p>

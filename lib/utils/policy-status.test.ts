@@ -73,6 +73,12 @@ describe('computePolicyStatus', () => {
     expect(computePolicyStatus(futureStart, endDate, now)).toBe('active')
   })
 
+  it('returns active when policy has no expiration flag', () => {
+    const endDate = daysFrom(now, -30)
+
+    expect(computePolicyStatus(startDate, endDate, now, true)).toBe('active')
+  })
+
   it('exposes a 90-day expiring threshold constant', () => {
     expect(EXPIRING_THRESHOLD_DAYS).toBe(90)
   })

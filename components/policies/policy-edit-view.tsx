@@ -66,11 +66,15 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
           policyType: values.policyType,
           holderName: values.holderName.trim(),
           startDate: new Date(values.startDate),
-          endDate: new Date(values.endDate),
+          endDate: values.hasNoExpiration
+            ? new Date(values.startDate)
+            : new Date(values.endDate),
+          hasNoExpiration: values.hasNoExpiration,
           premium: values.premium ? Number(values.premium) : 0,
           currency: values.currency.trim() || 'COP',
           paymentFrequency: values.paymentFrequency,
           coverages: values.coverages.trim() || undefined,
+          beneficiaries: values.beneficiaries.trim() || undefined,
           exclusions: values.exclusions.trim() || undefined,
           waitingPeriods: values.waitingPeriods.trim() || undefined,
           notes: values.notes.trim() || undefined,

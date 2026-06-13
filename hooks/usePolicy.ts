@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import type { PolicyDocument } from '@/lib/firebase/policies'
+import { canReadPolicy, isPolicyOwner } from '@/lib/utils/policy-access'
 
 async function loadPolicyById(
   policyId: string
@@ -43,7 +44,7 @@ export function usePolicy(policyId: string | undefined) {
         return
       }
 
-      if (nextPolicy.ownerUid !== user.uid) {
+      if (!canReadPolicy(nextPolicy, user.uid)) {
         setPolicy(null)
         setError(t('forbidden'))
         return
@@ -93,7 +94,7 @@ export function usePolicy(policyId: string | undefined) {
           return
         }
 
-        if (nextPolicy.ownerUid !== user.uid) {
+        if (!canReadPolicy(nextPolicy, user.uid)) {
           setPolicy(null)
           setError(t('forbidden'))
           return
@@ -124,6 +125,12 @@ export function usePolicy(policyId: string | undefined) {
     error,
     refresh,
     isAuthenticated: Boolean(user),
-    isOwner: Boolean(user && policy && policy.ownerUid === user.uid),
+    isOwner: Boolean(user && policy && isPolicyOwner(policy, user.uid)),
+    isShared: Boolean(
+      user &&
+      policy &&
+      !isPolicyOwner(policy, user.uid) &&
+      canReadPolicy(policy, user.uid)
+    ),
   }
 }

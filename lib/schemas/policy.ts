@@ -53,6 +53,15 @@ export const BeneficiaryEntrySchema = z.object({
 })
 export type BeneficiaryEntry = z.infer<typeof BeneficiaryEntrySchema>
 
+export const BenefitEntrySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  contactInfo: z.string().optional(),
+  quantity: z.string().optional(),
+})
+export type BenefitEntry = z.infer<typeof BenefitEntrySchema>
+
 export const PolicyAgentSchema = z.object({
   name: z.string().min(1),
   phone: z.string().min(1),
@@ -68,10 +77,12 @@ export const PolicySchema = z.object({
   holderName: z.string().min(1),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
+  hasNoExpiration: z.boolean().default(false),
   premium: z.number().nonnegative(),
   currency: z.string().length(3),
   paymentFrequency: PaymentFrequencySchema,
   coverages: z.string().optional(),
+  beneficiaries: z.string().optional(),
   exclusions: z.string().optional(),
   waitingPeriods: z.string().optional(),
   notes: z.string().optional(),
@@ -79,6 +90,7 @@ export const PolicySchema = z.object({
   coverageEntries: z.array(CoverageEntrySchema).default([]),
   deductibleEntries: z.array(DeductibleEntrySchema).default([]),
   beneficiaryEntries: z.array(BeneficiaryEntrySchema).default([]),
+  benefitEntries: z.array(BenefitEntrySchema).default([]),
   sharedWith: z.array(z.string().min(1)).default([]),
   status: PolicyStatusSchema,
   createdAt: z.coerce.date(),

@@ -222,7 +222,65 @@
     "manual": {
       "title": "Nueva póliza",
       "stepSubtitle": "Paso 2 de 4 — datos básicos del seguro",
-      "signInHint": "Inicia sesión para guardar esta póliza en tu cartera."
+      "stepSubtitleExtended": "Paso 2 de 4 — completa los datos de tu seguro",
+      "signInHint": "Inicia sesión para guardar esta póliza en tu cartera.",
+      "dateError": "La fecha de fin debe ser posterior o igual al inicio."
+    },
+    "tabs": {
+      "aria": "Secciones de pólizas",
+      "owned": "Mis pólizas",
+      "sharedWithMe": "Compartidas conmigo"
+    },
+    "sharedWithMe": {
+      "badge": "Compartida",
+      "sharedAccess": "Acceso de solo lectura compartido contigo",
+      "noExpiration": "Sin vencimiento",
+      "emptyTitle": "No tienes pólizas compartidas",
+      "emptyDesc": "Cuando alguien comparta una póliza contigo, aparecerá aquí."
+    },
+    "benefits": {
+      "link": "Ver beneficios"
+    },
+    "benefitsPage": {
+      "title": "Beneficios",
+      "subtitle": "Todos los beneficios activos de tu cartera",
+      "backToPolicies": "Volver a pólizas",
+      "totalBenefits": "Beneficios registrados",
+      "policiesWithBenefits": "Pólizas con beneficios",
+      "searchPlaceholder": "Buscar beneficio o aseguradora",
+      "generalCategory": "General",
+      "emptyTitle": "Aún no hay beneficios",
+      "emptyDesc": "Agrega beneficios al crear o editar una póliza manualmente.",
+      "noResultsTitle": "Sin resultados",
+      "noResultsDesc": "Prueba con otro término de búsqueda."
+    },
+    "structured": {
+      "coveragesTitle": "Coberturas estructuradas",
+      "coveragesEmpty": "Agrega montos por cobertura si los conoces.",
+      "addCoverage": "Agregar cobertura",
+      "coverageNamePlaceholder": "Nombre de la cobertura",
+      "deductiblesTitle": "Deducibles",
+      "deductiblesEmpty": "Registra deducibles por tipo de siniestro.",
+      "addDeductible": "Agregar deducible",
+      "deductibleIncidentPlaceholder": "Tipo de siniestro",
+      "benefitsTitle": "Beneficios adicionales",
+      "benefitsEmpty": "Registra asistencias o beneficios incluidos.",
+      "addBenefit": "Agregar beneficio",
+      "benefitNamePlaceholder": "Nombre del beneficio",
+      "benefitQuantityPlaceholder": "Cantidad",
+      "benefitDescriptionPlaceholder": "Descripción del beneficio",
+      "amountPlaceholder": "Monto",
+      "removeRow": "Eliminar fila"
+    },
+    "agent": {
+      "title": "Agente o asesor",
+      "description": "Datos de contacto de quien te vendió o gestiona la póliza.",
+      "name": "Nombre",
+      "namePlaceholder": "Nombre del agente",
+      "phone": "Teléfono",
+      "phonePlaceholder": "+57 300 000 0000",
+      "email": "Correo",
+      "emailPlaceholder": "agente@aseguradora.com"
     },
     "detail": {
       "title": "Detalle de póliza",
@@ -269,7 +327,10 @@
       "waitingPeriods": "Periodos de carencia",
       "waitingPeriodsPlaceholder": "Carencias aplicables",
       "notes": "Notas",
-      "notesPlaceholder": "Observaciones adicionales"
+      "notesPlaceholder": "Observaciones adicionales",
+      "noExpiration": "Sin fecha de vencimiento",
+      "beneficiariesNotes": "Beneficiarios (notas)",
+      "beneficiariesNotesPlaceholder": "Resumen de beneficiarios en texto libre"
     },
     "types": {
       "life": "Vida",
