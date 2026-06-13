@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
-import { getAdminFirestore } from '@/lib/firebase/admin'
+import {
+  mergeUserDocument,
+  readUserDocument,
+} from '@/lib/firebase/user-doc-server'
 import {
   NotificationChannelsSchema,
   NotificationPrefsSchema,
@@ -24,12 +27,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const userSnap = await getAdminFirestore()
-    .collection('users')
-    .doc(session.uid)
-    .get()
-
-  const userData = userSnap.data()
+  const userData = await readUserDocument(session.uid)
   const prefs = NotificationPrefsSchema.safeParse(userData?.notificationPrefs)
   const channels = NotificationChannelsSchema.safeParse(
     userData?.notificationChannels
@@ -63,14 +61,11 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Invalid preferences' }, { status: 400 })
   }
 
-  await getAdminFirestore().collection('users').doc(session.uid).set(
-    {
-      notificationPrefs: parsed.data.notificationPrefs,
-      notificationChannels: parsed.data.notificationChannels,
-      updatedAt: new Date(),
-    },
-    { merge: true }
-  )
+  await mergeUserDocument(session.uid, {
+    notificationPrefs: parsed.data.notificationPrefs,
+    notificationChannels: parsed.data.notificationChannels,
+    updatedAt: new Date(),
+  })
 
   return NextResponse.json({
     notificationPrefs: parsed.data.notificationPrefs,

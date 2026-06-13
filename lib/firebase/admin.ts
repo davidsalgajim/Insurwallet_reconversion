@@ -14,17 +14,19 @@ import { getFirestore, type Firestore } from 'firebase-admin/firestore'
 import { getStorage, type Storage } from 'firebase-admin/storage'
 
 const AUTH_EMULATOR_HOST = '127.0.0.1:9099'
+const FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080'
 
 function isAuthEmulatorEnabled(): boolean {
   return process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === 'true'
 }
 
-function configureAuthEmulator(): void {
+function configureEmulators(): void {
   if (!isAuthEmulatorEnabled()) {
     return
   }
 
   process.env.FIREBASE_AUTH_EMULATOR_HOST ??= AUTH_EMULATOR_HOST
+  process.env.FIRESTORE_EMULATOR_HOST ??= FIRESTORE_EMULATOR_HOST
 }
 
 function resolveProjectId(): string {
@@ -78,7 +80,7 @@ function resolveAdminApp(): App {
     return existing
   }
 
-  configureAuthEmulator()
+  configureEmulators()
 
   const projectId = resolveProjectId()
   const serviceAccount = loadServiceAccountFromEnv()

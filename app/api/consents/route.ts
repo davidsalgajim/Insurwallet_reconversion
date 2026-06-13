@@ -1,9 +1,11 @@
-import { FieldValue } from 'firebase-admin/firestore'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
-import { getAdminFirestore } from '@/lib/firebase/admin'
+import {
+  mergeUserDocument,
+  readUserDocument,
+} from '@/lib/firebase/user-doc-server'
 import { UserConsentsSchema } from '@/lib/schemas/consents'
 
 export const runtime = 'nodejs'
@@ -20,12 +22,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const userSnap = await getAdminFirestore()
-    .collection('users')
-    .doc(session.uid)
-    .get()
-
-  const consents = UserConsentsSchema.safeParse(userSnap.data()?.consents)
+  const userData = await readUserDocument(session.uid)
+  const consents = UserConsentsSchema.safeParse(userData?.consents)
 
   return NextResponse.json({
     consents: consents.success ? consents.data : {},
@@ -56,20 +54,23 @@ export async function POST(request: Request) {
 
   const now = new Date()
   const update: Record<string, unknown> = {
-    updatedAt: FieldValue.serverTimestamp(),
+    updatedAt: now,
   }
 
   if (parsed.data.cookies) {
-    update['consents.cookies'] = now
+    update.consents = { cookies: now }
   }
 
   if (parsed.data.cloudAI) {
-    update['consents.cloudAI'] = now
+    update.consents = {
+      ...(typeof update.consents === 'object' && update.consents !== null
+        ? (update.consents as Record<string, unknown>)
+        : {}),
+      cloudAI: now,
+    }
   }
 
-  await getAdminFirestore().collection('users').doc(session.uid).set(update, {
-    merge: true,
-  })
+  await mergeUserDocument(session.uid, update)
 
   return NextResponse.json({ status: 'ok' })
 }

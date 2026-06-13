@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
+import { adminFirestoreUnavailableResponse } from '@/lib/firebase/admin-required'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { getFeatureFlags } from '@/lib/feature-flags'
 import { PREMIUM_MONTHLY_AMOUNT_CENTS } from '@/lib/payments/constants'
@@ -19,6 +20,11 @@ export async function POST(request: Request) {
 
   if (!session?.uid || !session.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const adminUnavailable = adminFirestoreUnavailableResponse()
+  if (adminUnavailable) {
+    return adminUnavailable
   }
 
   const flags = getFeatureFlags()

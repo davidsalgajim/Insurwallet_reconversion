@@ -1,9 +1,8 @@
-import { FieldValue } from 'firebase-admin/firestore'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
-import { getAdminFirestore } from '@/lib/firebase/admin'
+import { appendUserArrayField } from '@/lib/firebase/user-doc-server'
 
 export const runtime = 'nodejs'
 
@@ -31,16 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 400 })
   }
 
-  const db = getAdminFirestore()
-  const userRef = db.collection('users').doc(session.uid)
-
-  await userRef.set(
-    {
-      fcmTokens: FieldValue.arrayUnion(parsed.data.token),
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    { merge: true }
-  )
+  await appendUserArrayField(session.uid, 'fcmTokens', parsed.data.token)
 
   return NextResponse.json({ status: 'registered' })
 }

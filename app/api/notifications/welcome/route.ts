@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
-import { getAdminFirestore } from '@/lib/firebase/admin'
+import {
+  mergeUserDocument,
+  readUserDocument,
+} from '@/lib/firebase/user-doc-server'
 import { getServerEnv, hasResendApiKey } from '@/lib/server/env-server'
 import { sendWelcomeEmail } from '@/lib/server/welcome-email'
 
@@ -29,9 +32,7 @@ export async function POST(request: Request) {
   const parsed = welcomeSchema.safeParse(body)
   const locale = parsed.success ? parsed.data.locale : 'es'
 
-  const userRef = getAdminFirestore().collection('users').doc(session.uid)
-  const userSnap = await userRef.get()
-  const userData = userSnap.data()
+  const userData = await readUserDocument(session.uid)
 
   if (userData?.welcomeEmailSentAt) {
     return NextResponse.json({ status: 'already_sent' })
@@ -53,12 +54,9 @@ export async function POST(request: Request) {
     emailSent = Boolean(result)
   }
 
-  await userRef.set(
-    {
-      welcomeEmailSentAt: new Date(),
-    },
-    { merge: true }
-  )
+  await mergeUserDocument(session.uid, {
+    welcomeEmailSentAt: new Date(),
+  })
 
   return NextResponse.json({
     status: emailSent ? 'sent' : 'skipped',

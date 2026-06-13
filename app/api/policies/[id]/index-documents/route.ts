@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getApiSession } from '@/lib/firebase/api-auth'
+import { adminFirestoreUnavailableResponse } from '@/lib/firebase/admin-required'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { parsePolicyDocument } from '@/lib/firebase/policies'
 import { indexPolicyDocumentsForRag } from '@/lib/server/document-chunks'
@@ -15,6 +16,11 @@ export async function POST(_request: Request, context: RouteContext) {
   const session = await getApiSession()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const adminUnavailable = adminFirestoreUnavailableResponse()
+  if (adminUnavailable) {
+    return adminUnavailable
   }
 
   const { id: policyId } = await context.params
