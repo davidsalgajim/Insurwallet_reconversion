@@ -192,12 +192,6 @@ export function SettingsView() {
           </section>
 
           <section aria-labelledby="settings-notifications">
-            <h2
-              id="settings-notifications"
-              className={settingsSectionTitleClass}
-            >
-              {t('sections.notifications')}
-            </h2>
             <NotificationPrefsPanel onChannelsChange={handleChannelsChange} />
             <Link
               href="/alerts"

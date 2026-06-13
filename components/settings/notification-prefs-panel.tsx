@@ -11,6 +11,11 @@ import {
   defaultNotificationChannels,
   defaultNotificationPrefs,
 } from '@/lib/schemas/user'
+import {
+  settingsHintClass,
+  settingsLabelClass,
+  settingsSectionTitleClass,
+} from '@/components/settings/settings-shared'
 import { cn } from '@/lib/utils/cn'
 
 type ChannelMode = 'email' | 'push' | 'both'
@@ -48,6 +53,7 @@ export function NotificationPrefsPanel({
   onChannelsChange,
 }: NotificationPrefsPanelProps) {
   const t = useTranslations('settings.notifications')
+  const tSettings = useTranslations('settings')
   const [prefs, setPrefs] = useState<NotificationPrefs>(
     defaultNotificationPrefs()
   )
@@ -136,84 +142,95 @@ export function NotificationPrefsPanel({
 
   return (
     <div className={className}>
-      <div className="mb-6">
-        <p className="mb-1 text-sm font-medium text-foreground">
-          {t('channels.title')}
-        </p>
-        <p className="mb-3 text-sm text-muted-foreground">
-          {t('channels.description')}
-        </p>
-        <div
-          className="glass-panel grid gap-2 p-2 sm:grid-cols-3"
-          role="radiogroup"
-          aria-label={t('channels.title')}
-        >
-          {channelModes.map((item) => (
-            <button
-              key={item.mode}
-              type="button"
-              role="radio"
-              aria-checked={activeMode === item.mode}
-              disabled={loading || saving}
-              onClick={() => setChannelMode(item.mode)}
-              className={cn(
-                'rounded-xl px-3 py-2.5 text-left text-sm font-medium transition',
-                activeMode === item.mode
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-white/60 text-foreground hover:bg-white/80'
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
+      <div className="glass-panel overflow-hidden">
+        <div className="px-5 pt-4">
+          <h2 id="settings-notifications" className={settingsSectionTitleClass}>
+            {tSettings('sections.notifications')}
+          </h2>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {t('channels.pushHint')}
-        </p>
-      </div>
 
-      <p className="mb-1 text-sm font-medium text-foreground">
-        {t('eventsTitle')}
-      </p>
-      <p className="mb-3 text-sm text-muted-foreground">{t('description')}</p>
-      <ul className="glass-panel divide-y divide-border/60 overflow-hidden">
-        {items.map((item) => (
-          <li
-            key={item.key}
-            className="flex items-start justify-between gap-4 px-4 py-3"
+        <div className="border-t border-border/60 px-5 py-4">
+          <p className={settingsLabelClass}>{t('channels.title')}</p>
+          <p className={settingsHintClass}>{t('channels.description')}</p>
+          <div
+            className="mt-3 grid gap-2 rounded-[var(--radius-inner)] bg-white/40 p-2 sm:grid-cols-3"
+            role="radiogroup"
+            aria-label={t('channels.title')}
           >
-            <span className="min-w-0 flex-1 text-sm font-medium leading-snug">
-              {item.label}
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={prefs[item.key]}
-              disabled={loading || saving}
-              onClick={() => togglePref(item.key)}
-              className="relative mt-0.5 inline-flex h-6 w-11 shrink-0 rounded-full border border-border/60 bg-muted transition data-[on=true]:bg-primary"
-              data-on={prefs[item.key] ? 'true' : 'false'}
-              style={{
-                backgroundColor: prefs[item.key] ? 'var(--primary)' : undefined,
-              }}
-            >
-              <span
-                className="pointer-events-none inline-block size-5 translate-x-0.5 rounded-full bg-white shadow transition-transform"
-                style={{
-                  transform: prefs[item.key]
-                    ? 'translateX(1.25rem)'
-                    : undefined,
-                }}
-              />
-            </button>
-          </li>
-        ))}
-      </ul>
-      {message ? (
-        <p className="mt-3 text-sm text-muted-foreground" role="status">
-          {message}
-        </p>
-      ) : null}
+            {channelModes.map((item) => (
+              <button
+                key={item.mode}
+                type="button"
+                role="radio"
+                aria-checked={activeMode === item.mode}
+                disabled={loading || saving}
+                onClick={() => setChannelMode(item.mode)}
+                className={cn(
+                  'rounded-xl px-3 py-2.5 text-left text-sm font-medium transition',
+                  activeMode === item.mode
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-white/60 text-foreground hover:bg-white/80'
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <p className={cn(settingsHintClass, 'mt-2')}>
+            {t('channels.pushHint')}
+          </p>
+        </div>
+
+        <div className="border-t border-border/60">
+          <div className="px-5 pt-4 pb-2">
+            <p className={settingsLabelClass}>{t('eventsTitle')}</p>
+            <p className={settingsHintClass}>{t('description')}</p>
+          </div>
+          <ul className="divide-y divide-border/60">
+            {items.map((item) => (
+              <li
+                key={item.key}
+                className="flex items-start justify-between gap-4 px-5 py-3.5"
+              >
+                <span className={cn(settingsLabelClass, 'min-w-0 flex-1')}>
+                  {item.label}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={prefs[item.key]}
+                  disabled={loading || saving}
+                  onClick={() => togglePref(item.key)}
+                  className="relative mt-0.5 inline-flex h-6 w-11 shrink-0 rounded-full border border-border/60 bg-muted transition data-[on=true]:bg-primary"
+                  data-on={prefs[item.key] ? 'true' : 'false'}
+                  style={{
+                    backgroundColor: prefs[item.key]
+                      ? 'var(--primary)'
+                      : undefined,
+                  }}
+                >
+                  <span
+                    className="pointer-events-none inline-block size-5 translate-x-0.5 rounded-full bg-white shadow transition-transform"
+                    style={{
+                      transform: prefs[item.key]
+                        ? 'translateX(1.25rem)'
+                        : undefined,
+                    }}
+                  />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {message ? (
+          <div className="border-t border-border/60 px-5 py-3">
+            <p className={cn(settingsHintClass, 'text-primary')} role="status">
+              {message}
+            </p>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
