@@ -6,6 +6,7 @@ RUN apt-get update \
     python3.12 \
     python3.12-venv \
     python3-pip \
+    curl \
   && rm -rf /var/lib/apt/lists/* \
   && ln -sf /usr/bin/python3.12 /usr/local/bin/python
 
@@ -17,6 +18,10 @@ COPY main.py ./
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
   && python -m pip install --no-cache-dir -e .
+
+# Verify JDK + OpenDataLoader are available in the image
+RUN java -version \
+  && python -c "import opendataloader_pdf; print('opendataloader-pdf OK')"
 
 ENV PYTHONPATH=/app
 ENV PORT=8080

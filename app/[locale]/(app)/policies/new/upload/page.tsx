@@ -17,7 +17,7 @@ import {
   registerUploadedDocument,
 } from '@/lib/firebase/documents'
 import { uploadPolicyPdf } from '@/lib/firebase/storage'
-import { PDF_MIME_TYPE, validatePdfUploadFile } from '@/lib/schemas/upload'
+import { validatePolicyUploadFile } from '@/lib/schemas/upload'
 
 type UploadPhase = 'idle' | 'validating' | 'uploading' | 'processing' | 'error'
 
@@ -60,7 +60,7 @@ export default function UploadPolicyPage() {
     setPhase('validating')
 
     try {
-      const validation = await validatePdfUploadFile(selectedFile)
+      const validation = await validatePolicyUploadFile(selectedFile)
 
       if (!validation.ok) {
         setErrorMessage(t(validation.errorKey))
@@ -89,7 +89,7 @@ export default function UploadPolicyPage() {
           policyId: draftPolicy.id,
           fileName: validation.file.name,
           fileSize: validation.file.size,
-          mimeType: PDF_MIME_TYPE,
+          mimeType: validation.mimeType,
         },
         onProgress: ({ progress: value }) => setProgress(value),
       })
@@ -100,6 +100,7 @@ export default function UploadPolicyPage() {
         fileName: validation.file.name,
         storagePath,
         fileSize: validation.file.size,
+        mimeType: validation.mimeType,
       })
 
       setPolicyId(draftPolicy.id)

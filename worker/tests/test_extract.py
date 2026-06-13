@@ -22,14 +22,19 @@ SAMPLE_POLICY_TEXT = (
 
 @patch("pipeline.extract.extract_policy_fields")
 @patch("pipeline.extract.download_document_bytes")
-@patch("pipeline.extract.extract_pdf_text")
+@patch("pipeline.extract.extract_pdf_full")
 def test_extract_document_runs_sanitize_and_claude(
-    mock_pdf_text,
+    mock_pdf_full,
     mock_download,
     mock_claude,
 ):
+    from pipeline.text_extractors import PdfExtractResult
+
     mock_download.return_value = b"%PDF-1.4 fake"
-    mock_pdf_text.return_value = (SAMPLE_POLICY_TEXT, "pymupdf")
+    mock_pdf_full.return_value = PdfExtractResult(
+        text=SAMPLE_POLICY_TEXT,
+        backend="pymupdf",
+    )
     mock_claude.return_value = SimpleNamespace(
         fields={
             "insurerName": "Bancolombia Seguros",

@@ -74,9 +74,49 @@ INTERNAL_API_SECRET=...        # optional shared secret
 
 Flow: Storage upload → `jobs/{jobId}` → `document-job-runner` POSTs to worker → extraction stored on `policies/{id}/documents/{docId}.extraction` → review UI shows confidence badges.
 
-## OpenDataLoader (optional)
+## OpenDataLoader (production)
 
-Production Docker image includes JDK 11. Install the ODL CLI in the image to prefer markdown+bboxes extraction; without it the pipeline uses pymupdf/pdfplumber automatically.
+Production Docker image includes **JDK 11** and **`opendataloader-pdf`** (pip). The pipeline prefers ODL markdown+JSON+bboxes; without JVM/ODL it falls back to **pymupdf → pdfplumber → pypdf**.
+
+### Docker smoke test (task 1.7)
+
+Requires Docker and curl (Git Bash or WSL on Windows):
+
+```bash
+bash worker/scripts/docker-smoke.sh
+```
+
+Optional env:
+
+```bash
+WORKER_SMOKE_PORT=18080 WORKER_SMOKE_SECRET=smoke-test-secret-min-16-chars bash worker/scripts/docker-smoke.sh
+```
+
+The script verifies:
+
+- `GET /health`
+- `GET /health/odl` — JDK + OpenDataLoader available in the image
+- `POST /jobs/process` returns **401** without auth
+- `POST /jobs/process` with `INTERNAL_API_SECRET` Bearer (pipeline may fail without fixture/API key)
+
+### Worker authentication (task 3.1)
+
+| Mode       | Env                                                                 | Caller                                      |
+| ---------- | ------------------------------------------------------------------- | ------------------------------------------- |
+| Local dev  | `INTERNAL_API_SECRET`                                               | Next.js `worker-client` sends shared secret |
+| Production | `WORKER_OIDC_AUDIENCE` + optional `WORKER_ALLOWED_SERVICE_ACCOUNTS` | Google OIDC ID token (service account)      |
+| Smoke only | `WORKER_AUTH_DISABLED=true`                                         | Unauthenticated (do not use in prod)        |
+
+Set `WORKER_OIDC_AUDIENCE` to the Cloud Run service URL. Next.js uses `google-auth-library` when `GOOGLE_APPLICATION_CREDENTIALS` or `GCLOUD_PROJECT` is set; otherwise falls back to `INTERNAL_API_SECRET`.
+
+## Golden set (task 3.10)
+
+```powershell
+cd worker
+pytest tests/test_golden.py -v
+```
+
+CI gate: `.github/workflows/golden-ocr.yml` — critical fields ≥95% on `worker/tests/golden/manifest.json` (20 sample policies + PDF keyword fixtures).
 
 ## Job creation
 

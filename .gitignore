@@ -59,3 +59,6 @@ venv/
 # testing artifacts
 playwright-report/
 test-results/
+
+# Python packaging
+*.egg-info/

@@ -37,7 +37,11 @@ Use this document before **staging** or **production** deploy. It complements th
 | `SENTRY_DSN`                                                   | Optional | Server Sentry (falls back to `NEXT_PUBLIC_SENTRY_DSN`) |
 | `ANTHROPIC_API_KEY`                                            | F2/F3    | **Secret Manager** in prod — not plain env             |
 | `RESEND_API_KEY`                                               | F4       | Transactional email                                    |
-| `MERCADOPAGO_*` (primary) / `WOMPI_*` (legacy)                 | F4       | Payment provider secrets                               |
+| `MERCADOPAGO_ACCESS_TOKEN`                                     | F4       | Server checkout + webhook (Secret Manager)             |
+| `MERCADOPAGO_WEBHOOK_SECRET`                                   | F4       | Webhook x-signature verification                       |
+| `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`                           | F4       | Client MP checkout (public)                            |
+| `MERCADOPAGO_API_BASE_URL`                                     | Optional | Default https://api.mercadopago.com                    |
+| `WOMPI_*` (legacy)                                             | Optional | Deprecated adapter only                                |
 | `POSTHOG_KEY`                                                  | Optional | Product analytics                                      |
 
 > **Rule:** Claude, Mercado Pago/Wompi, Resend, and service account JSON → **Google Secret Manager** in staging/prod. Reference from Vercel/Firebase via secret bindings — never commit to git.
@@ -69,6 +73,16 @@ Image: build from `worker/Dockerfile` (JDK 11 + Python 3.12). Smoke test: `worke
 ### 1.5 Cloud Run — MarIAna (future)
 
 Same pattern as worker: OIDC-only ingress, `ANTHROPIC_API_KEY` in Secret Manager, rate limits in `mariana/guardrails.ts`.
+
+---
+
+## 1.6 Settings & subscription (deploy notes)
+
+- [ ] **Profile & prefs:** `/api/user/profile`, `/api/user/preferences` — require Admin session cookies in prod (`FIREBASE_SERVICE_ACCOUNT`).
+- [ ] **Contacts:** `/api/user/contacts` — same auth; Firestore rules owner-only.
+- [ ] **Subscription:** Mercado Pago vars (§1.2) + `PAYMENTS_ENABLED` / `NEXT_PUBLIC_PAYMENTS_ENABLED`; smoke checkout on staging before prod.
+- [ ] **Notifications:** optional `NEXT_PUBLIC_FIREBASE_VAPID_KEY`; prefs API documented in [`docs/notifications.md`](notifications.md).
+- [ ] **Help:** static routes `/settings/help` — no extra env.
 
 ---
 

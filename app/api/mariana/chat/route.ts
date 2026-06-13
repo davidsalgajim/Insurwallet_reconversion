@@ -20,6 +20,15 @@ const chatRequestSchema = z.object({
   message: z.string().min(1),
   locale: z.enum(['es', 'en', 'pt']).default('es'),
   sessionId: z.string().min(1).optional(),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string(),
+      })
+    )
+    .default([]),
+  rollingSummary: z.string().optional(),
 })
 
 export async function POST(request: Request) {
@@ -44,7 +53,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { message, locale } = parsed.data
+  const { message, locale, history, rollingSummary } = parsed.data
 
   if (!validateMessageLength(message)) {
     return NextResponse.json({ error: 'Message too long' }, { status: 400 })
@@ -86,6 +95,8 @@ export async function POST(request: Request) {
           policies: policyContext.allPolicies,
           metadata: policyContext.metadata,
           toolContext: policyContext.toolContext,
+          history,
+          rollingSummary,
         })) {
           controller.enqueue(encoder.encode(encodeSseChunk(chunk)))
         }

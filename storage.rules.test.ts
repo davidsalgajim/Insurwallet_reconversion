@@ -62,7 +62,7 @@ describe.runIf(RUN_RULES_TESTS)('storage.rules', () => {
     )
   })
 
-  it('denies image uploads until image support is needed', async () => {
+  it('allows image uploads for mobile camera capture', async () => {
     const owner = testEnv.authenticatedContext('owner-a')
     const storage = owner.storage()
 
@@ -71,7 +71,7 @@ describe.runIf(RUN_RULES_TESTS)('storage.rules', () => {
         storage,
         storagePath('owner-a', `policies/p1/docs/doc1/file-${contentType}`)
       )
-      await assertFails(
+      await assertSucceeds(
         uploadBytes(fileRef, new Uint8Array(1024), { contentType })
       )
     }

@@ -37,6 +37,33 @@ describe('worker-client', () => {
     expect(extraction.confidence.holderName).toBe('medium')
   })
 
+  it('parses worker extraction with bboxes into PolicyExtraction schema', () => {
+    const extraction = parseWorkerExtraction({
+      fields: {
+        insurerName: 'Sura',
+        policyNumber: 'POL-99',
+      },
+      confidence: {
+        insurerName: 'high',
+        policyNumber: 'high',
+      },
+      bboxes: {
+        insurerName: {
+          page: 1,
+          left: 0.1,
+          top: 0.2,
+          width: 0.3,
+          height: 0.04,
+        },
+      },
+      method: 'odl',
+      extractedAt: '2025-06-12T12:00:00.000Z',
+    })
+
+    expect(extraction.bboxes?.insurerName?.page).toBe(1)
+    expect(extraction.method).toBe('odl')
+  })
+
   it('validates worker HTTP response shape', () => {
     const parsed = WorkerProcessResponseSchema.parse({
       job_id: 'job-1',

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   chunkText,
+  cosineSimilarity,
   estimateTokenCount,
   scoreChunkMatch,
 } from '@/lib/server/document-chunks'
@@ -27,5 +28,11 @@ describe('scoreChunkMatch', () => {
       scoreChunkMatch('Exclusión por deportes extremos', 'exclusión deportes')
     ).toBeGreaterThan(0)
     expect(scoreChunkMatch('Cobertura básica', 'exclusión')).toBe(0)
+  })
+})
+
+describe('cosineSimilarity', () => {
+  it('returns 1 for identical vectors', () => {
+    expect(cosineSimilarity([1, 0, 0], [1, 0, 0])).toBeCloseTo(1)
   })
 })

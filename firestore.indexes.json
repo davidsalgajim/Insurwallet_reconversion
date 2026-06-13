@@ -40,6 +40,19 @@
         { "fieldPath": "policyId", "order": "ASCENDING" },
         { "fieldPath": "ownerUid", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "chunks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "embedding",
+          "vectorConfig": {
+            "dimension": 768,
+            "flat": {}
+          }
+        }
+      ]
     }
   ],
   "fieldOverrides": []

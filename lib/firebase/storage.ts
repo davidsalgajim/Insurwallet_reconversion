@@ -6,7 +6,6 @@ import {
 } from 'firebase/storage'
 
 import {
-  PDF_MIME_TYPE,
   PolicyDocumentUploadInputSchema,
   buildPolicyDocumentStoragePath,
   type PolicyDocumentUploadInput,
@@ -46,7 +45,7 @@ export function createPolicyPdfUploadTask(
   )
   const fileRef = ref(storage, storagePath)
   const task = uploadBytesResumable(fileRef, file, {
-    contentType: PDF_MIME_TYPE,
+    contentType: parsed.mimeType,
     customMetadata: {
       ownerUid: parsed.ownerUid,
       policyId: parsed.policyId,

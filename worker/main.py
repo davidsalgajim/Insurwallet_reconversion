@@ -4,24 +4,32 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
+from pipeline.auth import verify_worker_authorization
 from pipeline.claude_extractor import ClaudeExtractionError
 from pipeline.extract import extract_document_safe
+from pipeline.odl_extract import is_opendataloader_available as odl_runtime_available
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="InsurWallet Document Worker",
-    version="0.2.0",
+    version="0.3.0",
     description="PDF/document processing pipeline (F2)",
 )
 
 
 class HealthResponse(BaseModel):
     status: str = "ok"
+
+
+class OdlHealthResponse(BaseModel):
+    status: str
+    opendataloader_available: bool
+    jdk_available: bool
 
 
 class ProcessJobRequest(BaseModel):
@@ -33,6 +41,7 @@ class ProcessJobRequest(BaseModel):
 class ExtractionPayload(BaseModel):
     fields: dict[str, object] = Field(default_factory=dict)
     confidence: dict[str, str] = Field(default_factory=dict)
+    bboxes: dict[str, dict[str, float | int]] | None = None
     method: str = "odl"
     extractedAt: str
 
@@ -53,10 +62,27 @@ def health() -> HealthResponse:
     return HealthResponse()
 
 
-@app.post("/jobs/process", response_model=ProcessJobResponse)
+@app.get("/health/odl", response_model=OdlHealthResponse)
+def health_odl() -> OdlHealthResponse:
+    import shutil
+
+    jdk = shutil.which("java") is not None
+    odl = odl_runtime_available()
+    status_value = "ok" if (jdk and odl) else "degraded"
+    return OdlHealthResponse(
+        status=status_value,
+        opendataloader_available=odl,
+        jdk_available=jdk,
+    )
+
+
+@app.post(
+    "/jobs/process",
+    response_model=ProcessJobResponse,
+    dependencies=[Depends(verify_worker_authorization)],
+)
 def process_job(request: ProcessJobRequest) -> ProcessJobResponse:
     """Process a document job: extract text, sanitize, Claude structured extraction."""
-    # TODO 3.1: verify Cloud Run OIDC / service-to-service token before processing.
     try:
         result = extract_document_safe(
             request.storage_path,
@@ -83,6 +109,7 @@ def process_job(request: ProcessJobRequest) -> ProcessJobResponse:
 
     extraction_data = result.extraction
     api_method = str(extraction_data.get("method", result.method))
+    raw_bboxes = extraction_data.get("bboxes")
 
     return ProcessJobResponse(
         job_id=request.job_id,
@@ -95,6 +122,7 @@ def process_job(request: ProcessJobRequest) -> ProcessJobResponse:
         extraction=ExtractionPayload(
             fields=dict(extraction_data.get("fields", {})),
             confidence=dict(extraction_data.get("confidence", {})),
+            bboxes=dict(raw_bboxes) if isinstance(raw_bboxes, dict) else None,
             method=api_method,
             extractedAt=str(extraction_data.get("extractedAt", "")),
         ),

@@ -147,6 +147,10 @@ function ReviewPolicyForm({
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [activeFieldId, setActiveFieldId] = useState<ReviewFieldId | null>(null)
+  const [hoveredFieldId, setHoveredFieldId] = useState<ReviewFieldId | null>(
+    null
+  )
 
   const isDraft = policy.policyNumber.startsWith('DRAFT-')
 
@@ -256,6 +260,9 @@ function ReviewPolicyForm({
             storagePath={storagePath}
             fileName={fileName}
             className="mt-6 flex-1"
+            highlights={extraction?.bboxes}
+            activeHighlightId={activeFieldId}
+            hoveredHighlightId={hoveredFieldId}
           />
         ) : (
           <div className="mt-6 flex flex-1 items-center justify-center rounded-[var(--radius-inner)] border border-dashed border-border/70 bg-white/40 p-8 text-center">
@@ -292,7 +299,24 @@ function ReviewPolicyForm({
           {fields.map((field) => (
             <li
               key={field.id}
-              className="rounded-[var(--radius-inner)] border border-border/60 bg-white/50 p-4"
+              className={cn(
+                'rounded-[var(--radius-inner)] border bg-white/50 p-4 transition-colors',
+                activeFieldId === field.id
+                  ? 'border-primary/50 ring-2 ring-primary/20'
+                  : 'border-border/60'
+              )}
+              onMouseEnter={() => setHoveredFieldId(field.id)}
+              onMouseLeave={() =>
+                setHoveredFieldId((current) =>
+                  current === field.id ? null : current
+                )
+              }
+              onFocus={() => setActiveFieldId(field.id)}
+              onBlur={() =>
+                setActiveFieldId((current) =>
+                  current === field.id ? null : current
+                )
+              }
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <label
@@ -314,6 +338,7 @@ function ReviewPolicyForm({
                 id={`review-${field.id}`}
                 value={field.value}
                 onChange={(event) => updateField(field.id, event.target.value)}
+                onFocus={() => setActiveFieldId(field.id)}
                 required={field.id !== 'premium'}
                 className="mt-2 w-full rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm font-medium outline-none ring-primary/30 transition focus-visible:ring-2"
               />

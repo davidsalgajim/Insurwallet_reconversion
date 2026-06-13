@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   buildPolicyDocumentStoragePath,
   MAX_UPLOAD_BYTES,
-  PdfUploadFileSchema,
+  PolicyUploadFileSchema,
   validatePdfMagicBytes,
-  validatePdfUploadFile,
+  validatePolicyUploadFile,
 } from './upload'
 
 function makePdfFile(name: string, size: number, content = '%PDF-1.4\n'): File {
@@ -16,17 +16,17 @@ function makePdfFile(name: string, size: number, content = '%PDF-1.4\n'): File {
 describe('upload schema', () => {
   it('accepts valid PDF files under 20MB', () => {
     const file = makePdfFile('policy.pdf', 1024)
-    expect(PdfUploadFileSchema.safeParse(file).success).toBe(true)
+    expect(PolicyUploadFileSchema.safeParse(file).success).toBe(true)
   })
 
   it('rejects files over 20MB', () => {
     const file = makePdfFile('large.pdf', MAX_UPLOAD_BYTES + 1)
-    expect(PdfUploadFileSchema.safeParse(file).success).toBe(false)
+    expect(PolicyUploadFileSchema.safeParse(file).success).toBe(false)
   })
 
   it('rejects empty files', () => {
     const file = new File([], 'empty.pdf', { type: 'application/pdf' })
-    expect(PdfUploadFileSchema.safeParse(file).success).toBe(false)
+    expect(PolicyUploadFileSchema.safeParse(file).success).toBe(false)
   })
 
   it('validates PDF magic bytes', async () => {
@@ -39,13 +39,25 @@ describe('upload schema', () => {
     expect(await validatePdfMagicBytes(invalid)).toBe(false)
   })
 
-  it('validatePdfUploadFile returns error for non-PDF content', async () => {
+  it('validatePolicyUploadFile returns error for non-PDF content', async () => {
     const file = new File(['hello'], 'fake.pdf', { type: 'application/pdf' })
-    const result = await validatePdfUploadFile(file)
+    const result = await validatePolicyUploadFile(file)
 
     expect(result.ok).toBe(false)
     if (!result.ok) {
       expect(result.errorKey).toBe('errors.invalidPdf')
+    }
+  })
+
+  it('accepts JPEG images from mobile camera capture', async () => {
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'scan.jpg', {
+      type: 'image/jpeg',
+    })
+    const result = await validatePolicyUploadFile(file)
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.mimeType).toBe('image/jpeg')
     }
   })
 

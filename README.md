@@ -2,7 +2,7 @@
 
 Migración de InsurWallet (iOS nativa) a una web app moderna para LATAM.
 
-**Estado actual (jun 2026):** F0 ~90% · F1 ~85% · F5 parcial (E2E, PWA, Sentry stub, production checklist). Auth, CRUD pólizas, dashboard, App Check (monitor), reglas testeadas en CI. Pendiente: pipeline IA (F2), deploy staging, App Check Enforce en consola.
+**Estado actual (jun 2026):** F0 ~90% · F1 ~85% · F2 ~90% (worker + revisión IA) · F3 ~85% (MarIAna + share) · F4 ~85% (Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Auth, CRUD, dashboard, upload→worker, settings hub, reglas en CI. Pendiente: deploy staging, App Check Enforce, backups iOS import.
 
 Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md). Plan de tareas: [`tasks/tasks-plan-reconversion-insurwallet.md`](tasks/tasks-plan-reconversion-insurwallet.md).
 
@@ -16,20 +16,20 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 | Validación          | Zod                                                                         |
 | Tests TS            | Vitest                                                                      |
 | Tests reglas        | Firebase emulators + `@firebase/rules-unit-testing`                         |
-| Backend planificado | Cloud Functions (Node), Cloud Run (worker Python, MarIAna)                  |
+| Backend             | Cloud Functions (Node), Cloud Run worker Python; MarIAna en Next.js API     |
 | Documentos (F2)     | OpenDataLoader PDF, Surya OCR, MarkItDown, Claude API                       |
 | Pagos (F4)          | Mercado Pago (Colombia); Wompi deprecated                                   |
 
 ## Fases
 
-| Fase | Descripción                                                 | Estado      |
-| ---- | ----------------------------------------------------------- | ----------- |
-| F0   | Setup, Firebase, design system, CI, i18n, App Check         | ~90%        |
-| F1   | Auth, Firestore schema, CRUD pólizas, dashboard, upload PDF | ~85%        |
-| F2   | Pipeline de documentos + UI de revisión                     | No iniciado |
-| F3   | MarIAna multi-agente, compartir pólizas                     | Stub UI     |
-| F4   | Pagos, notificaciones, GDPR                                 | No iniciado |
-| F5   | Hardening, E2E, beta                                        | No iniciado |
+| Fase | Descripción                                                 | Estado  |
+| ---- | ----------------------------------------------------------- | ------- |
+| F0   | Setup, Firebase, design system, CI, i18n, App Check         | ~90%    |
+| F1   | Auth, Firestore schema, CRUD pólizas, dashboard, upload PDF | ~85%    |
+| F2   | Pipeline de documentos + UI de revisión                     | ~90%    |
+| F3   | MarIAna multi-agente, compartir pólizas                     | ~85%    |
+| F4   | Pagos (Mercado Pago), notificaciones, GDPR                  | ~85%    |
+| F5   | Hardening, E2E, beta                                        | Parcial |
 
 ## Implementado
 
@@ -45,14 +45,16 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **E2E:** Playwright smoke + flujos con emuladores (`e2e/`, `npm run test:e2e:emulators`)
 - **PWA:** manifest + service worker shell (`public/sw.js`)
 - **Observability:** Sentry stub (no-op sin DSN)
+- **Configuración (settings):** `/settings` — perfil, moneda/preferencias, privacidad (export/delete cuenta), notificaciones; `/settings/contacts` — contactos de emergencia; `/settings/subscription` — plan y checkout **Mercado Pago**; `/settings/help` — ayuda
+- **Documentos (F2):** upload → job worker (`WORKER_URL`) → extracción Claude → pantalla de revisión split-view con confianza/bboxes
 - **Notificaciones (prefs):** canal email/push/ambos + tipos de aviso en Configuración; API `GET/PUT /api/notifications/prefs`; registro FCM si push activo — envío real email/push en F4 (ver [`docs/notifications.md`](docs/notifications.md))
 
 ## Pendiente (próximos hitos)
 
 - Deploy staging (checklist: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md))
-- POC OpenDataLoader / worker Cloud Run (F2 — ver tarea 1.7 stub en tasks)
-- Pipeline IA post-upload, pantalla de revisión split-view
-- MarIAna backend completo, pagos
+- Deploy worker Cloud Run en staging/prod + OIDC (`WORKER_OIDC_AUDIENCE`)
+- MarIAna: embeddings vectoriales completos, cost tracking
+- Backups Firestore, import iOS, recibo email post-pago
 - App Check **Enforce** en Firebase Console (checklist documentado en 6.13)
 
 ## Firebase staging
@@ -110,7 +112,7 @@ i18n/                  # routing, navigation, request (next-intl)
 lib/                   # firebase/, schemas/, env.ts, utils/
 messages/              # es.json, en.json, pt.json
 functions/             # Cloud Functions (scheduled status, scaffold)
-worker/                # Pipeline documentos (F2 — pendiente)
+worker/                # Pipeline documentos Cloud Run (ver worker/README.md)
 mariana/               # Orquestador chat (F3)
 e2e/                   # Playwright (F5)
 tasks/                 # Task list de implementación
@@ -142,6 +144,36 @@ npm run dev
 ```
 
 App en `http://localhost:3000` — rutas con prefijo de locale, p. ej. `/es`, `/es/dashboard`.
+
+### Worker (documentos — Python 3.12)
+
+Requisitos: **Python 3.12+**, JDK 11 para OpenDataLoader en Docker/prod (local puede usar fallback pymupdf).
+
+```powershell
+cd worker
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+$env:ANTHROPIC_API_KEY="sk-ant-..."   # shell del worker, nunca NEXT_PUBLIC_*
+$env:FIREBASE_STORAGE_BUCKET="your-project.firebasestorage.app"
+uvicorn main:app --reload --port 8080
+```
+
+En la raíz del repo (Next.js, server-only): `WORKER_URL=http://localhost:8080` en `.env.local`. Detalle: [`worker/README.md`](worker/README.md).
+
+### Variables de entorno
+
+Plantilla completa: [`.env.example`](.env.example) (copiar a `.env.local`). Validación en `lib/env.ts` (cliente) y `lib/env-server.ts` (servidor).
+
+| Área             | Variables clave                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Firebase cliente | `NEXT_PUBLIC_FIREBASE_*`, emuladores, verify-email, App Check site key                                                                                 |
+| Dev / App Check  | `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` o `FIREBASE_APPCHECK_DEBUG_TOKEN` registrado en consola                                                    |
+| Auth servidor    | `FIREBASE_SERVICE_ACCOUNT` o `GOOGLE_APPLICATION_CREDENTIALS` — sin ellas, **dev** guarda ID token verificado como cookie (ver tests `session-server`) |
+| Worker           | `WORKER_URL`, `INTERNAL_API_SECRET` (local), `WORKER_OIDC_AUDIENCE` (prod)                                                                             |
+| Claude           | `ANTHROPIC_API_KEY` en proceso worker y/o servidor MarIAna — Secret Manager en prod                                                                    |
+| Pagos            | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`                                                         |
+| Deploy           | [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · notificaciones: [`docs/notifications.md`](docs/notifications.md)                      |
 
 ### Emuladores Firebase
 
@@ -198,6 +230,7 @@ Flujos en `e2e/`: `auth-policy.spec.ts`, `policy-flows.spec.ts`, `settings-maria
 
 - Staging/prod: `NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION=true` — middleware bloquea rutas `(app)/*` hasta verificar.
 - Local/dev: `false` — banner dismissible en layout de app; flujo verify-email disponible.
+- **Dev session fallback:** sin credenciales Admin, rutas que aceptan sesión almacenan el **ID token verificado** como cookie (solo desarrollo); producción requiere service account.
 
 ### Notificaciones (email / push)
 

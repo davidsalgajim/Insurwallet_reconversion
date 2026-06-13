@@ -4,15 +4,23 @@ from __future__ import annotations
 
 import io
 import logging
-import shutil
-import subprocess
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
+
+from pipeline.odl_extract import OdlElement, extract_with_opendataloader, is_opendataloader_available
 
 logger = logging.getLogger(__name__)
 
 ExtractBackend = Literal["odl", "pymupdf", "pdfplumber", "markitdown", "pypdf", "surya"]
+
+
+@dataclass(frozen=True, slots=True)
+class PdfExtractResult:
+    text: str
+    backend: ExtractBackend
+    elements: tuple[OdlElement, ...] = ()
 
 
 def _extract_with_pymupdf(pdf_bytes: bytes) -> str:
@@ -50,42 +58,13 @@ def _extract_with_pypdf(pdf_bytes: bytes) -> str:
     return "\n".join(pages).strip()
 
 
-def is_opendataloader_available() -> bool:
-    return shutil.which("opendataloader") is not None or shutil.which("odl") is not None
-
-
-def _extract_with_opendataloader(pdf_bytes: bytes) -> str:
-    """Run OpenDataLoader CLI if installed (JDK required). Returns markdown text."""
-    cli = shutil.which("opendataloader") or shutil.which("odl")
-    if not cli:
-        raise RuntimeError("OpenDataLoader CLI not found")
-
-    with tempfile.TemporaryDirectory() as tmp:
-        pdf_path = Path(tmp) / "input.pdf"
-        out_dir = Path(tmp) / "out"
-        out_dir.mkdir()
-        pdf_path.write_bytes(pdf_bytes)
-
-        subprocess.run(
-            [cli, str(pdf_path), "-o", str(out_dir)],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-
-        md_files = list(out_dir.glob("**/*.md"))
-        if not md_files:
-            raise RuntimeError("OpenDataLoader produced no markdown output")
-
-        return md_files[0].read_text(encoding="utf-8").strip()
-
-
-def extract_pdf_text(pdf_bytes: bytes) -> tuple[str, ExtractBackend]:
+def extract_pdf_full(pdf_bytes: bytes) -> PdfExtractResult:
     """Primary PDF extraction — ODL when available, else pymupdf → pdfplumber → pypdf."""
     if is_opendataloader_available():
         try:
-            return _extract_with_opendataloader(pdf_bytes), "odl"
+            odl = extract_with_opendataloader(pdf_bytes)
+            if odl.text.strip():
+                return PdfExtractResult(text=odl.text, backend="odl", elements=odl.elements)
         except Exception as exc:
             logger.warning("OpenDataLoader failed, falling back to pymupdf: %s", exc)
 
@@ -97,13 +76,19 @@ def extract_pdf_text(pdf_bytes: bytes) -> tuple[str, ExtractBackend]:
         try:
             text = fn(pdf_bytes)
             if text.strip():
-                return text, backend  # type: ignore[return-value]
+                return PdfExtractResult(text=text, backend=backend)  # type: ignore[arg-type]
         except ImportError:
             logger.debug("%s not installed", backend)
         except Exception as exc:
             logger.warning("%s extraction failed: %s", backend, exc)
 
-    return "", "pypdf"
+    return PdfExtractResult(text="", backend="pypdf")
+
+
+def extract_pdf_text(pdf_bytes: bytes) -> tuple[str, ExtractBackend]:
+    """Backward-compatible PDF text extraction."""
+    result = extract_pdf_full(pdf_bytes)
+    return result.text, result.backend
 
 
 def run_surya_ocr(pdf_bytes: bytes) -> tuple[str, ExtractBackend]:
@@ -112,14 +97,16 @@ def run_surya_ocr(pdf_bytes: bytes) -> tuple[str, ExtractBackend]:
         "Surya OCR is not configured in this environment — "
         "using pymupdf/pdfplumber fallback for scanned/complex PDFs"
     )
-    text, backend = extract_pdf_text(pdf_bytes)
-    return text, "surya" if backend == "odl" else backend
+    result = extract_pdf_full(pdf_bytes)
+    backend: ExtractBackend = "surya" if result.backend == "odl" else result.backend
+    return result.text, backend
 
 
 def extract_non_pdf_text(file_bytes: bytes, mime_type: str) -> tuple[str, ExtractBackend]:
     """MarkItDown for office/image formats; pypdf for mislabeled PDFs."""
     if mime_type == "application/pdf":
-        return extract_pdf_text(file_bytes)
+        result = extract_pdf_full(file_bytes)
+        return result.text, result.backend
 
     try:
         from markitdown import MarkItDown

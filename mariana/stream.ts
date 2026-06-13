@@ -3,12 +3,14 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { MarianaPolicyContext } from '@/lib/server/mariana-context'
 import { prefetchToolsForAgent } from '@/lib/server/mariana-tools'
 import { getAgentSystemPrompt } from '@/mariana/agents'
+import { buildCachedSystemBlocks } from '@/mariana/agents/prompt-cache'
 import { classifyWithHaiku } from '@/mariana/haiku-router'
 import {
   isInsuranceScopedResponse,
   wrapDocumentData,
 } from '@/mariana/guardrails'
 import { routeMessage } from '@/mariana/router'
+import { formatHistoryForModel, type ChatTurn } from '@/mariana/rolling-summary'
 import { buildTier0Response } from '@/mariana/tier0-respond'
 import type {
   MarianaChatChunk,
@@ -27,6 +29,8 @@ type StreamInput = {
   policies: MarianaPolicyContext[]
   metadata: PolicyMetadata[]
   toolContext: ToolContext
+  history?: ChatTurn[]
+  rollingSummary?: string | null
 }
 
 function extractCitationsFromTools(
@@ -169,12 +173,23 @@ async function streamSpecialist(
     }
 
     const client = new Anthropic({ apiKey: input.apiKey })
+    const responseSuffix =
+      'When citing documents, mention document name and page. End responses with a brief reminder to verify against the original policy.'
+    const historyBlock = formatHistoryForModel({
+      rollingSummary: input.rollingSummary ?? null,
+      recentTurns: input.history ?? [],
+      locale: input.locale,
+    })
+
     const stream = await client.messages.stream({
       model: SPECIALIST_MODEL,
       max_tokens: 1_024,
       temperature: 0.2,
-      system: `${systemPrompt}\n\nWhen citing documents, mention document name and page. End responses with a brief reminder to verify against the original policy.`,
+      system: buildCachedSystemBlocks(systemPrompt, responseSuffix),
       messages: [
+        ...(historyBlock
+          ? [{ role: 'user' as const, content: historyBlock }]
+          : []),
         {
           role: 'user',
           content: `${buildToolContextBlock(toolResults)}\n\nUser question (${input.locale}):\n${input.message}`,

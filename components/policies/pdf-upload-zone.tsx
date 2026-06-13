@@ -1,12 +1,16 @@
 'use client'
 
-import { FileText, Upload, X } from 'lucide-react'
+import { Camera, FileText, Upload, X } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/cn'
-import { MAX_UPLOAD_BYTES } from '@/lib/schemas/upload'
+import {
+  MAX_UPLOAD_BYTES,
+  POLICY_CAMERA_ACCEPT,
+  POLICY_UPLOAD_ACCEPT,
+} from '@/lib/schemas/upload'
 
 type PdfUploadZoneProps = {
   disabled?: boolean
@@ -23,6 +27,7 @@ export function PdfUploadZone({
 }: PdfUploadZoneProps) {
   const t = useTranslations('policies.upload')
   const inputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
   const handleFiles = useCallback(
@@ -71,9 +76,9 @@ export function PdfUploadZone({
           if (!disabled) inputRef.current?.click()
         }}
         className={cn(
-          'glass-panel flex min-h-[220px] cursor-pointer flex-col items-center justify-center border-2 border-dashed p-8 text-center transition-[border-color,transform,box-shadow] duration-200',
+          'glass-panel flex min-h-[220px] cursor-pointer flex-col items-center justify-center border-2 border-dashed p-8 text-center motion-safe:transition-[border-color,transform,box-shadow] motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]',
           isDragging
-            ? 'border-primary/50 shadow-[var(--shadow-float)]'
+            ? 'border-primary/50 shadow-[var(--shadow-float)] motion-safe:-translate-y-px'
             : 'border-border/80 hover:border-primary/30 hover:shadow-[var(--shadow-soft)]',
           disabled && 'pointer-events-none opacity-60',
           selectedFile && 'min-h-[160px]'
@@ -82,10 +87,24 @@ export function PdfUploadZone({
         <input
           ref={inputRef}
           type="file"
-          accept="application/pdf,.pdf"
+          accept={POLICY_UPLOAD_ACCEPT}
           className="sr-only"
           disabled={disabled}
           onChange={(event) => handleFiles(event.target.files)}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept={POLICY_CAMERA_ACCEPT}
+          capture="environment"
+          className="sr-only"
+          disabled={disabled}
+          onChange={(event) => {
+            handleFiles(event.target.files)
+            if (cameraInputRef.current) {
+              cameraInputRef.current.value = ''
+            }
+          }}
         />
 
         {selectedFile ? (
@@ -111,6 +130,7 @@ export function PdfUploadZone({
                   event.stopPropagation()
                   onFileSelect(null)
                   if (inputRef.current) inputRef.current.value = ''
+                  if (cameraInputRef.current) cameraInputRef.current.value = ''
                 }}
               >
                 <X className="size-3.5" strokeWidth={1.5} />
@@ -127,15 +147,31 @@ export function PdfUploadZone({
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
               {t('dropzoneHint', { maxSize: maxSizeMb })}
             </p>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="mt-5 rounded-[var(--radius-pill)]"
-              tabIndex={-1}
-            >
-              {t('browseFiles')}
-            </Button>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="rounded-[var(--radius-pill)]"
+                tabIndex={-1}
+              >
+                {t('browseFiles')}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="rounded-[var(--radius-pill)] md:hidden"
+                tabIndex={-1}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  if (!disabled) cameraInputRef.current?.click()
+                }}
+              >
+                <Camera className="size-3.5" strokeWidth={1.5} />
+                {t('takePhoto')}
+              </Button>
+            </div>
           </>
         )}
       </div>

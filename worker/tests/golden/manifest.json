@@ -1,0 +1,445 @@
+{
+  "version": 1,
+  "critical_fields": [
+    "insurerName",
+    "policyNumber",
+    "holderName",
+    "premium",
+    "startDate",
+    "endDate"
+  ],
+  "min_critical_accuracy": 0.95,
+  "cases": [
+    {
+      "id": "life-bancolombia-01",
+      "input": {
+        "insurerName": "Bancolombia Seguros",
+        "policyNumber": "POL-12345678",
+        "holderName": "Juan Pérez",
+        "premium": 1200000,
+        "currency": "COP",
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "expected": {
+        "insurerName": "Bancolombia Seguros",
+        "policyNumber": "POL-12345678",
+        "holderName": "Juan Pérez",
+        "premium": 1200000,
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      }
+    },
+    {
+      "id": "life-sura-02",
+      "input": {
+        "insurerName": "Sura",
+        "policyNumber": "VDA-99887766",
+        "holderName": "María López",
+        "premium": 890000,
+        "currency": "COP",
+        "startDate": "2024-06-01",
+        "endDate": "2025-05-31"
+      },
+      "expected": {
+        "insurerName": "Sura",
+        "policyNumber": "VDA-99887766",
+        "holderName": "María López",
+        "premium": 890000,
+        "startDate": "2024-06-01",
+        "endDate": "2025-05-31"
+      }
+    },
+    {
+      "id": "auto-mapfre-03",
+      "input": {
+        "insurerName": "Mapfre Seguros",
+        "policyNumber": "AUTO-44556677",
+        "holderName": "Carlos Ruiz",
+        "premium": 2100000,
+        "currency": "COP",
+        "startDate": "2025-03-15",
+        "endDate": "2026-03-14"
+      },
+      "expected": {
+        "insurerName": "Mapfre Seguros",
+        "policyNumber": "AUTO-44556677",
+        "holderName": "Carlos Ruiz",
+        "premium": 2100000,
+        "startDate": "2025-03-15",
+        "endDate": "2026-03-14"
+      }
+    },
+    {
+      "id": "health-axa-04",
+      "input": {
+        "insurerName": "AXA Colpatria",
+        "policyNumber": "SAL-11223344",
+        "holderName": "Ana Torres",
+        "premium": 3500000,
+        "currency": "COP",
+        "startDate": "2025-01-15",
+        "endDate": "2026-01-14"
+      },
+      "expected": {
+        "insurerName": "AXA Colpatria",
+        "policyNumber": "SAL-11223344",
+        "holderName": "Ana Torres",
+        "premium": 3500000,
+        "startDate": "2025-01-15",
+        "endDate": "2026-01-14"
+      }
+    },
+    {
+      "id": "cancer-bancolombia-05",
+      "input": {
+        "insurerName": "Bancolombia",
+        "policyNumber": "CAN-55667788",
+        "holderName": "Pedro Gómez",
+        "premium": 450000,
+        "currency": "COP",
+        "startDate": "2025-02-01",
+        "endDate": "2026-01-31"
+      },
+      "expected": {
+        "insurerName": "Bancolombia",
+        "policyNumber": "CAN-55667788",
+        "holderName": "Pedro Gómez",
+        "premium": 450000,
+        "startDate": "2025-02-01",
+        "endDate": "2026-01-31"
+      }
+    },
+    {
+      "id": "home-liberty-06",
+      "input": {
+        "insurerName": "Liberty Seguros",
+        "policyNumber": "HOG-33445566",
+        "holderName": "Laura Martínez",
+        "premium": 780000,
+        "currency": "COP",
+        "startDate": "2024-11-01",
+        "endDate": "2025-10-31"
+      },
+      "expected": {
+        "insurerName": "Liberty Seguros",
+        "policyNumber": "HOG-33445566",
+        "holderName": "Laura Martínez",
+        "premium": 780000,
+        "startDate": "2024-11-01",
+        "endDate": "2025-10-31"
+      }
+    },
+    {
+      "id": "travel-allianz-07",
+      "input": {
+        "insurerName": "Allianz",
+        "policyNumber": "VIA-22110099",
+        "holderName": "Diego Herrera",
+        "premium": 320000,
+        "currency": "COP",
+        "startDate": "2025-07-01",
+        "endDate": "2025-07-15"
+      },
+      "expected": {
+        "insurerName": "Allianz",
+        "policyNumber": "VIA-22110099",
+        "holderName": "Diego Herrera",
+        "premium": 320000,
+        "startDate": "2025-07-01",
+        "endDate": "2025-07-15"
+      }
+    },
+    {
+      "id": "life-seguros-bolivar-08",
+      "input": {
+        "insurerName": "Seguros Bolívar",
+        "policyNumber": "BOL-88776655",
+        "holderName": "Camila Rojas",
+        "premium": 1500000,
+        "currency": "COP",
+        "startDate": "2025-04-01",
+        "endDate": "2026-03-31"
+      },
+      "expected": {
+        "insurerName": "Seguros Bolívar",
+        "policyNumber": "BOL-88776655",
+        "holderName": "Camila Rojas",
+        "premium": 1500000,
+        "startDate": "2025-04-01",
+        "endDate": "2026-03-31"
+      }
+    },
+    {
+      "id": "auto-sura-09",
+      "input": {
+        "insurerName": "Sura Seguros",
+        "policyNumber": "AUT-10203040",
+        "holderName": "Andrés Vargas",
+        "premium": 1850000,
+        "currency": "COP",
+        "startDate": "2025-05-01",
+        "endDate": "2026-04-30"
+      },
+      "expected": {
+        "insurerName": "Sura Seguros",
+        "policyNumber": "AUT-10203040",
+        "holderName": "Andrés Vargas",
+        "premium": 1850000,
+        "startDate": "2025-05-01",
+        "endDate": "2026-04-30"
+      }
+    },
+    {
+      "id": "health-sura-10",
+      "input": {
+        "insurerName": "Sura EPS",
+        "policyNumber": "EPS-55664433",
+        "holderName": "Valentina Castro",
+        "premium": 2900000,
+        "currency": "COP",
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "expected": {
+        "insurerName": "Sura EPS",
+        "policyNumber": "EPS-55664433",
+        "holderName": "Valentina Castro",
+        "premium": 2900000,
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      }
+    },
+    {
+      "id": "life-chubb-11",
+      "input": {
+        "insurerName": "Chubb Seguros Colombia",
+        "policyNumber": "CHB-90909090",
+        "holderName": "Felipe Ortiz",
+        "premium": 2200000,
+        "currency": "COP",
+        "startDate": "2024-08-01",
+        "endDate": "2025-07-31"
+      },
+      "expected": {
+        "insurerName": "Chubb Seguros Colombia",
+        "policyNumber": "CHB-90909090",
+        "holderName": "Felipe Ortiz",
+        "premium": 2200000,
+        "startDate": "2024-08-01",
+        "endDate": "2025-07-31"
+      }
+    },
+    {
+      "id": "home-mapfre-12",
+      "input": {
+        "insurerName": "Mapfre",
+        "policyNumber": "RES-12121212",
+        "holderName": "Sofía Mejía",
+        "premium": 640000,
+        "currency": "COP",
+        "startDate": "2025-06-01",
+        "endDate": "2026-05-31"
+      },
+      "expected": {
+        "insurerName": "Mapfre",
+        "policyNumber": "RES-12121212",
+        "holderName": "Sofía Mejía",
+        "premium": 640000,
+        "startDate": "2025-06-01",
+        "endDate": "2026-05-31"
+      }
+    },
+    {
+      "id": "auto-axa-13",
+      "input": {
+        "insurerName": "AXA",
+        "policyNumber": "VEH-34343434",
+        "holderName": "Jorge Salazar",
+        "premium": 1750000,
+        "currency": "COP",
+        "startDate": "2025-02-15",
+        "endDate": "2026-02-14"
+      },
+      "expected": {
+        "insurerName": "AXA",
+        "policyNumber": "VEH-34343434",
+        "holderName": "Jorge Salazar",
+        "premium": 1750000,
+        "startDate": "2025-02-15",
+        "endDate": "2026-02-14"
+      }
+    },
+    {
+      "id": "life-zurich-14",
+      "input": {
+        "insurerName": "Zurich Seguros",
+        "policyNumber": "ZUR-56565656",
+        "holderName": "Natalia Pardo",
+        "premium": 980000,
+        "currency": "COP",
+        "startDate": "2025-03-01",
+        "endDate": "2026-02-28"
+      },
+      "expected": {
+        "insurerName": "Zurich Seguros",
+        "policyNumber": "ZUR-56565656",
+        "holderName": "Natalia Pardo",
+        "premium": 980000,
+        "startDate": "2025-03-01",
+        "endDate": "2026-02-28"
+      }
+    },
+    {
+      "id": "health-colmedica-15",
+      "input": {
+        "insurerName": "Colsanitas",
+        "policyNumber": "COL-78787878",
+        "holderName": "Ricardo Muñoz",
+        "premium": 4100000,
+        "currency": "COP",
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "expected": {
+        "insurerName": "Colsanitas",
+        "policyNumber": "COL-78787878",
+        "holderName": "Ricardo Muñoz",
+        "premium": 4100000,
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      }
+    },
+    {
+      "id": "life-hdi-16",
+      "input": {
+        "insurerName": "HDI Seguros",
+        "policyNumber": "HDI-41414141",
+        "holderName": "Paula Giraldo",
+        "premium": 720000,
+        "currency": "COP",
+        "startDate": "2024-12-01",
+        "endDate": "2025-11-30"
+      },
+      "expected": {
+        "insurerName": "HDI Seguros",
+        "policyNumber": "HDI-41414141",
+        "holderName": "Paula Giraldo",
+        "premium": 720000,
+        "startDate": "2024-12-01",
+        "endDate": "2025-11-30"
+      }
+    },
+    {
+      "id": "auto-equidad-17",
+      "input": {
+        "insurerName": "La Equidad Seguros",
+        "policyNumber": "EQU-23232323",
+        "holderName": "Miguel Ángel Ríos",
+        "premium": 1320000,
+        "currency": "COP",
+        "startDate": "2025-08-01",
+        "endDate": "2026-07-31"
+      },
+      "expected": {
+        "insurerName": "La Equidad Seguros",
+        "policyNumber": "EQU-23232323",
+        "holderName": "Miguel Ángel Ríos",
+        "premium": 1320000,
+        "startDate": "2025-08-01",
+        "endDate": "2026-07-31"
+      }
+    },
+    {
+      "id": "life-previsora-18",
+      "input": {
+        "insurerName": "La Previsora",
+        "policyNumber": "PRE-67676767",
+        "holderName": "Daniela Suárez",
+        "premium": 560000,
+        "currency": "COP",
+        "startDate": "2025-09-01",
+        "endDate": "2026-08-31"
+      },
+      "expected": {
+        "insurerName": "La Previsora",
+        "policyNumber": "PRE-67676767",
+        "holderName": "Daniela Suárez",
+        "premium": 560000,
+        "startDate": "2025-09-01",
+        "endDate": "2026-08-31"
+      }
+    },
+    {
+      "id": "home-sbs-19",
+      "input": {
+        "insurerName": "SBS Seguros",
+        "policyNumber": "SBS-81818181",
+        "holderName": "Esteban Quintero",
+        "premium": 910000,
+        "currency": "COP",
+        "startDate": "2025-10-01",
+        "endDate": "2026-09-30"
+      },
+      "expected": {
+        "insurerName": "SBS Seguros",
+        "policyNumber": "SBS-81818181",
+        "holderName": "Esteban Quintero",
+        "premium": 910000,
+        "startDate": "2025-10-01",
+        "endDate": "2026-09-30"
+      }
+    },
+    {
+      "id": "life-solidaria-20",
+      "input": {
+        "insurerName": "Solidaria Seguros",
+        "policyNumber": "SOL-91919191",
+        "holderName": "Gabriela Acosta",
+        "premium": 430000,
+        "currency": "COP",
+        "startDate": "2025-11-01",
+        "endDate": "2026-10-31"
+      },
+      "expected": {
+        "insurerName": "Solidaria Seguros",
+        "policyNumber": "SOL-91919191",
+        "holderName": "Gabriela Acosta",
+        "premium": 430000,
+        "startDate": "2025-11-01",
+        "endDate": "2026-10-31"
+      }
+    }
+  ],
+  "pdf_cases": [
+    {
+      "id": "pdf-life-01",
+      "lines": [
+        "Póliza de seguro de vida No. POL-12345678",
+        "Aseguradora: Bancolombia Seguros",
+        "Tomador: Juan Pérez",
+        "Prima anual: COP $1.200.000",
+        "Vigencia: 01/01/2025 - 31/12/2025"
+      ],
+      "must_contain": ["POL-12345678", "Bancolombia", "Juan Pérez"]
+    },
+    {
+      "id": "pdf-auto-02",
+      "lines": [
+        "Certificado de seguro automóvil AUTO-44556677",
+        "Compañía: Mapfre Seguros",
+        "Asegurado: Carlos Ruiz"
+      ],
+      "must_contain": ["AUTO-44556677", "Mapfre", "Carlos Ruiz"]
+    },
+    {
+      "id": "pdf-cancer-03",
+      "lines": [
+        "Póliza cancer Bancolombia CAN-55667788",
+        "Tomador: Pedro Gómez",
+        "Cobertura clausulado beneficiario deducible certificado"
+      ],
+      "must_contain": ["CAN-55667788", "Bancolombia", "Pedro Gómez"]
+    }
+  ]
+}

@@ -16,9 +16,11 @@ from pipeline.insurance_terms import apply_insurance_corrections
 from pipeline.quality_gate import needs_quality_escalation, word_count
 from pipeline.sanitizer import SanitizeResult, sanitize_document_text
 from pipeline.storage_loader import StorageDownloadError, download_document_bytes
+from pipeline.bbox_matcher import match_field_bboxes
 from pipeline.text_extractors import (
+    PdfExtractResult,
     extract_non_pdf_text,
-    extract_pdf_text,
+    extract_pdf_full,
     run_surya_ocr,
 )
 from pipeline.validators import validate_extraction
@@ -49,21 +51,25 @@ def _map_method_to_api(method: str) -> str:
     return method
 
 
-def _extract_raw_text(file_bytes: bytes, mime_type: str) -> tuple[str, str]:
+def _extract_raw_text(file_bytes: bytes, mime_type: str) -> PdfExtractResult:
     if mime_type == "application/pdf":
-        text, backend = extract_pdf_text(file_bytes)
-        if needs_quality_escalation(text):
+        result = extract_pdf_full(file_bytes)
+        if needs_quality_escalation(result.text):
             logger.info(
                 "Quality gate failed (words=%s) — escalating to Surya fallback",
-                word_count(text),
+                word_count(result.text),
             )
             surya_text, surya_backend = run_surya_ocr(file_bytes)
-            if word_count(surya_text) >= word_count(text):
-                return surya_text, surya_backend
-        return text, backend
+            if word_count(surya_text) >= word_count(result.text):
+                return PdfExtractResult(
+                    text=surya_text,
+                    backend=surya_backend,  # type: ignore[arg-type]
+                    elements=result.elements,
+                )
+        return result
 
     text, backend = extract_non_pdf_text(file_bytes, mime_type)
-    return text, backend
+    return PdfExtractResult(text=text, backend=backend)  # type: ignore[arg-type]
 
 
 def extract_document(
@@ -73,8 +79,9 @@ def extract_document(
 ) -> ExtractResult:
     """Full pipeline: download → extract → sanitize → Claude → validate."""
     file_bytes = download_document_bytes(storage_path)
-    raw_text, backend = _extract_raw_text(file_bytes, mime_type)
-    corrected = apply_insurance_corrections(raw_text)
+    pdf_result = _extract_raw_text(file_bytes, mime_type)
+    backend = pdf_result.backend
+    corrected = apply_insurance_corrections(pdf_result.text)
     sanitized = sanitize_document_text(corrected)
 
     pipeline_steps: list[str] = [_map_method_to_api(backend)]
@@ -92,18 +99,23 @@ def extract_document(
     validation = validate_extraction(claude_result.fields)
     api_method = _map_method_to_api(backend)
 
+    serialized_fields = serialize_fields_for_api(
+        {
+            key: validation.fields[key].value
+            for key in validation.fields
+            if validation.fields[key].value is not None
+        }
+    )
+    field_bboxes = match_field_bboxes(serialized_fields, pdf_result.elements)
+
     extraction_payload: dict[str, object] = {
-        "fields": serialize_fields_for_api(
-            {
-                key: validation.fields[key].value
-                for key in validation.fields
-                if validation.fields[key].value is not None
-            }
-        ),
+        "fields": serialized_fields,
         "confidence": validation.to_confidence_dict(),
         "method": api_method,
         "extractedAt": datetime.now(UTC).isoformat(),
     }
+    if field_bboxes:
+        extraction_payload["bboxes"] = field_bboxes
 
     return ExtractResult(
         text=sanitized.text,

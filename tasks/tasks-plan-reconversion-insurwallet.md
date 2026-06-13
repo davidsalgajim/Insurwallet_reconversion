@@ -79,7 +79,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 1.4 CI/CD: `.github/workflows/ci.yml`, Dependabot, Vitest config
   - [x] 1.5 `PRODUCT.md` + `DESIGN.md` en raíz (impeccable init)
   - [x] 1.6 Design tokens en `globals.css` + componentes UI (Button, Card) + páginas visuales
-  - [ ] 1.7 POC OpenDataLoader: contenedor Docker (JDK 11 + Python 3.12) — **`worker/scripts/docker-smoke.sh`** smoke test; extracción real pendiente (3.3)
+  - [x] 1.7 POC OpenDataLoader: contenedor Docker (JDK 11 + Python 3.12) — **`worker/scripts/docker-smoke.sh`** verifica `/health/odl` + auth; imagen instala `opendataloader-pdf`; fallback dev pymupdf intacto
   - [x] 1.8 next-intl ES/EN/PT + middleware + `messages/*.json`
   - [x] 1.9 Revisión de código con agentes (security-reviewer + typescript-reviewer) y commit de cierre de fase — parcial: CONTRIBUTING.md + convención PR/agent review (7.5); cierre formal F0 pendiente POC 1.7
 
@@ -98,37 +98,37 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 2.12 Deploy a staging, revisión con agentes (security-reviewer + typescript-reviewer + Bugbot) y commit de cierre — checklist pre-deploy documentado en README (deploy real pendiente)
 
   - [ ] 3.0 F2 — Pipeline de documentos: worker Cloud Run, sanitizador anti-injection, extracción Claude estructurada y pantalla de revisión
-  - [x] 3.1 Crear worker Cloud Run (FastAPI + Dockerfile JDK11+Py3.12) con endpoint de job autenticado (OIDC service-to-service, nunca público) — **parcial:** Dockerfile, `main.py`, `/jobs/process` stub; **hecho jun 2026:** `document-job-runner` + `/api/jobs/[jobId]/process` + dispatch interno desde `on-storage-upload`; OIDC worker↔Cloud Run pendiente
-  - [x] 3.2 Implementar upload de documentos: drag-and-drop + cámara móvil, validación cliente (tipo/tamaño), progreso visible, creación de `jobs/{jobId}` vía Function trigger de Storage — **parcial:** UI upload + Storage + trigger + listener dispara procesamiento; cámara móvil pendiente
-  - [x] 3.3 Integrar OpenDataLoader (markdown + JSON + bboxes) como extractor principal (TDD con PDFs de muestra) — **parcial:** ODL CLI cuando JDK/CLI disponible; **dev fallback:** pymupdf → pdfplumber → pypdf sin JVM
+  - [x] 3.1 Crear worker Cloud Run (FastAPI + Dockerfile JDK11+Py3.12) con endpoint de job autenticado (OIDC service-to-service, nunca público) — **hecho jun 2026:** `verify_worker_authorization` (OIDC + `INTERNAL_API_SECRET` dev); `worker-client` envía OIDC cuando hay creds GCP; deploy Cloud Run + audience prod pendiente
+  - [x] 3.2 Implementar upload de documentos: drag-and-drop + cámara móvil, validación cliente (tipo/tamaño), progreso visible, creación de `jobs/{jobId}` vía Function trigger de Storage — **hecho jun 2026:** UI upload + Storage + trigger + listener; cámara móvil con `capture="environment"` + imágenes JPG/PNG/WebP
+  - [x] 3.3 Integrar OpenDataLoader (markdown + JSON + bboxes) como extractor principal (TDD con PDFs de muestra) — **hecho jun 2026:** `opendataloader-pdf` en Docker + `odl_extract.py` + `bbox_matcher.py`; dev fallback pymupdf → pdfplumber → pypdf sin JVM
   - [x] 3.4 Portar quality gate del Swift (`DocumentProcessingService.swift` ~363): <100 palabras o sin keywords de póliza → escalar a Surya; tests con casos límite
   - [x] 3.5 Integrar Surya OCR como fallback para scans/PDFs complejos + MarkItDown para docx/xlsx/imágenes — **parcial:** Surya stub con log claro + pymupdf fallback; MarkItDown para no-PDF cuando instalado
   - [x] 3.6 Implementar sanitizador anti prompt-injection (zero-width chars, normalización Unicode, detección de patrones imperativos) — TDD con corpus de strings maliciosos; integrado en pipeline antes de Claude
   - [x] 3.7 Implementar extracción Claude con tool-use/JSON schema obligatorio, portando los prompts de `ClaudeDocumentService.swift` y el diccionario `insuranceCustomWords` (~200 términos) para post-corrección
   - [x] 3.8 Portar los regex de `DocumentProcessingService+Extraction.swift` como validadores post-IA (números de póliza plausibles, fechas coherentes, montos en rango) con score de confianza por campo — TDD
   - [x] 3.9 Job queue con reintentos (máx 3, backoff), timeout, estados en Firestore y manejo de fallos con mensaje accionable al usuario — **hecho jun 2026:** `invokeWorkerWithRetries` (1s/3s/9s) + estado `failed` con mensaje ES
-  - [ ] 3.10 Construir golden set: ~20 pólizas reales (incl. Cancer Bancolombia) con JSON esperado; workflow CI con métrica ≥95% en campos críticos como gate
-  - [x] 3.11 UI de estados de procesamiento en vivo (listener Firestore): subiendo → extrayendo → analizando → listo, con micro-interacciones emil-design-eng — **parcial:** `DocumentProcessingListener` + integración en upload; polish emil pendiente
-  - [x] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto — **parcial jun 2026:** split-view + badges desde `documents.extraction.confidence` + visor PDF; **pendiente:** bboxes resaltados, indexación de texto al confirmar
+  - [x] 3.10 Construir golden set: ~20 pólizas reales (incl. Cancer Bancolombia) con JSON esperado; workflow CI con métrica ≥95% en campos críticos como gate — **hecho jun 2026:** `worker/tests/golden/manifest.json` (20 casos + 3 PDF fixtures), `test_golden.py`, `.github/workflows/golden-ocr.yml`; PDFs reales de producción pendientes sustituir fixtures sintéticos
+  - [x] 3.11 UI de estados de procesamiento en vivo (listener Firestore): subiendo → extrayendo → analizando → listo, con micro-interacciones emil-design-eng — **hecho jun 2026:** `DocumentProcessingListener` + barra de progreso + transiciones 200ms + `prefers-reduced-motion`
+  - [x] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto — **hecho jun 2026:** split-view + badges + visor pdf.js con overlay bbox al focus/hover; requiere ODL bboxes en extracción real para ver resaltados en prod
   - [ ] 3.13 Flujo C — documentos adicionales a póliza existente: detección de diffs (ej. endoso con nueva vigencia) + banner "¿actualizar la póliza?" con diff visible
   - [ ] 3.14 Revisión con agentes (security-reviewer + python-reviewer + typescript-reviewer + Bugbot) y commit de cierre
 
 - [ ] 4.0 F3 — MarIAna multi-agente y compartir pólizas
-  - [x] 4.1 Implementar chunking + embeddings del texto extraído (chunks ~500 tokens con página/bbox) y vector index de Firestore; indexación automática al confirmar revisión — **hecho jun 2026:** chunking texto + búsqueda por términos; indexación en confirm review; vector index opcional pendiente
+  - [x] 4.1 Implementar chunking + embeddings del texto extraído (chunks ~500 tokens con página/bbox) y vector index de Firestore; indexación automática al confirmar revisión — **hecho jun 2026:** chunking + búsqueda híbrida términos/vector opcional; índice vector 768-dim en `firestore.indexes.json`; pipeline embeddings pendiente
   - [x] 4.2 Implementar Tier 0 determinístico: intents frecuentes (vencimientos, primas, contactos) resueltos con query Firestore + plantilla localizada <300ms, sin LLM — TDD del matcher de intents
   - [x] 4.3 Implementar router con Haiku: clasificación de intención + extracción de entidades (qué póliza, qué tema) con contexto mínimo (solo metadatos de pólizas)
   - [x] 4.4 Implementar tools read-only con scope server-side por uid (`get_policies_summary`, `search_document_chunks`, `get_coverage_details`, `get_contacts`) — los tools jamás aceptan IDs arbitrarios del cliente; tests de autorización
-  - [x] 4.5 Implementar los 5 agentes especialistas (Documental con citas a documento+página, Coberturas, Vencimientos, Aseguradoras, Emergencias con bypass por keywords) como system prompts + prompt caching — **hecho jun 2026:** prompts 5 agentes; prompt caching pendiente
+  - [x] 4.5 Implementar los 5 agentes especialistas (Documental con citas a documento+página, Coberturas, Vencimientos, Aseguradoras, Emergencias con bypass por keywords) como system prompts + prompt caching — **hecho jun 2026:** prompts 5 agentes + `cache_control: ephemeral` en system blocks estáticos
   - [x] 4.6 Guardrails: scope-check de respuesta (solo seguros), rate limiting por uid, límite de tokens por sesión, texto de documentos siempre en `<document_data>` — tests adversariales básicos
-  - [x] 4.7 UI de chat: streaming, historial con rolling summary, citas clicables que abren el documento en la página fuente, sugerencias de preguntas iniciales — **parcial jun 2026:** streaming SSE + citas clicables a review; rolling summary pendiente
+  - [x] 4.7 UI de chat: streaming, historial con rolling summary, citas clicables que abren el documento en la página fuente, sugerencias de preguntas iniciales — **hecho jun 2026:** streaming SSE + citas + rolling summary determinístico en cliente/API
   - [x] 4.8 Compartir pólizas: generación de token (hash en Firestore, expiración), email al destinatario, página `share/[token]` con aceptación, permisos view/view_download, revocación — tests de reglas para acceso compartido — **hecho jun 2026:** API shares + Resend email + revocación UI + permisos; tests unitarios email/share
-  - [x] 4.9 Gestión de beneficiarios y beneficios (CRUD en detalle de póliza) con catálogo de beneficios comunes por tipo de seguro — **hecho jun 2026:** CRUD subcolección beneficiaries + UI básica; catálogo común pendiente
+  - [x] 4.9 Gestión de beneficiarios y beneficios (CRUD en detalle de póliza) con catálogo de beneficios comunes por tipo de seguro — **hecho jun 2026:** CRUD beneficiaries + catálogo sugerido en edición de póliza
   - [ ] 4.10 Tracking de costos LLM por usuario/sesión (tokens in/out por modelo) hacia analytics — base para decisiones de pricing
   - [ ] 4.11 Revisión con agentes (security-reviewer enfocado en los tools y el scope + typescript-reviewer + Bugbot) y commit de cierre
 
-- [ ] 5.0 F4 — Monetización y retención: pagos, gates premium, notificaciones y cumplimiento legal — **~80% jun 2026:** Wompi checkout+webhook, Resend, FCM, legal consent, GDPR export/delete; pendiente 5.11 backups, 5.12 import iOS, 5.13 revisión agentes, recibo pago email, Remote Config real
+- [ ] 5.0 F4 — Monetización y retención: pagos, gates premium, notificaciones y cumplimiento legal — **~85% jun 2026:** Mercado Pago checkout+webhook (Wompi legacy), Resend, FCM, legal consent, GDPR export/delete; pendiente 5.11 backups, 5.12 import iOS, 5.13 revisión agentes, recibo pago email, Remote Config real
   - [x] 5.1 Diseñar e implementar interface `PaymentProvider` (createCheckout, webhook, cancelSubscription) — TDD con mocks de ambos proveedores
-  - [x] 5.2 Implementar primera integración (Wompi para Colombia: tarjeta + Nequi/PSE) con checkout y página de resultado
+  - [x] 5.2 Checkout Colombia vía **Mercado Pago** (tarjeta + PSE/Nequi según MP); adapter Wompi legacy en `lib/payments/wompi.ts`
   - [x] 5.3 Webhook de pagos: verificación de firma, idempotencia por event-id, actualización de `users/{uid}.subscription` — tests con payloads reales firmados/maliciosos
   - [x] 5.4 Gates free/premium replicando `SubscriptionManager.swift` (free: 3 pólizas, sin IA en nube; premium: ilimitado + MarIAna) + paywall con impeccable craft
   - [x] 5.5 Feature flags con Firebase Remote Config (mariana_enabled, payments_enabled, surya_fallback) para rollout gradual — **jun 2026:** fallback por env vars (`PAYMENTS_ENABLED`, `MARIANA_ENABLED`, `SURYA_FALLBACK`); Remote Config pendiente
@@ -157,7 +157,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 6.13 Producción App Check: checklist Enforce en README + `docs/PRODUCTION-CHECKLIST.md` §5; cliente en `lib/firebase/app-check.ts` — ejecutar Enforce en consola pendiente
 
 - [ ] 7.0 Transversal — Observabilidad, analytics y calidad de código continua (durante todas las fases)
-  - [x] 7.1 Sentry en frontend (stub wired): `sentry.client.ts` + `sentry.server.ts` + `instrumentation.ts` — no-op sin DSN; `@sentry/nextjs` + source maps pendiente
+  - [x] 7.1 Sentry en frontend: `@sentry/nextjs` wired en `sentry.client.ts` + `sentry.server.ts` + `instrumentation.ts` — no-op sin DSN; source maps en deploy pendiente
   - [ ] 7.2 Logging estructurado en worker y Functions (Cloud Logging con jobId/uid/timings) + dashboard de métricas del pipeline (tasa de éxito, tiempos por motor, % fallback Surya)
   - [ ] 7.3 Alertas de presupuesto GCP + tracking de costos por servicio (Claude, Cloud Run, Firestore) con corte semanal
   - [ ] 7.4 Analytics de producto (PostHog): funnels de activación (registro → primera póliza → primer documento procesado → primera pregunta a MarIAna), retención semanal
@@ -166,8 +166,10 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 
 ### Pendientes explícitos post-cierre backend/UI (jun 2026)
 
-- [x] **Extracción real:** OpenDataLoader → quality gate → Surya/MarkItDown → Claude tool-use (3.3–3.8) — **jun 2026:** pipeline funcional; ODL/Surya prod pendiente Docker
-- [ ] **Visor PDF avanzado:** resaltado de bboxes por campo en revisión (3.12)
+- [x] **Settings hub (jun 2026):** `/settings` (perfil, moneda, privacidad/GDPR, notificaciones), `/settings/contacts`, `/settings/subscription` (Mercado Pago), `/settings/help`
+
+- [x] **Extracción real:** OpenDataLoader → quality gate → Surya/MarkItDown → Claude tool-use (3.3–3.8) — **jun 2026:** pipeline + Docker ODL + bboxes; Surya prod real pendiente
+- [x] **Visor PDF avanzado:** resaltado de bboxes por campo en revisión (3.12) — pdf.js overlay; datos bbox dependen de ODL en worker
 - [ ] **FCM end-to-end:** `NEXT_PUBLIC_FIREBASE_VAPID_KEY` + envío en `sendExpiryReminders` y al job `ready` (5.6, 5.8)
 - [ ] **Share completo:** ~~email Resend al destinatario, revocación UI, `view_download` (4.8)~~ hecho jun 2026; E2E share pendiente
 - [ ] **GDPR completo:** signed URLs de documentos en export + audit log delete (5.10)

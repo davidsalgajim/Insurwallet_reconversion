@@ -7,13 +7,13 @@ import {
   type Firestore,
 } from 'firebase/firestore'
 
+import { createPolicy, type PolicyDocument } from '@/lib/firebase/policies'
 import { PolicyDocumentSchema } from '@/lib/schemas/document'
 import {
   PolicyExtractionSchema,
   type PolicyExtraction,
 } from '@/lib/schemas/extraction'
-import { PDF_MIME_TYPE } from '@/lib/schemas/upload'
-import { createPolicy, type PolicyDocument } from '@/lib/firebase/policies'
+import type { PolicyUploadMimeType } from '@/lib/schemas/upload'
 
 export type CreateDraftPolicyForUploadInput = {
   ownerUid: string
@@ -25,6 +25,7 @@ export type RegisterUploadedDocumentInput = {
   fileName: string
   storagePath: string
   fileSize: number
+  mimeType: PolicyUploadMimeType
 }
 
 export async function createDraftPolicyForUpload(
@@ -53,7 +54,7 @@ export function documentToFirestoreData(
     category: 'cover',
     storagePath: input.storagePath,
     fileSize: input.fileSize,
-    mimeType: PDF_MIME_TYPE,
+    mimeType: input.mimeType,
     processing: { state: 'pending' },
     createdAt: now,
   })

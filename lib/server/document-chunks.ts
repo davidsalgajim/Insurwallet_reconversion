@@ -120,11 +120,42 @@ export function scoreChunkMatch(text: string, query: string): number {
   return hits / terms.length
 }
 
+export function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) {
+    return 0
+  }
+
+  let dot = 0
+  let normA = 0
+  let normB = 0
+
+  for (let index = 0; index < a.length; index += 1) {
+    dot += a[index]! * b[index]!
+    normA += a[index]! * a[index]!
+    normB += b[index]! * b[index]!
+  }
+
+  if (normA === 0 || normB === 0) {
+    return 0
+  }
+
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB))
+}
+
+function combineChunkScores(termScore: number, vectorScore: number): number {
+  if (vectorScore <= 0) {
+    return termScore
+  }
+
+  return Math.max(termScore, termScore * 0.35 + vectorScore * 0.65)
+}
+
 export async function searchDocumentChunks(input: {
   policyId: string
   docId?: string
   query: string
   limit?: number
+  queryEmbedding?: number[]
 }): Promise<ChunkSearchResult[]> {
   const db = getAdminFirestore()
   const limit = input.limit ?? 5
@@ -153,7 +184,14 @@ export async function searchDocumentChunks(input: {
         continue
       }
 
-      const score = scoreChunkMatch(parsed.data.text, input.query)
+      const termScore = scoreChunkMatch(parsed.data.text, input.query)
+      const vectorScore =
+        input.queryEmbedding &&
+        parsed.data.embedding &&
+        parsed.data.embedding.length === input.queryEmbedding.length
+          ? cosineSimilarity(input.queryEmbedding, parsed.data.embedding)
+          : 0
+      const score = combineChunkScores(termScore, vectorScore)
       if (score <= 0) {
         continue
       }

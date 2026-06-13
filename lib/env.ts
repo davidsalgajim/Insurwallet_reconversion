@@ -43,15 +43,15 @@ const envSchema = z.object({
   NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN: z.string().min(1).optional(),
 })
 
-const DEV_FIREBASE_DEFAULTS: z.infer<typeof envSchema> = {
+const DEV_FIREBASE_DEFAULTS: Partial<Record<FirebaseEnvKey, string>> = {
   NEXT_PUBLIC_FIREBASE_API_KEY: 'demo',
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'demo.firebaseapp.com',
   NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'insurwallet-staging',
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'insurwallet-staging.appspot.com',
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000',
   NEXT_PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:demo',
-  NEXT_PUBLIC_USE_FIREBASE_EMULATORS: false,
-  NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION: false,
+  NEXT_PUBLIC_USE_FIREBASE_EMULATORS: 'false',
+  NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION: 'false',
 }
 
 /**

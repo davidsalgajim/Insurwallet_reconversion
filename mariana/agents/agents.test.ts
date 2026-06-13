@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildCoveragePrompt, buildDocumentalPrompt } from '@/mariana/agents'
+import { buildCachedSystemBlocks } from '@/mariana/agents/prompt-cache'
 import { getAgentSystemPrompt } from '@/mariana/agents/index'
 
 describe('MarIAna agent prompts', () => {
@@ -24,5 +25,11 @@ describe('MarIAna agent prompts', () => {
 
   it('returns prompt for emergency agent', () => {
     expect(getAgentSystemPrompt('emergency', 'es')).toContain('Emergency')
+  })
+
+  it('builds cached system blocks for Anthropic prompt caching', () => {
+    const blocks = buildCachedSystemBlocks('Static prompt', 'Dynamic suffix')
+    expect(blocks[0]?.cache_control).toEqual({ type: 'ephemeral' })
+    expect(blocks[1]?.text).toBe('Dynamic suffix')
   })
 })

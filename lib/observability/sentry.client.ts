@@ -1,5 +1,7 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
+
 type SentryLike = {
   captureException: (error: unknown) => void
   captureMessage: (message: string) => void
@@ -11,10 +13,11 @@ const noopSentry: SentryLike = {
 }
 
 let sentryClient: SentryLike = noopSentry
+let initialized = false
 
 /**
  * Initializes Sentry in the browser when NEXT_PUBLIC_SENTRY_DSN is set.
- * Stub-safe: no @sentry/nextjs dependency until F7 wiring is complete.
+ * No-op without DSN — safe for local dev and CI.
  */
 export function initSentryClient(): SentryLike {
   if (typeof window === 'undefined') {
@@ -26,24 +29,30 @@ export function initSentryClient(): SentryLike {
     return noopSentry
   }
 
-  if (sentryClient !== noopSentry) {
+  if (initialized) {
     return sentryClient
   }
 
-  // TODO 7.1: replace with @sentry/nextjs init({ dsn, tracesSampleRate, ... })
-  if (process.env.NODE_ENV === 'development') {
-    console.info('[observability] Sentry client stub active (DSN configured)')
-  }
+  Sentry.init({
+    dsn,
+    enabled: true,
+    environment:
+      process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0,
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 0,
+  })
 
   sentryClient = {
     captureException: (error) => {
-      console.error('[sentry stub] captureException', error)
+      Sentry.captureException(error)
     },
     captureMessage: (message) => {
-      console.warn('[sentry stub] captureMessage', message)
+      Sentry.captureMessage(message)
     },
   }
 
+  initialized = true
   return sentryClient
 }
 

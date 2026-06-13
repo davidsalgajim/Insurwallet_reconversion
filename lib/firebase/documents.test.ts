@@ -14,6 +14,7 @@ describe('documentToFirestoreData', () => {
         fileName: 'policy.pdf',
         storagePath: 'users/u/policies/pol-1/docs/doc-1/policy.pdf',
         fileSize: 1024,
+        mimeType: PDF_MIME_TYPE,
       },
       now
     )

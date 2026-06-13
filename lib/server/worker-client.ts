@@ -8,8 +8,17 @@ import {
 export type WorkerExtractionPayload = {
   fields: Record<string, unknown>
   confidence: Record<string, string>
+  bboxes?: Record<string, FieldBboxPayload>
   method: string
   extractedAt: string
+}
+
+export type FieldBboxPayload = {
+  page: number
+  left: number
+  top: number
+  width: number
+  height: number
 }
 
 export type WorkerProcessResponse = {
@@ -23,9 +32,18 @@ export type WorkerProcessResponse = {
   extraction?: WorkerExtractionPayload | null
 }
 
+const FieldBboxPayloadSchema = z.object({
+  page: z.number().int().positive(),
+  left: z.number().min(0).max(1),
+  top: z.number().min(0).max(1),
+  width: z.number().min(0).max(1),
+  height: z.number().min(0).max(1),
+})
+
 const WorkerExtractionPayloadSchema = z.object({
   fields: z.record(z.unknown()),
   confidence: z.record(z.string()),
+  bboxes: z.record(FieldBboxPayloadSchema).optional(),
   method: z.string(),
   extractedAt: z.string(),
 })
@@ -51,9 +69,43 @@ export function parseWorkerExtraction(
   return PolicyExtractionSchema.parse({
     fields: payload.fields,
     confidence: payload.confidence,
+    bboxes: payload.bboxes,
     method,
     extractedAt: payload.extractedAt,
   })
+}
+
+async function buildWorkerAuthHeaders(
+  workerUrl: string
+): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  const internalSecret = process.env.INTERNAL_API_SECRET?.trim()
+  const hasGoogleCreds = Boolean(
+    process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim() ||
+    process.env.GCLOUD_PROJECT?.trim()
+  )
+
+  if (!hasGoogleCreds && internalSecret) {
+    headers.Authorization = `Bearer ${internalSecret}`
+    return headers
+  }
+
+  try {
+    const { GoogleAuth } = await import('google-auth-library')
+    const auth = new GoogleAuth()
+    const client = await auth.getIdTokenClient(workerUrl)
+    const token = await client.idTokenProvider.fetchIdToken(workerUrl)
+    headers.Authorization = `Bearer ${token}`
+    return headers
+  } catch {
+    if (internalSecret) {
+      headers.Authorization = `Bearer ${internalSecret}`
+    }
+    return headers
+  }
 }
 
 export async function invokeWorkerProcessJob(input: {
@@ -68,14 +120,7 @@ export async function invokeWorkerProcessJob(input: {
   }
 
   const endpoint = `${workerUrl.replace(/\/$/, '')}/jobs/process`
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  }
-
-  const internalSecret = process.env.INTERNAL_API_SECRET?.trim()
-  if (internalSecret) {
-    headers.Authorization = `Bearer ${internalSecret}`
-  }
+  const headers = await buildWorkerAuthHeaders(workerUrl)
 
   const response = await fetch(endpoint, {
     method: 'POST',

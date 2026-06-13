@@ -265,6 +265,7 @@ export async function processDocumentJob(
         extraction: {
           fields: extraction.fields,
           confidence: extraction.confidence,
+          ...(extraction.bboxes ? { bboxes: extraction.bboxes } : {}),
           method: pipelineMethod,
           extractedAt: Timestamp.fromDate(extraction.extractedAt),
         },
