@@ -1,4 +1,8 @@
-"""Claude structured extraction via Anthropic tool-use (JSON schema)."""
+"""Claude structured extraction via Anthropic tool-use (JSON schema).
+
+Tool schema aligns with lib/schemas/extraction.ts and lib/schemas/policy.ts:
+manual wizard ≡ extraction ≡ MarIAna readable fields.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +15,73 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "claude-sonnet-4-20250514"
+
+_POLICY_TYPE_ENUM = ["life", "health", "auto", "home", "travel", "other"]
+_PAYMENT_FREQUENCY_ENUM = [
+    "monthly",
+    "quarterly",
+    "semi_annual",
+    "annual",
+    "single",
+]
+
+_COVERAGE_ENTRY = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "amount": {"type": "number"},
+    },
+    "required": ["name", "amount"],
+    "additionalProperties": False,
+}
+
+_DEDUCTIBLE_ENTRY = {
+    "type": "object",
+    "properties": {
+        "incidentType": {"type": "string"},
+        "amount": {"type": "number"},
+        "isPercentage": {"type": "boolean"},
+    },
+    "required": ["incidentType", "amount", "isPercentage"],
+    "additionalProperties": False,
+}
+
+_BENEFICIARY_ENTRY = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string", "description": "Beneficiary full name"},
+        "pct": {
+            "type": "number",
+            "description": "Benefit percentage 0-100",
+        },
+        "notes": {"type": "string", "description": "Optional observations"},
+    },
+    "required": ["name", "pct"],
+    "additionalProperties": False,
+}
+
+_BENEFIT_ENTRY = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "category": {"type": "string"},
+        "contactInfo": {"type": "string"},
+        "quantity": {"type": "string"},
+    },
+    "required": ["name"],
+    "additionalProperties": False,
+}
+
+_AGENT = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "phone": {"type": "string"},
+        "email": {"type": "string"},
+    },
+    "additionalProperties": False,
+}
 
 EXTRACTION_TOOL: dict[str, Any] = {
     "name": "extract_policy_fields",
@@ -29,6 +100,11 @@ EXTRACTION_TOOL: dict[str, Any] = {
                 "type": "string",
                 "description": "Policy or certificate number",
             },
+            "policyType": {
+                "type": "string",
+                "enum": _POLICY_TYPE_ENUM,
+                "description": "Insurance type",
+            },
             "holderName": {
                 "type": "string",
                 "description": "Policy holder / tomador full name",
@@ -41,6 +117,10 @@ EXTRACTION_TOOL: dict[str, Any] = {
                 "type": "string",
                 "description": "ISO 4217 currency code (e.g. COP, USD)",
             },
+            "paymentFrequency": {
+                "type": "string",
+                "enum": _PAYMENT_FREQUENCY_ENUM,
+            },
             "startDate": {
                 "type": "string",
                 "description": "Coverage start date in YYYY-MM-DD format",
@@ -49,10 +129,62 @@ EXTRACTION_TOOL: dict[str, Any] = {
                 "type": "string",
                 "description": "Coverage end date in YYYY-MM-DD format",
             },
+            "hasNoExpiration": {"type": "boolean"},
+            "coverages": {
+                "type": "string",
+                "description": "Free-text coverage summary",
+            },
+            "beneficiaries": {
+                "type": "string",
+                "description": "Free-text beneficiary summary",
+            },
+            "exclusions": {"type": "string"},
+            "waitingPeriods": {"type": "string"},
+            "notes": {"type": "string"},
+            "agent": _AGENT,
+            "coverageEntries": {
+                "type": "array",
+                "items": _COVERAGE_ENTRY,
+            },
+            "deductibleEntries": {
+                "type": "array",
+                "items": _DEDUCTIBLE_ENTRY,
+            },
+            "beneficiaryEntries": {
+                "type": "array",
+                "items": _BENEFICIARY_ENTRY,
+            },
+            "benefitEntries": {
+                "type": "array",
+                "items": _BENEFIT_ENTRY,
+            },
         },
         "additionalProperties": False,
     },
 }
+
+_FIELD_KEYS = (
+    "insurerName",
+    "policyNumber",
+    "policyType",
+    "holderName",
+    "premium",
+    "currency",
+    "paymentFrequency",
+    "startDate",
+    "endDate",
+    "hasNoExpiration",
+    "coverages",
+    "beneficiaries",
+    "exclusions",
+    "waitingPeriods",
+    "notes",
+    "agent",
+    "coverageEntries",
+    "deductibleEntries",
+    "beneficiaryEntries",
+    "benefitEntries",
+)
 
 SYSTEM_PROMPT = """You are InsurWallet's insurance document extraction engine.
 
@@ -63,7 +195,9 @@ Rules:
 4. Omit fields that are not clearly stated in the document.
 5. Dates must be YYYY-MM-DD. Currency must be a 3-letter ISO 4217 code.
 6. Premium must be numeric (no currency symbols or thousand separators in the number).
-7. Prefer Spanish/English/Portuguese labels: Póliza, Aseguradora, Tomador, Prima, Vigencia.
+7. Prefer Spanish/English/Portuguese labels: Póliza, Aseguradora, Tomador, Prima, Vigencia, Beneficiario.
+8. For beneficiaryEntries use full name, benefit percentage (pct), and optional notes.
+9. policyType must be one of: life, health, auto, home, travel, other.
 
 Common OCR corrections: poliza→póliza, asegurad0→asegurado. Apply reasonable fixes only when context is clear."""
 
@@ -92,6 +226,16 @@ def _build_user_message(sanitized_text: str, has_suspicious: bool) -> str:
     )
 
 
+def _normalize_fields(raw_input: dict[str, object]) -> dict[str, object]:
+    fields: dict[str, object] = {}
+    for key_name in _FIELD_KEYS:
+        value = raw_input.get(key_name)
+        if value is None or value == "" or value == []:
+            continue
+        fields[key_name] = value
+    return fields
+
+
 def extract_policy_fields(
     sanitized_text: str,
     *,
@@ -116,7 +260,7 @@ def extract_policy_fields(
 
     response = anthropic_client.messages.create(
         model=model,
-        max_tokens=1024,
+        max_tokens=4096,
         system=SYSTEM_PROMPT,
         messages=[
             {
@@ -136,19 +280,7 @@ def extract_policy_fields(
         raise ClaudeExtractionError("Claude did not return a tool_use block")
 
     raw_input = dict(tool_block.input)
-    fields: dict[str, object] = {}
-    for key_name in (
-        "insurerName",
-        "policyNumber",
-        "holderName",
-        "premium",
-        "currency",
-        "startDate",
-        "endDate",
-    ):
-        value = raw_input.get(key_name)
-        if value is not None and value != "":
-            fields[key_name] = value
+    fields = _normalize_fields(raw_input)
 
     logger.info(
         "Claude extraction complete model=%s fields=%s",

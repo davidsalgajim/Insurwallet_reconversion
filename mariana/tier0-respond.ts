@@ -85,5 +85,30 @@ export function buildTier0Response(
       }
       return `${headers[locale]}\n\n${lines.join('\n')}`
     }
+    case 'beneficiary_info': {
+      const lines = policies.flatMap((policy) => {
+        if (policy.beneficiaryEntries.length === 0) {
+          return [
+            `• ${policy.insurerName} (${policy.policyNumber}): ${
+              locale === 'es'
+                ? 'sin beneficiarios registrados'
+                : locale === 'pt'
+                  ? 'sem beneficiários registrados'
+                  : 'no beneficiaries on file'
+            }`,
+          ]
+        }
+        return policy.beneficiaryEntries.map((entry) => {
+          const notes = entry.notes ? ` — ${entry.notes}` : ''
+          return `• ${policy.insurerName} (${policy.policyNumber}): ${entry.name} — ${entry.pct}%${notes}`
+        })
+      })
+      const headers: Record<Locale, string> = {
+        es: 'Beneficiarios registrados en tus pólizas:',
+        en: 'Beneficiaries recorded on your policies:',
+        pt: 'Beneficiários registrados nas suas apólices:',
+      }
+      return `${headers[locale]}\n\n${lines.join('\n')}`
+    }
   }
 }

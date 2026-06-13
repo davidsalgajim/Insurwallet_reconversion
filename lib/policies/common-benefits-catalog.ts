@@ -39,6 +39,28 @@ const COMMON_BENEFITS_BY_TYPE: Record<PolicyType, CommonBenefitSuggestion[]> = {
     { id: 'baggage', labelKey: 'baggage' },
     { id: 'repatriation', labelKey: 'repatriation' },
   ],
+  pet: [
+    { id: 'vet-visits', labelKey: 'vetVisits' },
+    { id: 'surgery', labelKey: 'surgery' },
+    { id: 'medications', labelKey: 'medications' },
+    { id: 'liability', labelKey: 'liability' },
+  ],
+  funeral: [
+    { id: 'funeral', labelKey: 'funeral' },
+    { id: 'death-benefit', labelKey: 'deathBenefit' },
+    { id: 'repatriation', labelKey: 'repatriation' },
+  ],
+  dental: [
+    { id: 'dental', labelKey: 'dental' },
+    { id: 'orthodontics', labelKey: 'orthodontics' },
+    { id: 'preventive', labelKey: 'preventive' },
+  ],
+  business: [
+    { id: 'property', labelKey: 'property' },
+    { id: 'civil-liability', labelKey: 'civilLiability' },
+    { id: 'business-interruption', labelKey: 'businessInterruption' },
+    { id: 'employees', labelKey: 'employees' },
+  ],
   other: [
     { id: 'general-coverage', labelKey: 'generalCoverage' },
     { id: 'deductible', labelKey: 'deductible' },

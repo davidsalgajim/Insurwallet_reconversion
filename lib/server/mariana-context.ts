@@ -5,16 +5,13 @@ import type { PolicyMetadata } from '@/mariana/types'
 import type { ToolContext } from '@/mariana/tools'
 
 export type MarianaPolicyContext = PolicyMetadata & {
-  premium: number
-  currency: string
-  startDate: string
-  endDate: string
   coverages?: string
   exclusions?: string
   agent: Policy['agent']
   coverageEntries: Policy['coverageEntries']
   deductibleEntries: Policy['deductibleEntries']
   beneficiaryEntries: Policy['beneficiaryEntries']
+  benefitEntries: Policy['benefitEntries']
 }
 
 function toIsoDate(value: Date): string {
@@ -27,7 +24,16 @@ export function toPolicyMetadata(policy: MarianaPolicyContext): PolicyMetadata {
     policyNumber: policy.policyNumber,
     insurerName: policy.insurerName,
     policyType: policy.policyType,
+    holderName: policy.holderName,
+    startDate: policy.startDate,
     endDate: policy.endDate,
+    premium: policy.premium,
+    currency: policy.currency,
+    paymentFrequency: policy.paymentFrequency,
+    coverageCount: policy.coverageEntries.length,
+    deductibleCount: policy.deductibleEntries.length,
+    beneficiaryCount: policy.beneficiaryEntries.length,
+    benefitCount: policy.benefitEntries.length,
   }
 }
 
@@ -55,16 +61,23 @@ export async function loadMarianaPolicyContext(uid: string): Promise<{
       policyNumber: parsed.policyNumber,
       insurerName: parsed.insurerName,
       policyType: parsed.policyType,
+      holderName: parsed.holderName,
       endDate: toIsoDate(parsed.endDate),
+      startDate: toIsoDate(parsed.startDate),
       premium: parsed.premium,
       currency: parsed.currency,
-      startDate: toIsoDate(parsed.startDate),
+      paymentFrequency: parsed.paymentFrequency,
+      coverageCount: parsed.coverageEntries.length,
+      deductibleCount: parsed.deductibleEntries.length,
+      beneficiaryCount: parsed.beneficiaryEntries.length,
+      benefitCount: parsed.benefitEntries.length,
       coverages: parsed.coverages,
       exclusions: parsed.exclusions,
       agent: parsed.agent,
       coverageEntries: parsed.coverageEntries,
       deductibleEntries: parsed.deductibleEntries,
       beneficiaryEntries: parsed.beneficiaryEntries,
+      benefitEntries: parsed.benefitEntries,
     }
   })
 
@@ -83,16 +96,23 @@ export async function loadMarianaPolicyContext(uid: string): Promise<{
       policyNumber: parsed.policyNumber,
       insurerName: parsed.insurerName,
       policyType: parsed.policyType,
+      holderName: parsed.holderName,
       endDate: toIsoDate(parsed.endDate),
+      startDate: toIsoDate(parsed.startDate),
       premium: parsed.premium,
       currency: parsed.currency,
-      startDate: toIsoDate(parsed.startDate),
+      paymentFrequency: parsed.paymentFrequency,
+      coverageCount: parsed.coverageEntries.length,
+      deductibleCount: parsed.deductibleEntries.length,
+      beneficiaryCount: parsed.beneficiaryEntries.length,
+      benefitCount: parsed.benefitEntries.length,
       coverages: parsed.coverages,
       exclusions: parsed.exclusions,
       agent: parsed.agent,
       coverageEntries: parsed.coverageEntries,
       deductibleEntries: parsed.deductibleEntries,
       beneficiaryEntries: parsed.beneficiaryEntries,
+      benefitEntries: parsed.benefitEntries,
     }
   })
 

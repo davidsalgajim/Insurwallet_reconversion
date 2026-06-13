@@ -18,9 +18,18 @@ import {
   registerUploadedDocument,
 } from '@/lib/firebase/documents'
 import { uploadPolicyPdf } from '@/lib/firebase/storage'
-import { validatePolicyUploadFile } from '@/lib/schemas/upload'
+import {
+  MAX_UPLOAD_BYTES,
+  validatePolicyUploadFile,
+} from '@/lib/schemas/upload'
 
-type UploadPhase = 'idle' | 'validating' | 'uploading' | 'processing' | 'error'
+type UploadPhase =
+  | 'idle'
+  | 'validating'
+  | 'optimizing'
+  | 'uploading'
+  | 'processing'
+  | 'error'
 
 export default function UploadPolicyPage() {
   const t = useTranslations('policies.upload')
@@ -43,7 +52,8 @@ export default function UploadPolicyPage() {
   const [policyId, setPolicyId] = useState<string | null>(null)
   const [docId, setDocId] = useState<string | null>(null)
 
-  const isBusy = phase === 'validating' || phase === 'uploading'
+  const isBusy =
+    phase === 'validating' || phase === 'optimizing' || phase === 'uploading'
 
   const handleFileSelect = useCallback(
     (file: File | null) => {
@@ -63,6 +73,10 @@ export default function UploadPolicyPage() {
     setPhase('validating')
 
     try {
+      if (selectedFile.size > MAX_UPLOAD_BYTES) {
+        setPhase('optimizing')
+      }
+
       const validation = await validatePolicyUploadFile(selectedFile)
 
       if (!validation.ok) {
@@ -222,18 +236,28 @@ export default function UploadPolicyPage() {
             errorMessage={errorMessage}
           />
 
-          {phase === 'uploading' ? (
+          {phase === 'uploading' || phase === 'optimizing' ? (
             <div className="space-y-2" aria-live="polite">
               <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                <span>{t('uploading')}</span>
-                <span>{Math.round(progress * 100)}%</span>
+                <span>
+                  {phase === 'optimizing' ? t('optimizing') : t('uploading')}
+                </span>
+                {phase === 'uploading' ? (
+                  <span>{Math.round(progress * 100)}%</span>
+                ) : null}
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/60 ring-1 ring-border">
-                <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-200"
-                  style={{ width: `${Math.round(progress * 100)}%` }}
-                />
-              </div>
+              {phase === 'uploading' ? (
+                <div className="h-2 overflow-hidden rounded-full bg-white/60 ring-1 ring-border">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-200"
+                    style={{ width: `${Math.round(progress * 100)}%` }}
+                  />
+                </div>
+              ) : (
+                <div className="h-2 overflow-hidden rounded-full bg-white/60 ring-1 ring-border">
+                  <div className="h-full w-1/2 animate-pulse rounded-full bg-primary/70" />
+                </div>
+              )}
             </div>
           ) : null}
 
@@ -272,9 +296,11 @@ export default function UploadPolicyPage() {
             >
               {phase === 'validating'
                 ? t('validating')
-                : phase === 'uploading'
-                  ? t('uploading')
-                  : t('startUpload')}
+                : phase === 'optimizing'
+                  ? t('optimizing')
+                  : phase === 'uploading'
+                    ? t('uploading')
+                    : t('startUpload')}
             </Button>
           </div>
         </div>

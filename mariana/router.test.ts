@@ -6,15 +6,16 @@ import {
   matchTier0Intent,
   routeMessage,
 } from '@/mariana/router'
+import { makePolicyMetadata } from '@/mariana/test-fixtures'
 
 const samplePolicies = [
-  {
+  makePolicyMetadata({
     id: 'policy-auto',
     policyNumber: 'AUTO-001',
     insurerName: 'Seguros Bolívar',
     policyType: 'auto',
     endDate: '2026-06-01',
-  },
+  }),
 ]
 
 describe('matchEmergencyKeywords', () => {
@@ -35,6 +36,9 @@ describe('matchTier0Intent', () => {
     )
     expect(matchTier0Intent('¿A quién llamo en la aseguradora?')).toBe(
       'contact_info'
+    )
+    expect(matchTier0Intent('¿Qué beneficiarios tengo registrados?')).toBe(
+      'beneficiary_info'
     )
   })
 

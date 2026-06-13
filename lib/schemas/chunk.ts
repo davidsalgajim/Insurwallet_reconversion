@@ -14,10 +14,8 @@ export type DocumentChunk = z.infer<typeof DocumentChunkSchema>
 
 export const BeneficiaryRecordSchema = z.object({
   name: z.string().min(1),
-  idType: z.enum(['cc', 'ce', 'passport', 'nit', 'other']),
-  idNumber: z.string().min(1),
-  relationship: z.string().min(1),
   pct: z.number().min(0).max(100),
+  notes: z.string().optional(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 })

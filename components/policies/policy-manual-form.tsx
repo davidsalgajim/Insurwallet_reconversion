@@ -13,22 +13,23 @@ import {
   PolicyBasicFields,
   type PolicyBasicFieldsValues,
 } from '@/components/policies/policy-basic-fields'
-import { BenefitsCatalogSuggestions } from '@/components/policies/benefits-catalog-suggestions'
+import {
+  PolicyManualBeneficiaries,
+  createEmptyManualBeneficiaryRow,
+  type ManualBeneficiaryFormRow,
+} from '@/components/policies/policy-manual-beneficiaries'
 import {
   PolicyStructuredFields,
   createEmptyBenefitRow,
   createEmptyCoverageRow,
   createEmptyDeductibleRow,
-  sanitizeBenefitRows,
-  sanitizeCoverageRows,
-  sanitizeDeductibleRows,
   type BenefitRow,
   type CoverageRow,
   type DeductibleRow,
 } from '@/components/policies/policy-structured-fields'
 import { Button } from '@/components/ui/button'
 import { useRouter } from '@/i18n/navigation'
-import type { CreatePolicyInput } from '@/lib/firebase/policies'
+import { buildCreateInputFromForm } from '@/lib/policies/form-input'
 import { cn } from '@/lib/utils/cn'
 
 import { policyFieldClassName } from './policy-form-styles'
@@ -61,44 +62,6 @@ function defaultAgentValues(): PolicyAgentFieldsValues {
   }
 }
 
-function buildCreateInput(
-  values: PolicyBasicFieldsValues,
-  agent: PolicyAgentFieldsValues,
-  coverageRows: CoverageRow[],
-  deductibleRows: DeductibleRow[],
-  benefitRows: BenefitRow[],
-  ownerUid: string
-): CreatePolicyInput {
-  return {
-    ownerUid,
-    insurerName: values.insurerName.trim(),
-    policyNumber: values.policyNumber.trim(),
-    policyType: values.policyType,
-    holderName: values.holderName.trim() || values.insurerName.trim(),
-    startDate: new Date(values.startDate),
-    endDate: values.hasNoExpiration
-      ? new Date(values.startDate)
-      : new Date(values.endDate),
-    hasNoExpiration: values.hasNoExpiration,
-    premium: values.premium ? Number(values.premium) : 0,
-    currency: values.currency.trim() || 'COP',
-    paymentFrequency: values.paymentFrequency,
-    coverages: values.coverages.trim() || undefined,
-    beneficiaries: values.beneficiaries.trim() || undefined,
-    exclusions: values.exclusions.trim() || undefined,
-    waitingPeriods: values.waitingPeriods.trim() || undefined,
-    notes: values.notes.trim() || undefined,
-    agent: {
-      name: agent.agentName.trim() || undefined,
-      phone: agent.agentPhone.trim() || undefined,
-      email: agent.agentEmail.trim() || undefined,
-    },
-    coverageEntries: sanitizeCoverageRows(coverageRows),
-    deductibleEntries: sanitizeDeductibleRows(deductibleRows),
-    benefitEntries: sanitizeBenefitRows(benefitRows),
-  }
-}
-
 export function PolicyManualForm() {
   const router = useRouter()
   const t = useTranslations('policies')
@@ -112,6 +75,9 @@ export function PolicyManualForm() {
   const [coverageRows, setCoverageRows] = useState<CoverageRow[]>([])
   const [deductibleRows, setDeductibleRows] = useState<DeductibleRow[]>([])
   const [benefitRows, setBenefitRows] = useState<BenefitRow[]>([])
+  const [beneficiaryRows, setBeneficiaryRows] = useState<
+    ManualBeneficiaryFormRow[]
+  >([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -156,17 +122,24 @@ export function PolicyManualForm() {
         import('@/lib/firebase/policies'),
       ])
 
-      await createPolicy(
-        db,
-        buildCreateInput(
-          values,
-          agent,
-          coverageRows,
-          deductibleRows,
-          benefitRows,
-          user.uid
-        )
+      const input = buildCreateInputFromForm(
+        values,
+        agent,
+        coverageRows,
+        deductibleRows,
+        benefitRows,
+        beneficiaryRows,
+        user.uid
       )
+
+      const created = await createPolicy(db, input)
+
+      if (input.beneficiaryEntries && input.beneficiaryEntries.length > 0) {
+        const { syncPolicyBeneficiaries } =
+          await import('@/lib/policies/form-input')
+        await syncPolicyBeneficiaries(created.id, input.beneficiaryEntries)
+      }
+
       router.push('/policies')
     } catch {
       setError(t('errors.saveFailed'))
@@ -184,35 +157,11 @@ export function PolicyManualForm() {
         defaultCurrency={preferredCurrency}
       />
 
-      <BenefitsCatalogSuggestions
-        policyType={values.policyType}
-        coveragesText={values.coverages}
-        onAppend={(benefitLabel) => {
-          handleChange(
-            'coverages',
-            values.coverages.trim()
-              ? `${values.coverages.trim()}\n• ${benefitLabel}`
-              : `• ${benefitLabel}`
-          )
-        }}
+      {/* Beneficios sugeridos programados para fase posterior — ver policy-edit-view */}
+      <PolicyManualBeneficiaries
+        rows={beneficiaryRows}
+        onChange={setBeneficiaryRows}
       />
-
-      <div className="space-y-2">
-        <label htmlFor="beneficiaries" className="text-sm font-medium">
-          {t('fields.beneficiariesNotes')}
-        </label>
-        <textarea
-          id="beneficiaries"
-          name="beneficiaries"
-          rows={3}
-          value={values.beneficiaries}
-          onChange={(event) =>
-            handleChange('beneficiaries', event.target.value)
-          }
-          placeholder={t('fields.beneficiariesNotesPlaceholder')}
-          className={cn(policyFieldClassName, 'min-h-[88px] resize-y py-3')}
-        />
-      </div>
 
       <PolicyStructuredFields
         coverageRows={coverageRows}
@@ -260,6 +209,7 @@ export function PolicyManualForm() {
 }
 
 export {
+  createEmptyManualBeneficiaryRow,
   createEmptyBenefitRow,
   createEmptyCoverageRow,
   createEmptyDeductibleRow,

@@ -14,12 +14,12 @@ function makePdfFile(name: string, size: number, content = '%PDF-1.4\n'): File {
 }
 
 describe('upload schema', () => {
-  it('accepts valid PDF files under 20MB', () => {
+  it('accepts valid PDF files under 2MB', () => {
     const file = makePdfFile('policy.pdf', 1024)
     expect(PolicyUploadFileSchema.safeParse(file).success).toBe(true)
   })
 
-  it('rejects files over 20MB', () => {
+  it('rejects files over 2MB', () => {
     const file = makePdfFile('large.pdf', MAX_UPLOAD_BYTES + 1)
     expect(PolicyUploadFileSchema.safeParse(file).success).toBe(false)
   })

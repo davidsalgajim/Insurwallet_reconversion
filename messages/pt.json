@@ -224,7 +224,15 @@
       "stepSubtitle": "Passo 2 de 4 — dados básicos do seguro",
       "stepSubtitleExtended": "Passo 2 de 4 — complete os dados da apólice",
       "signInHint": "Entre para salvar esta apólice na sua carteira.",
-      "dateError": "A data de fim deve ser igual ou posterior ao início."
+      "dateError": "A data de fim deve ser igual ou posterior ao início.",
+      "beneficiariesTitle": "Beneficiários",
+      "addBeneficiary": "Adicionar beneficiário",
+      "beneficiariesEmpty": "Opcional: adicione beneficiários com nome e percentual.",
+      "beneficiaryName": "Nome completo",
+      "beneficiaryPct": "Percentual (0-100)",
+      "beneficiaryObservations": "Observações (opcional)",
+      "beneficiaryPctTotal": "Total atribuído: {pct}%",
+      "beneficiaryPctWarning": "A soma ultrapassa 100%. Revise os percentuais antes de salvar."
     },
     "tabs": {
       "aria": "Seções de apólices",
@@ -255,6 +263,12 @@
       "noResultsDesc": "Tente outro termo de busca."
     },
     "structured": {
+      "beneficiariesTitle": "Beneficiários",
+      "beneficiariesEmpty": "Adicione beneficiários com nome e percentual.",
+      "addBeneficiary": "Adicionar beneficiário",
+      "beneficiaryNamePlaceholder": "Nome completo",
+      "beneficiaryPctPlaceholder": "% benefício",
+      "beneficiaryNotesPlaceholder": "Observações (opcional)",
       "coveragesTitle": "Coberturas estruturadas",
       "coveragesEmpty": "Adicione valores por cobertura se souber.",
       "addCoverage": "Adicionar cobertura",
@@ -338,6 +352,10 @@
       "auto": "Auto",
       "home": "Casa",
       "travel": "Viagem",
+      "pet": "Pet",
+      "funeral": "Funeral",
+      "dental": "Dental",
+      "business": "Empresarial",
       "other": "Outro"
     },
     "paymentFrequency": {
@@ -365,6 +383,7 @@
       "removeFile": "Remover arquivo",
       "startUpload": "Enviar e processar",
       "validating": "Validando…",
+      "optimizing": "Otimizando documento…",
       "uploading": "Enviando…",
       "back": "Voltar",
       "authRequired": "Faça login para enviar documentos à sua carteira.",
@@ -372,7 +391,10 @@
       "viewDraft": "Ver rascunho",
       "errors": {
         "emptyFile": "O arquivo está vazio.",
-        "tooLarge": "O arquivo excede o limite de 20 MB.",
+        "tooLarge": "O arquivo excede o limite de 2 MB após otimização.",
+        "sourceTooLarge": "O arquivo excede 20 MB. Use um documento menor.",
+        "compressionFailed": "Não foi possível otimizar o documento. Tente outro arquivo.",
+        "compressionTooLarge": "Não conseguimos reduzir o documento abaixo de 2 MB. Recorte páginas ou use uma foto mais leve.",
         "invalidType": "Somente PDF ou imagens JPG/PNG/WebP são permitidos.",
         "invalidPdf": "O arquivo não parece ser um PDF válido.",
         "uploadFailed": "Não foi possível enviar o documento. Tente novamente.",
@@ -480,6 +502,13 @@
         "tripCancellation": "Cancelamento de viagem",
         "baggage": "Bagagem",
         "repatriation": "Repatriação",
+        "vetVisits": "Consultas veterinárias",
+        "surgery": "Cirurgias",
+        "orthodontics": "Ortodontia",
+        "preventive": "Prevenção",
+        "property": "Bens segurados",
+        "businessInterruption": "Perda de receita",
+        "employees": "Funcionários",
         "generalCoverage": "Cobertura geral",
         "deductible": "Franquia",
         "exclusions": "Exclusões"
@@ -497,16 +526,8 @@
       "save": "Salvar",
       "saving": "Salvando…",
       "namePlaceholder": "Nome completo",
-      "idNumberPlaceholder": "Número do documento",
-      "relationshipPlaceholder": "Parentesco (ex. cônjuge)",
       "pctPlaceholder": "Percentual (0-100)",
-      "idType": {
-        "cc": "Documento",
-        "ce": "Documento estrangeiro",
-        "passport": "Passaporte",
-        "nit": "NIT",
-        "other": "Outro"
-      }
+      "notesPlaceholder": "Observações (opcional)"
     }
   },
   "dashboard": {

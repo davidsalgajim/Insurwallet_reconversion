@@ -25,6 +25,10 @@ export const POLICY_TYPE_VALUES = [
   'auto',
   'home',
   'travel',
+  'pet',
+  'funeral',
+  'dental',
+  'business',
   'other',
 ] as const satisfies readonly PolicyType[]
 

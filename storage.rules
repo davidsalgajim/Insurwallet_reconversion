@@ -14,7 +14,7 @@ service firebase.storage {
     }
 
     function isWithinSizeLimit() {
-      return request.resource.size <= 20 * 1024 * 1024;
+      return request.resource.size <= 2 * 1024 * 1024;
     }
 
     function isValidUpload() {

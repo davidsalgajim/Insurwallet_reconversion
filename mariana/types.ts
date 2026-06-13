@@ -13,6 +13,7 @@ export const TIER0_INTENTS = [
   'policy_expiry',
   'premium_info',
   'contact_info',
+  'beneficiary_info',
 ] as const
 
 export type Tier0Intent = (typeof TIER0_INTENTS)[number]
@@ -22,7 +23,16 @@ export type PolicyMetadata = {
   policyNumber: string
   insurerName: string
   policyType: string
+  holderName: string
+  startDate: string
   endDate: string
+  premium: number
+  currency: string
+  paymentFrequency: string
+  coverageCount: number
+  deductibleCount: number
+  beneficiaryCount: number
+  benefitCount: number
 }
 
 export type RouteDecision = {

@@ -305,20 +305,29 @@ export function buildStubResponse(
   if (decision.agent === 'tier0' && decision.tier0Intent) {
     fullText = buildTier0Response(
       decision.tier0Intent,
-      policies.map((policy) => ({
-        ...policy,
-        premium: 0,
-        currency: 'COP',
-        startDate: policy.endDate,
-        agent: {
-          name: 'Agent',
-          phone: '+570000000000',
-          email: 'a@example.com',
-        },
-        coverageEntries: [],
-        deductibleEntries: [],
-        beneficiaryEntries: [],
-      })),
+      policies.map(
+        (policy): MarianaPolicyContext => ({
+          ...policy,
+          premium: policy.premium ?? 0,
+          currency: policy.currency ?? 'COP',
+          startDate: policy.startDate ?? policy.endDate,
+          holderName: policy.holderName ?? '',
+          paymentFrequency: policy.paymentFrequency ?? 'annual',
+          coverageCount: policy.coverageCount ?? 0,
+          deductibleCount: policy.deductibleCount ?? 0,
+          beneficiaryCount: policy.beneficiaryCount ?? 0,
+          benefitCount: policy.benefitCount ?? 0,
+          agent: {
+            name: 'Agent',
+            phone: '+570000000000',
+            email: 'a@example.com',
+          },
+          coverageEntries: [],
+          deductibleEntries: [],
+          beneficiaryEntries: [],
+          benefitEntries: [],
+        })
+      ),
       locale as 'es' | 'en' | 'pt'
     )
   } else {

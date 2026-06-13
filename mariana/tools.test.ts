@@ -14,7 +14,16 @@ const policies = [
     policyNumber: 'POL-001',
     insurerName: 'Demo',
     policyType: 'auto',
+    holderName: 'Jane',
+    startDate: '2025-01-01',
     endDate: '2026-01-01',
+    premium: 1000,
+    currency: 'COP',
+    paymentFrequency: 'annual',
+    coverageCount: 0,
+    deductibleCount: 0,
+    beneficiaryCount: 0,
+    benefitCount: 0,
   },
 ]
 

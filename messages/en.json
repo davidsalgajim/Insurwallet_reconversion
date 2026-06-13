@@ -224,7 +224,15 @@
       "stepSubtitle": "Step 2 of 4 — basic insurance details",
       "stepSubtitleExtended": "Step 2 of 4 — complete your policy details",
       "signInHint": "Sign in to save this policy to your portfolio.",
-      "dateError": "End date must be on or after the start date."
+      "dateError": "End date must be on or after the start date.",
+      "beneficiariesTitle": "Beneficiaries",
+      "addBeneficiary": "Add beneficiary",
+      "beneficiariesEmpty": "Optional: add beneficiaries with name and percentage.",
+      "beneficiaryName": "Full name",
+      "beneficiaryPct": "Percentage (0-100)",
+      "beneficiaryObservations": "Notes (optional)",
+      "beneficiaryPctTotal": "Total allocated: {pct}%",
+      "beneficiaryPctWarning": "Total exceeds 100%. Review percentages before saving."
     },
     "tabs": {
       "aria": "Policy sections",
@@ -255,6 +263,12 @@
       "noResultsDesc": "Try a different search term."
     },
     "structured": {
+      "beneficiariesTitle": "Beneficiaries",
+      "beneficiariesEmpty": "Add beneficiaries with name and percentage.",
+      "addBeneficiary": "Add beneficiary",
+      "beneficiaryNamePlaceholder": "Full name",
+      "beneficiaryPctPlaceholder": "Benefit %",
+      "beneficiaryNotesPlaceholder": "Notes (optional)",
       "coveragesTitle": "Structured coverages",
       "coveragesEmpty": "Add coverage amounts if you know them.",
       "addCoverage": "Add coverage",
@@ -338,6 +352,10 @@
       "auto": "Auto",
       "home": "Home",
       "travel": "Travel",
+      "pet": "Pet",
+      "funeral": "Funeral",
+      "dental": "Dental",
+      "business": "Business",
       "other": "Other"
     },
     "paymentFrequency": {
@@ -365,6 +383,7 @@
       "removeFile": "Remove file",
       "startUpload": "Upload and process",
       "validating": "Validating…",
+      "optimizing": "Optimizing document…",
       "uploading": "Uploading…",
       "back": "Back",
       "authRequired": "Sign in to upload documents to your portfolio.",
@@ -372,7 +391,10 @@
       "viewDraft": "View draft",
       "errors": {
         "emptyFile": "The file is empty.",
-        "tooLarge": "The file exceeds the 20 MB limit.",
+        "tooLarge": "The file exceeds the 2 MB limit after optimization.",
+        "sourceTooLarge": "The file exceeds 20 MB. Use a smaller document.",
+        "compressionFailed": "Could not optimize the document. Try another file.",
+        "compressionTooLarge": "We could not reduce the document below 2 MB. Trim pages or use a lighter photo.",
         "invalidType": "Only PDF or JPG/PNG/WebP images are allowed.",
         "invalidPdf": "The file does not appear to be a valid PDF.",
         "uploadFailed": "Could not upload the document. Try again.",
@@ -480,6 +502,13 @@
         "tripCancellation": "Trip cancellation",
         "baggage": "Baggage",
         "repatriation": "Repatriation",
+        "vetVisits": "Vet visits",
+        "surgery": "Surgery",
+        "orthodontics": "Orthodontics",
+        "preventive": "Preventive care",
+        "property": "Insured property",
+        "businessInterruption": "Business interruption",
+        "employees": "Employees",
         "generalCoverage": "General coverage",
         "deductible": "Deductible",
         "exclusions": "Exclusions"
@@ -497,16 +526,8 @@
       "save": "Save",
       "saving": "Saving…",
       "namePlaceholder": "Full name",
-      "idNumberPlaceholder": "ID number",
-      "relationshipPlaceholder": "Relationship (e.g. spouse)",
       "pctPlaceholder": "Percentage (0-100)",
-      "idType": {
-        "cc": "National ID",
-        "ce": "Foreign ID",
-        "passport": "Passport",
-        "nit": "Tax ID",
-        "other": "Other"
-      }
+      "notesPlaceholder": "Notes (optional)"
     }
   },
   "dashboard": {

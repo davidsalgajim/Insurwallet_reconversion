@@ -224,7 +224,15 @@
       "stepSubtitle": "Paso 2 de 4 — datos básicos del seguro",
       "stepSubtitleExtended": "Paso 2 de 4 — completa los datos de tu seguro",
       "signInHint": "Inicia sesión para guardar esta póliza en tu cartera.",
-      "dateError": "La fecha de fin debe ser posterior o igual al inicio."
+      "dateError": "La fecha de fin debe ser posterior o igual al inicio.",
+      "beneficiariesTitle": "Beneficiarios",
+      "addBeneficiary": "Agregar beneficiario",
+      "beneficiariesEmpty": "Opcional: agrega beneficiarios con nombre y porcentaje.",
+      "beneficiaryName": "Nombre completo",
+      "beneficiaryPct": "Porcentaje (0-100)",
+      "beneficiaryObservations": "Observaciones (opcional)",
+      "beneficiaryPctTotal": "Total asignado: {pct}%",
+      "beneficiaryPctWarning": "La suma supera 100%. Revisa los porcentajes antes de guardar."
     },
     "tabs": {
       "aria": "Secciones de pólizas",
@@ -255,6 +263,12 @@
       "noResultsDesc": "Prueba con otro término de búsqueda."
     },
     "structured": {
+      "beneficiariesTitle": "Beneficiarios",
+      "beneficiariesEmpty": "Agrega beneficiarios con nombre y porcentaje.",
+      "addBeneficiary": "Agregar beneficiario",
+      "beneficiaryNamePlaceholder": "Nombre completo",
+      "beneficiaryPctPlaceholder": "% beneficio",
+      "beneficiaryNotesPlaceholder": "Observaciones (opcional)",
       "coveragesTitle": "Coberturas estructuradas",
       "coveragesEmpty": "Agrega montos por cobertura si los conoces.",
       "addCoverage": "Agregar cobertura",
@@ -338,6 +352,10 @@
       "auto": "Auto",
       "home": "Hogar",
       "travel": "Viaje",
+      "pet": "Mascotas",
+      "funeral": "Funerario",
+      "dental": "Dental",
+      "business": "Empresarial",
       "other": "Otro"
     },
     "paymentFrequency": {
@@ -365,6 +383,7 @@
       "removeFile": "Quitar archivo",
       "startUpload": "Subir y procesar",
       "validating": "Validando…",
+      "optimizing": "Optimizando documento…",
       "uploading": "Subiendo…",
       "back": "Volver",
       "authRequired": "Inicia sesión para subir documentos a tu cartera.",
@@ -372,7 +391,10 @@
       "viewDraft": "Ver borrador",
       "errors": {
         "emptyFile": "El archivo está vacío.",
-        "tooLarge": "El archivo supera el límite de 20 MB.",
+        "tooLarge": "El archivo supera el límite de 2 MB tras optimización.",
+        "sourceTooLarge": "El archivo supera 20 MB. Usa un documento más pequeño.",
+        "compressionFailed": "No se pudo optimizar el documento. Intenta con otro archivo.",
+        "compressionTooLarge": "No pudimos reducir el documento bajo 2 MB. Recorta páginas o usa una foto más ligera.",
         "invalidType": "Solo se permiten PDF o imágenes JPG/PNG/WebP.",
         "invalidPdf": "El archivo no parece ser un PDF válido.",
         "uploadFailed": "No se pudo subir el documento. Intenta de nuevo.",
@@ -480,6 +502,13 @@
         "tripCancellation": "Cancelación de viaje",
         "baggage": "Equipaje",
         "repatriation": "Repatriación",
+        "vetVisits": "Consultas veterinarias",
+        "surgery": "Cirugías",
+        "orthodontics": "Ortodoncia",
+        "preventive": "Prevención",
+        "property": "Bienes asegurados",
+        "businessInterruption": "Pérdida de ingresos",
+        "employees": "Empleados",
         "generalCoverage": "Cobertura general",
         "deductible": "Deducible",
         "exclusions": "Exclusiones"
@@ -497,16 +526,8 @@
       "save": "Guardar",
       "saving": "Guardando…",
       "namePlaceholder": "Nombre completo",
-      "idNumberPlaceholder": "Número de documento",
-      "relationshipPlaceholder": "Parentesco (ej. cónyuge)",
       "pctPlaceholder": "Porcentaje (0-100)",
-      "idType": {
-        "cc": "Cédula",
-        "ce": "Cédula extranjería",
-        "passport": "Pasaporte",
-        "nit": "NIT",
-        "other": "Otro"
-      }
+      "notesPlaceholder": "Observaciones (opcional)"
     }
   },
   "dashboard": {

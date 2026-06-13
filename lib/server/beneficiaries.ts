@@ -4,15 +4,9 @@ import { z } from 'zod'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { parsePolicyDocument } from '@/lib/firebase/policies'
 import { BeneficiaryRecordSchema } from '@/lib/schemas/chunk'
-import { BeneficiaryIdTypeSchema } from '@/lib/schemas/policy'
+import { BeneficiaryEntrySchema } from '@/lib/schemas/policy'
 
-const BeneficiaryInputSchema = z.object({
-  name: z.string().min(1),
-  idType: BeneficiaryIdTypeSchema,
-  idNumber: z.string().min(1),
-  relationship: z.string().min(1),
-  pct: z.number().min(0).max(100),
-})
+const BeneficiaryInputSchema = BeneficiaryEntrySchema
 
 export type BeneficiaryDto = z.infer<typeof BeneficiaryInputSchema> & {
   id: string

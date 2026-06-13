@@ -89,7 +89,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 2.3 `firestore.rules` (owner, sharedWith read, subcolecciones documents/auditLogs) + 19 tests — ejecutar con emulador (requiere JDK 21+; `firebase-tools` ≥15)
   - [x] 2.4 `storage.rules` (mime PDF/imágenes, máx 20MB, owner) + 6 tests emulator-ready
   - [x] 2.5 `firestore.indexes.json` (ownerUid+status, ownerUid+endDate, sharedWith+endDate)
-  - [x] 2.6 Wizard paso 1 + paso 2 manual ampliado (tipo, vigencias, prima, agente, coberturas/deducibles/beneficios estructurados) + upload PDF — revisión IA (pasos 3-4) pendientes F2
+  - [x] 2.6 Wizard paso 1 + paso 2 manual ampliado (tipo, vigencias, prima, agente, coberturas/deducibles/beneficios estructurados, beneficiarios manuales) + upload PDF — revisión IA (pasos 3-4) pendientes F2; catálogo beneficios sugeridos solo en edición (fase posterior en wizard manual)
   - [x] 2.7 Lista de pólizas con tabs Mis pólizas / Compartidas conmigo (`listSharedPoliciesForUser`, `usePolicies`) + pantalla `/policies/benefits` + detalle `/policies/[id]` con lectura compartida
   - [x] 2.8 Dashboard con KPIs y vencimientos reales desde Firestore (`dashboard-summary.tsx`)
   - [x] 2.9 Edición y borrado de pólizas con confirmación + `auditLogs` — detalle `/policies/[id]`, edit `/policies/[id]/edit`
@@ -122,7 +122,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 4.6 Guardrails: scope-check de respuesta (solo seguros), rate limiting por uid, límite de tokens por sesión, texto de documentos siempre en `<document_data>` — tests adversariales básicos
   - [x] 4.7 UI de chat: streaming, historial con rolling summary, citas clicables que abren el documento en la página fuente, sugerencias de preguntas iniciales — **hecho jun 2026:** streaming SSE + citas + rolling summary determinístico en cliente/API
   - [x] 4.8 Compartir pólizas: generación de token (hash en Firestore, expiración), email al destinatario, página `share/[token]` con aceptación, permisos view/view_download, revocación — tests de reglas para acceso compartido — **hecho jun 2026:** API shares + Resend email + revocación UI + permisos; tests unitarios email/share
-  - [x] 4.9 Gestión de beneficiarios y beneficios (CRUD en detalle de póliza) con catálogo de beneficios comunes por tipo de seguro — **hecho jun 2026:** CRUD beneficiaries + catálogo sugerido en edición de póliza
+  - [x] 4.9 Gestión de beneficiarios y beneficios (CRUD en detalle de póliza) con catálogo de beneficios comunes por tipo de seguro — **hecho jun 2026:** CRUD beneficiaries + catálogo sugerido en edición de póliza; wizard manual sin sugerencias (fase posterior)
   - [ ] 4.10 Tracking de costos LLM por usuario/sesión (tokens in/out por modelo) hacia analytics — base para decisiones de pricing
   - [ ] 4.11 Revisión con agentes (security-reviewer enfocado en los tools y el scope + typescript-reviewer + Bugbot) y commit de cierre
 

@@ -12,7 +12,6 @@ import {
   policyDocumentToFormValues,
   type PolicyBasicFieldsValues,
 } from '@/components/policies/policy-basic-fields'
-import { BenefitsCatalogSuggestions } from '@/components/policies/benefits-catalog-suggestions'
 import { Button } from '@/components/ui/button'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { PolicyDocument } from '@/lib/firebase/policies'
@@ -97,19 +96,6 @@ function PolicyEditForm({ policy }: PolicyEditFormProps) {
         onChange={handleChange}
         showExtendedFields
         defaultCurrency={preferredCurrency}
-      />
-
-      <BenefitsCatalogSuggestions
-        policyType={values.policyType}
-        coveragesText={values.coverages}
-        onAppend={(benefitLabel) => {
-          handleChange(
-            'coverages',
-            values.coverages.trim()
-              ? `${values.coverages.trim()}\n• ${benefitLabel}`
-              : `• ${benefitLabel}`
-          )
-        }}
       />
 
       {submitError ? (

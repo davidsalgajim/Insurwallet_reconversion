@@ -14,7 +14,10 @@ export const POLICY_UPLOAD_MIME_TYPES = [
 
 export type PolicyUploadMimeType = (typeof POLICY_UPLOAD_MIME_TYPES)[number]
 
-export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024
+
+/** Max size accepted before client-side compression is attempted */
+export const MAX_PRE_COMPRESS_BYTES = 20 * 1024 * 1024
 
 const PDF_MAGIC = '%PDF'
 
@@ -53,6 +56,16 @@ export const PolicyUploadFileSchema = z
     message: 'errors.invalidType',
   })
 
+export const PolicyUploadSourceFileSchema = z
+  .instanceof(File)
+  .refine((file) => file.size > 0, { message: 'errors.emptyFile' })
+  .refine((file) => file.size <= MAX_PRE_COMPRESS_BYTES, {
+    message: 'errors.sourceTooLarge',
+  })
+  .refine((file) => resolveUploadMimeType(file) !== null, {
+    message: 'errors.invalidType',
+  })
+
 export type PolicyUploadFile = z.infer<typeof PolicyUploadFileSchema>
 
 /** @deprecated Use PolicyUploadFileSchema */
@@ -71,29 +84,44 @@ export async function validatePolicyUploadFile(
   | { ok: true; file: PolicyUploadFile; mimeType: PolicyUploadMimeType }
   | { ok: false; errorKey: string }
 > {
-  const parsed = PolicyUploadFileSchema.safeParse(file)
-
-  if (!parsed.success) {
-    const issue = parsed.error.issues[0]
+  const sourceParsed = PolicyUploadSourceFileSchema.safeParse(file)
+  if (!sourceParsed.success) {
+    const issue = sourceParsed.error.issues[0]
     return {
       ok: false,
       errorKey: issue?.message ?? 'errors.invalidType',
     }
   }
 
-  const mimeType = resolveUploadMimeType(parsed.data)
+  const mimeType = resolveUploadMimeType(sourceParsed.data)
   if (!mimeType) {
     return { ok: false, errorKey: 'errors.invalidType' }
   }
 
-  if (mimeType === PDF_MIME_TYPE) {
+  const { preparePolicyUploadFile } =
+    await import('@/lib/utils/document-compression')
+  const prepared = await preparePolicyUploadFile(sourceParsed.data, mimeType)
+  if (!prepared.ok) {
+    return { ok: false, errorKey: prepared.errorKey }
+  }
+
+  const parsed = PolicyUploadFileSchema.safeParse(prepared.file)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    return {
+      ok: false,
+      errorKey: issue?.message ?? 'errors.tooLarge',
+    }
+  }
+
+  if (prepared.mimeType === PDF_MIME_TYPE) {
     const hasPdfHeader = await validatePdfMagicBytes(parsed.data)
     if (!hasPdfHeader) {
       return { ok: false, errorKey: 'errors.invalidPdf' }
     }
   }
 
-  return { ok: true, file: parsed.data, mimeType }
+  return { ok: true, file: parsed.data, mimeType: prepared.mimeType }
 }
 
 /** @deprecated Use validatePolicyUploadFile */

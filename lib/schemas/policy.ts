@@ -1,14 +1,23 @@
+/**
+ * Single source of truth for policy fields.
+ * manual wizard ≡ Claude extraction (lib/schemas/extraction.ts) ≡ MarIAna read tools.
+ */
 import { z } from 'zod'
 
 export const PolicyStatusSchema = z.enum(['active', 'expiring', 'expired'])
 export type PolicyStatus = z.infer<typeof PolicyStatusSchema>
 
+/** iOS PolicyTypeIcon set + LATAM supplements (pet, funeral, dental, business) */
 export const PolicyTypeSchema = z.enum([
   'life',
   'health',
   'auto',
   'home',
   'travel',
+  'pet',
+  'funeral',
+  'dental',
+  'business',
   'other',
 ])
 export type PolicyType = z.infer<typeof PolicyTypeSchema>
@@ -35,6 +44,7 @@ export const DeductibleEntrySchema = z.object({
 })
 export type DeductibleEntry = z.infer<typeof DeductibleEntrySchema>
 
+/** Used by global beneficiaries (settings); policy beneficiaries use BeneficiaryEntrySchema */
 export const BeneficiaryIdTypeSchema = z.enum([
   'cc',
   'ce',
@@ -44,12 +54,11 @@ export const BeneficiaryIdTypeSchema = z.enum([
 ])
 export type BeneficiaryIdType = z.infer<typeof BeneficiaryIdTypeSchema>
 
+/** Policy-level beneficiary: full name, benefit %, optional notes */
 export const BeneficiaryEntrySchema = z.object({
   name: z.string().min(1),
-  idType: BeneficiaryIdTypeSchema,
-  idNumber: z.string().min(1),
-  relationship: z.string().min(1),
   pct: z.number().min(0).max(100),
+  notes: z.string().optional(),
 })
 export type BeneficiaryEntry = z.infer<typeof BeneficiaryEntrySchema>
 
@@ -68,6 +77,13 @@ export const PolicyAgentSchema = z.object({
   email: z.string().email(),
 })
 export type PolicyAgent = z.infer<typeof PolicyAgentSchema>
+
+export const PolicyAgentPartialSchema = z.object({
+  name: z.string().min(1).optional(),
+  phone: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+})
+export type PolicyAgentPartial = z.infer<typeof PolicyAgentPartialSchema>
 
 export const PolicySchema = z.object({
   ownerUid: z.string().min(1),

@@ -4,9 +4,11 @@ import { getAdminFirestore } from '@/lib/firebase/admin'
 import {
   mergePolicyUpdate,
   parsePolicyDocument,
+  policyToFirestoreData,
   type PolicyDocument,
 } from '@/lib/firebase/policies'
 import { JOBS_COLLECTION } from '@/lib/firebase/jobs'
+import { extractionFieldsToCreateInput } from '@/lib/policies/extraction-mapping'
 import {
   PolicyExtractionSchema,
   type PolicyExtraction,
@@ -92,15 +94,13 @@ function mergeExtractionIntoPolicy(
   const { id, ...existingPolicy } = policy
   void id
 
-  return mergePolicyUpdate(existingPolicy, {
-    insurerName: extraction.fields.insurerName ?? policy.insurerName,
-    policyNumber: extraction.fields.policyNumber ?? policy.policyNumber,
-    holderName: extraction.fields.holderName ?? policy.holderName,
-    premium: extraction.fields.premium ?? policy.premium,
-    currency: extraction.fields.currency ?? policy.currency,
-    startDate: extraction.fields.startDate ?? policy.startDate,
-    endDate: extraction.fields.endDate ?? policy.endDate,
-  })
+  const input = extractionFieldsToCreateInput(
+    extraction.fields,
+    existingPolicy.ownerUid,
+    existingPolicy
+  )
+  const { ownerUid: _ownerUid, ...update } = input
+  return mergePolicyUpdate(existingPolicy, update)
 }
 
 export type ProcessDocumentJobResult = {
@@ -249,17 +249,10 @@ export async function processDocumentJob(
   const updatedPolicy = mergeExtractionIntoPolicy(policy, extraction)
 
   await db.runTransaction(async (transaction) => {
-    transaction.update(db.collection('policies').doc(job.policyId), {
-      insurerName: updatedPolicy.insurerName,
-      policyNumber: updatedPolicy.policyNumber,
-      holderName: updatedPolicy.holderName,
-      premium: updatedPolicy.premium,
-      currency: updatedPolicy.currency,
-      startDate: Timestamp.fromDate(updatedPolicy.startDate),
-      endDate: Timestamp.fromDate(updatedPolicy.endDate),
-      status: updatedPolicy.status,
-      updatedAt: Timestamp.fromDate(updatedPolicy.updatedAt),
-    })
+    transaction.update(
+      db.collection('policies').doc(job.policyId),
+      policyToFirestoreData(updatedPolicy)
+    )
 
     transaction.set(
       docRef,

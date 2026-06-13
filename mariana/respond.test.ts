@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildStubResponse, encodeSseChunk } from '@/mariana/stream'
+import { makePolicyMetadata } from '@/mariana/test-fixtures'
 
 describe('buildStubResponse', () => {
   it('returns tier0 placeholder for expiry questions', () => {
@@ -8,13 +9,13 @@ describe('buildStubResponse', () => {
       '¿Cuándo vence mi póliza de auto?',
       'es',
       [
-        {
+        makePolicyMetadata({
           id: 'policy-auto',
           policyNumber: 'AUTO-001',
           insurerName: 'Seguros Bolívar',
           policyType: 'auto',
           endDate: '2026-06-01',
-        },
+        }),
       ]
     )
     expect(fullText).toContain('vencimiento')

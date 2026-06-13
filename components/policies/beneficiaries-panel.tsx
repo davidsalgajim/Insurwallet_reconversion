@@ -5,15 +5,12 @@ import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
-import type { BeneficiaryIdType } from '@/lib/schemas/policy'
 
 type BeneficiaryRow = {
   id: string
   name: string
-  idType: BeneficiaryIdType
-  idNumber: string
-  relationship: string
   pct: number
+  notes?: string
 }
 
 type BeneficiariesPanelProps = {
@@ -21,14 +18,10 @@ type BeneficiariesPanelProps = {
   isOwner: boolean
 }
 
-const ID_TYPES: BeneficiaryIdType[] = ['cc', 'ce', 'passport', 'nit', 'other']
-
 const EMPTY_FORM = {
   name: '',
-  idType: 'cc' as BeneficiaryIdType,
-  idNumber: '',
-  relationship: '',
   pct: 100,
+  notes: '',
 }
 
 export function BeneficiariesPanel({
@@ -82,7 +75,11 @@ export function BeneficiariesPanel({
       const response = await fetch(`/api/policies/${policyId}/beneficiaries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          pct: form.pct,
+          notes: form.notes.trim() || undefined,
+        }),
       })
       if (!response.ok) {
         throw new Error('create failed')
@@ -157,8 +154,7 @@ export function BeneficiariesPanel({
               <div>
                 <p className="text-sm font-medium">{row.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t(`idType.${row.idType}`)} {row.idNumber} ·{' '}
-                  {row.relationship} · {row.pct}%
+                  {row.pct}%{row.notes ? ` · ${row.notes}` : ''}
                 </p>
               </div>
               {isOwner ? (
@@ -192,65 +188,30 @@ export function BeneficiariesPanel({
             placeholder={t('namePlaceholder')}
             className="w-full rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
           />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <select
-              value={form.idType}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  idType: event.target.value as BeneficiaryIdType,
-                }))
-              }
-              className="rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
-            >
-              {ID_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {t(`idType.${type}`)}
-                </option>
-              ))}
-            </select>
-            <input
-              required
-              value={form.idNumber}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  idNumber: event.target.value,
-                }))
-              }
-              placeholder={t('idNumberPlaceholder')}
-              className="rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input
-              required
-              value={form.relationship}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  relationship: event.target.value,
-                }))
-              }
-              placeholder={t('relationshipPlaceholder')}
-              className="rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
-            />
-            <input
-              required
-              type="number"
-              min={0}
-              max={100}
-              value={form.pct}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  pct: Number(event.target.value),
-                }))
-              }
-              placeholder={t('pctPlaceholder')}
-              className="rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
-            />
-          </div>
+          <input
+            required
+            type="number"
+            min={0}
+            max={100}
+            value={form.pct}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                pct: Number(event.target.value),
+              }))
+            }
+            placeholder={t('pctPlaceholder')}
+            className="w-full rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
+          />
+          <textarea
+            rows={2}
+            value={form.notes}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, notes: event.target.value }))
+            }
+            placeholder={t('notesPlaceholder')}
+            className="w-full rounded-[var(--radius-inner)] border border-border/70 bg-white/80 px-3 py-2 text-sm"
+          />
           <Button
             type="submit"
             variant="ink"

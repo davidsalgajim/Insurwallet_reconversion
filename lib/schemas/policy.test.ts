@@ -34,10 +34,8 @@ const validPolicy = {
   beneficiaryEntries: [
     {
       name: 'John Doe',
-      idType: 'cc',
-      idNumber: '1234567890',
-      relationship: 'spouse',
       pct: 100,
+      notes: 'Spouse',
     },
   ],
   benefitEntries: [{ name: 'Hospitalización', category: 'Salud' }],
@@ -84,10 +82,8 @@ describe('Policy schemas', () => {
     expect(
       BeneficiaryEntrySchema.safeParse({
         name: 'Maria',
-        idType: 'cc',
-        idNumber: '9876543210',
-        relationship: 'child',
         pct: 50,
+        notes: 'Child',
       }).success
     ).toBe(true)
   })
@@ -105,9 +101,6 @@ describe('Policy schemas', () => {
   it('rejects beneficiary percentage outside 0-100', () => {
     const result = BeneficiaryEntrySchema.safeParse({
       name: 'Maria',
-      idType: 'cc',
-      idNumber: '9876543210',
-      relationship: 'child',
       pct: 150,
     })
 

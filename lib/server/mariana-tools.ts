@@ -70,6 +70,7 @@ export async function executeToolAsync(
           policyId: call.policyId ?? null,
           coverages: policy?.coverageEntries ?? [],
           deductibles: policy?.deductibleEntries ?? [],
+          benefits: policy?.benefitEntries ?? [],
           coveragesText: policy?.coverages ?? null,
           exclusionsText: policy?.exclusions ?? null,
           beneficiaries: policy?.beneficiaryEntries ?? [],
@@ -122,16 +123,16 @@ export async function prefetchToolsForAgent(input: {
   const calls: ToolCall[] = [{ name: 'get_policies_summary' }]
 
   if (policyId) {
-    if (input.agent === 'documental' || input.agent === 'coverage') {
+    if (input.agent === 'coverage' || input.agent === 'expiry') {
+      calls.push({ name: 'get_coverage_details', policyId })
+    }
+
+    if (input.agent === 'coverage' || input.agent === 'documental') {
       calls.push({
         name: 'search_document_chunks',
         policyId,
         query: input.message,
       })
-    }
-
-    if (input.agent === 'coverage' || input.agent === 'expiry') {
-      calls.push({ name: 'get_coverage_details', policyId })
     }
 
     if (input.agent === 'insurers' || input.agent === 'emergency') {

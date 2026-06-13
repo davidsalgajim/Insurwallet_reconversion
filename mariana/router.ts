@@ -39,6 +39,12 @@ const TIER0_PATTERNS: ReadonlyArray<{
       /\b(a\s+qui[eé]n\s+llamo|contacto|tel[eé]fono\s+del\s+agente|call|contact)\b/i,
     ],
   },
+  {
+    intent: 'beneficiary_info',
+    patterns: [
+      /\b(beneficiari[oa]s?|hereder[oa]s?|beneficiary|beneficiaries)\b/i,
+    ],
+  },
 ]
 
 const AGENT_PATTERNS: ReadonlyArray<{
@@ -155,6 +161,11 @@ export function buildTier0Placeholder(
       es: 'Consulta determinística: buscaré contactos de agentes y aseguradoras.',
       en: 'Deterministic lookup: I will find agent and insurer contacts.',
       pt: 'Consulta determinística: vou buscar contatos de agentes e seguradoras.',
+    },
+    beneficiary_info: {
+      es: 'Consulta determinística: revisaré beneficiarios registrados en tus pólizas.',
+      en: 'Deterministic lookup: I will check beneficiaries recorded on your policies.',
+      pt: 'Consulta determinística: vou verificar beneficiários registrados nas suas apólices.',
     },
   }
 

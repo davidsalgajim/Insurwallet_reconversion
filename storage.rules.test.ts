@@ -20,8 +20,8 @@ import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 const PROJECT_ID = 'insurwallet-storage-rules-test'
 const RUN_RULES_TESTS = Boolean(process.env.FIREBASE_STORAGE_EMULATOR_HOST)
 
-const TWENTY_MB = 20 * 1024 * 1024
-const TWENTY_MB_PLUS_ONE = TWENTY_MB + 1
+const TWO_MB = 2 * 1024 * 1024
+const TWO_MB_PLUS_ONE = TWO_MB + 1
 
 function storagePath(uid: string, suffix = 'policies/p1/docs/doc1') {
   return `users/${uid}/${suffix}`
@@ -47,7 +47,7 @@ describe.runIf(RUN_RULES_TESTS)('storage.rules', () => {
     await testEnv.clearStorage()
   })
 
-  it('allows owner to upload PDF under 20MB', async () => {
+  it('allows owner to upload PDF under 2MB', async () => {
     const owner = testEnv.authenticatedContext('owner-a')
     const storage = owner.storage()
     const fileRef = ref(
@@ -89,13 +89,13 @@ describe.runIf(RUN_RULES_TESTS)('storage.rules', () => {
     )
   })
 
-  it('denies uploads larger than 20MB', async () => {
+  it('denies uploads larger than 2MB', async () => {
     const owner = testEnv.authenticatedContext('owner-a')
     const storage = owner.storage()
     const fileRef = ref(storage, storagePath('owner-a', 'docs/large.pdf'))
 
     await assertFails(
-      uploadBytes(fileRef, new Uint8Array(TWENTY_MB_PLUS_ONE), {
+      uploadBytes(fileRef, new Uint8Array(TWO_MB_PLUS_ONE), {
         contentType: 'application/pdf',
       })
     )
