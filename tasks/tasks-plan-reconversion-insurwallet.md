@@ -158,6 +158,100 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [ ] 6.12 Revisión final con agentes (security-review completo del repo + Bugbot) y go/no-go de lanzamiento — incluye [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](../docs/PRODUCTION-LEGAL-CHECKLIST.md) §7 beta legal
   - [x] 6.13 Producción App Check: checklist Enforce en README + `docs/PRODUCTION-CHECKLIST.md` §5; cliente en `lib/firebase/app-check.ts` — ejecutar Enforce en consola pendiente
 
+- [ ] 8.0 F6 — Producción (go-live): secretos, deploy infra, smoke, App Check Enforce y dominio prod
+  - Orden recomendado: **staging completo → smoke → Monitor estable → prod domain → Enforce → go-live público**. Runbook detallado: [`docs/PRODUCTION-CHECKLIST.md`](../docs/PRODUCTION-CHECKLIST.md).
+
+  ### A. Secretos y variables de entorno (Vercel + Secret Manager + Functions + worker)
+  - [ ] 8.A.1 Crear proyecto Firebase **producción** (distinto de `insurwallet-staging`) y proyecto GCP vinculado
+  - [ ] 8.A.2 Google Secret Manager: `ANTHROPIC_API_KEY`, `GOOGLE_AI_API_KEY` (o `EMBEDDING_API_KEY`), `RESEND_API_KEY`, `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `FIREBASE_SERVICE_ACCOUNT`, `INTERNAL_API_SECRET`, `SENTRY_DSN` — nunca en git ni env plano en repo
+  - [x] 8.A.3 Plantilla documentada en [`.env.example`](../.env.example) y tablas en `docs/PRODUCTION-CHECKLIST.md` §1
+  - [ ] 8.A.4 Vercel **Preview** (staging): todas las `NEXT_PUBLIC_FIREBASE_*`, `NEXT_PUBLIC_USE_FIREBASE_EMULATORS=false`, `NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION=true`, App Check site key, `FIREBASE_SERVICE_ACCOUNT`, `APP_URL`, `INTERNAL_API_SECRET`, `WORKER_URL`, `WORKER_OIDC_AUDIENCE`, `ANTHROPIC_API_KEY`, `GOOGLE_AI_API_KEY`, Resend, Mercado Pago sandbox
+  - [ ] 8.A.5 Vercel **Production**: mismas vars con proyecto Firebase prod, `APP_URL` canónico, claves MP **live**, sin debug tokens
+  - [ ] 8.A.6 Cloud Functions: vincular secretos MP, Resend, Sentry vía `firebase functions:secrets:set` o params
+  - [ ] 8.A.7 Cloud Run worker: `ANTHROPIC_API_KEY` vía `--set-secrets`; opcional `SENTRY_DSN`
+  - [ ] 8.A.8 Confirmar **ausencia** de `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` y `FIREBASE_APPCHECK_DEBUG_TOKEN` en Preview/Production (solo dev local)
+  - [ ] 8.A.9 `NEXT_PUBLIC_FIREBASE_VAPID_KEY` en Vercel si se activa push web (FCM)
+
+  ### B. Firebase (rules, índices, functions, App Check, Auth)
+  - [x] 8.B.1 `firestore.rules` + `storage.rules` implementadas y testeadas en CI (19 + 6 tests)
+  - [ ] 8.B.2 Deploy rules staging: `firebase deploy --only firestore:rules,storage --project insurwallet-staging`
+  - [ ] 8.B.3 Deploy rules prod: mismo comando con proyecto prod
+  - [x] 8.B.4 `firestore.indexes.json` incluye índice vector **768-dim** (`chunks.embedding`) para RAG MarIAna
+  - [ ] 8.B.5 Deploy índices staging + prod: `firebase deploy --only firestore:indexes` (esperar build del índice vector)
+  - [x] 8.B.6 Functions implementadas: `onPolicyDocumentUpload`, `createCheckout`, `mercadoPagoPaymentWebhook`, `sendExpiryReminders`, `refreshPolicyStatuses`, `exportUserData`, `deleteUserAccount`
+  - [ ] 8.B.7 Deploy Functions staging: `firebase deploy --only functions --project insurwallet-staging`
+  - [ ] 8.B.8 Deploy Functions prod
+  - [x] 8.B.9 Cliente App Check: `lib/firebase/app-check.ts` + validación env en `lib/env-app-check.ts`
+  - [ ] 8.B.10 App Check **Monitor** en Firestore + Storage (staging y prod) antes de Enforce
+  - [ ] 8.B.11 App Check **Enforce** en Firestore + Storage (prod, tras ≥95% tráfico válido 1–2 semanas) — ver 8.F y tarea 6.13
+  - [ ] 8.B.12 reCAPTCHA Admin: dominios permitidos `localhost`, `*.vercel.app`, dominio staging, dominio prod custom (6.13)
+  - [ ] 8.B.13 Auth → dominios autorizados: `localhost`, preview Vercel, dominio staging, dominio prod
+
+  ### C. Cloud Run — worker de documentos
+  - [x] 8.C.1 Dockerfile JDK 11 + Python 3.12 + OpenDataLoader; smoke `worker/scripts/docker-smoke.sh`
+  - [x] 8.C.2 Auth OIDC + `INTERNAL_API_SECRET` fallback dev; `lib/server/worker-client.ts`
+  - [ ] 8.C.3 Build imagen staging: `gcloud builds submit --tag gcr.io/<project>/insurwallet-worker ./worker`
+  - [ ] 8.C.4 Deploy Cloud Run staging: `--no-allow-unauthenticated`, secretos, región, CPU/mem para PDFs
+  - [ ] 8.C.5 Deploy Cloud Run prod (misma imagen o tag release)
+  - [ ] 8.C.6 `WORKER_URL` + `WORKER_OIDC_AUDIENCE` (= URL del servicio, sin trailing slash) en Vercel
+  - [ ] 8.C.7 IAM: cuenta de servicio Next.js/Functions autorizada en `WORKER_ALLOWED_SERVICE_ACCOUNTS`
+  - [ ] 8.C.8 Smoke worker: upload PDF en staging → job `ready` → revisión con extracción Claude
+
+  ### D. Vercel (Next.js)
+  - [ ] 8.D.1 Conectar repo; Node 22; build `npm run build`
+  - [ ] 8.D.2 Entorno **Preview** = staging Firebase + worker staging + MP sandbox
+  - [ ] 8.D.3 Entorno **Production** = Firebase prod + worker prod + MP live
+  - [ ] 8.D.4 Dominio custom prod (p. ej. `app.insurwallet.com`) + DNS + redirect www
+  - [ ] 8.D.5 `APP_URL` en Production = URL canónica HTTPS (emails, share, checkout return)
+  - [ ] 8.D.6 Verificar CI verde en rama de release antes de promote a Production
+
+  ### E. Mercado Pago
+  - [x] 8.E.1 Adapter + webhook con verificación `x-signature` e idempotencia (código F4)
+  - [ ] 8.E.2 Staging: credenciales **TEST** en Secret Manager / Vercel Preview
+  - [ ] 8.E.3 Registrar webhook URL staging en MP Developers → `https://<region>-<project>.cloudfunctions.net/mercadoPagoPaymentWebhook`
+  - [ ] 8.E.4 Prod: credenciales **live** (`MERCADOPAGO_ACCESS_TOKEN`, `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`)
+  - [ ] 8.E.5 Registrar webhook URL prod; verificar evento de prueba firmado
+  - [ ] 8.E.6 Smoke checkout Premium en staging antes de activar pagos en prod
+
+  ### F. Resend (email transaccional)
+  - [x] 8.F.1 Integración en Functions + Next.js (share, bienvenida, vencimientos)
+  - [ ] 8.F.2 Verificar dominio remitente en Resend (SPF/DKIM)
+  - [ ] 8.F.3 `RESEND_FROM_EMAIL` prod (p. ej. `InsurWallet <notificaciones@tudominio.com>`)
+  - [ ] 8.F.4 Smoke: email share invite + bienvenida en staging
+
+  ### G. MarIAna RAG en producción
+  - [x] 8.G.1 Chunking + embeddings Google text-embedding-004 (768-dim); híbrido vector+keyword (`lib/server/embeddings.ts`, `document-chunks.ts`)
+  - [x] 8.G.2 Indexación al confirmar revisión vía `POST /api/policies/{id}/index-documents` (requiere consentimiento `cloudAI`)
+  - [ ] 8.G.3 `GOOGLE_AI_API_KEY` (o `EMBEDDING_API_KEY`) en Vercel Production + Secret Manager
+  - [ ] 8.G.4 Tras deploy prod: re-indexar pólizas existentes con documentos (consentimiento IA + endpoint index-documents por póliza o script batch)
+  - [ ] 8.G.5 Smoke MarIAna: pregunta con cita a chunk tras upload+confirmación en staging/prod
+  - [ ] 8.G.6 Verificar índice vector Firestore en estado **Enabled** antes de escalar usuarios RAG
+
+  ### H. Smoke, E2E y monitoreo
+  - [x] 8.H.1 Suite E2E Playwright (`e2e/*.spec.ts`, `npm run test:e2e:emulators`)
+  - [ ] 8.H.2 Smoke manual staging (runbook §3 en PRODUCTION-CHECKLIST): registro → verify email → póliza manual → upload PDF → revisión → MarIAna → share → settings
+  - [ ] 8.H.3 E2E smoke contra URL preview Vercel (`.github/workflows/e2e.yml`)
+  - [x] 8.H.4 Sentry wired (`@sentry/nextjs`, no-op sin DSN)
+  - [ ] 8.H.5 Configurar `NEXT_PUBLIC_SENTRY_DSN` + `SENTRY_DSN` en staging/prod; source maps en deploy Vercel
+  - [ ] 8.H.6 PostHog (7.4): `NEXT_PUBLIC_POSTHOG_KEY` + funnels activación
+  - [ ] 8.H.7 Uptime checks app + worker `/health` (7.6)
+  - [ ] 8.H.8 Pentest básico en staging ([`docs/security/pentest-checklist.md`](../docs/security/pentest-checklist.md))
+
+  ### I. Legal y cumplimiento (go-live público)
+  - [x] 8.I.1 Contenido legal ES/EN/PT + consentimiento registro/upload + banner cookies (`lib/legal/`)
+  - [x] 8.I.2 Checklist legal detallado: [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](../docs/PRODUCTION-LEGAL-CHECKLIST.md)
+  - [ ] 8.I.3 Completar NIT, domicilio, representante legal en `lib/legal/company.ts`
+  - [ ] 8.I.4 Revisión abogado colombiano (Habeas Data, Términos, reembolsos Ley 1480)
+  - [ ] 8.I.5 Registro RNSD / inventario tratamiento SIC
+  - [ ] 8.I.6 DPAs subprocesadores (Anthropic, Google, Resend, Mercado Pago)
+  - [ ] 8.I.7 Go/no-go legal + técnico (6.12) antes de registro público
+
+  ### J. Cierre F6
+  - [ ] 8.J.1 Beta cerrada 2 semanas en staging/prod con usuarios iOS (6.11) — opcional antes de marketing público
+  - [ ] 8.J.2 Revisión security-reviewer + Bugbot en rama release
+  - [ ] 8.J.3 Rollback documentado (Vercel instant rollback + revisión rules Firebase)
+  - [ ] 8.J.4 Marcar F6 completada y actualizar README estado deploy
+
 - [ ] 7.0 Transversal — Observabilidad, analytics y calidad de código continua (durante todas las fases)
   - [x] 7.1 Sentry en frontend: `@sentry/nextjs` wired en `sentry.client.ts` + `sentry.server.ts` + `instrumentation.ts` — no-op sin DSN; source maps en deploy pendiente
   - [ ] 7.2 Logging estructurado en worker y Functions (Cloud Logging con jobId/uid/timings) + dashboard de métricas del pipeline (tasa de éxito, tiempos por motor, % fallback Surya)
@@ -180,4 +274,4 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - [ ] **Share completo:** ~~email Resend al destinatario, revocación UI, `view_download` (4.8)~~ hecho jun 2026; E2E share pendiente
 - [ ] **GDPR completo:** signed URLs de documentos en export + audit log delete (5.10)
 - [ ] **Calendario topbar:** permanece `comingSoon` — implementar solo si producto lo prioriza
-- [ ] **Env producción:** `APP_URL`, `INTERNAL_API_SECRET`, `WORKER_URL` en Secret Manager para dispatch automático post-upload
+- [ ] **Env producción:** `APP_URL`, `INTERNAL_API_SECRET`, `WORKER_URL`, `GOOGLE_AI_API_KEY` — ver **F6 §A** y [`docs/PRODUCTION-CHECKLIST.md`](../docs/PRODUCTION-CHECKLIST.md)
