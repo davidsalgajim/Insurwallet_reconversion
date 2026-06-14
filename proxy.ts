@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 import { routing } from './i18n/routing'
 import { claimsNeedEmailVerification } from './lib/firebase/session-claims'
+import { stripLocalePrefix } from './lib/utils/safe-redirect'
 import { SESSION_COOKIE_NAME } from './lib/firebase/session-config'
 import { verifySessionCookieEdge } from './lib/firebase/verify-session-edge'
 
@@ -46,7 +47,7 @@ function redirectToLogin(
 ) {
   const loginUrl = request.nextUrl.clone()
   loginUrl.pathname = `/${locale}/login`
-  loginUrl.searchParams.set('redirect', pathname)
+  loginUrl.searchParams.set('redirect', stripLocalePrefix(pathname))
 
   const response = NextResponse.redirect(loginUrl)
 
@@ -94,7 +95,7 @@ export default async function proxy(request: NextRequest) {
     if (isAppRoute && hasValidSession && needsEmailVerification) {
       const verifyUrl = request.nextUrl.clone()
       verifyUrl.pathname = `/${locale}/verify-email`
-      verifyUrl.searchParams.set('redirect', pathname)
+      verifyUrl.searchParams.set('redirect', stripLocalePrefix(pathname))
       return NextResponse.redirect(verifyUrl)
     }
 

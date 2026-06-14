@@ -251,6 +251,10 @@ Deploy: `firebase deploy --only functions`
 
 Imagen: `worker/Dockerfile` (JDK 11 + Python 3.12). Smoke: `worker/scripts/docker-smoke.sh`.
 
+Pipeline prod: ODL → quality gate → **Claude vision** si PDF escaneado (`pipeline: vision, claude`) → extracción guardada en `documents/{docId}.extraction`. Local: `INTERNAL_API_SECRET` compartido Next.js + worker.
+
+Frontend revisión: pdf.js con `public/pdf.worker.mjs` — ejecutar `npm run sync-pdf-worker` tras actualizar `pdfjs-dist`.
+
 ### 1.5 Settings & subscription
 
 - [ ] `/api/user/profile`, `/api/user/preferences` — requieren session cookies + Admin en prod

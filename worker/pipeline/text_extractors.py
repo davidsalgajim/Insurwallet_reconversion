@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from pipeline.errors import PdfEncryptedError
 from pipeline.odl_extract import OdlElement, extract_with_opendataloader, is_opendataloader_available
 
 logger = logging.getLogger(__name__)
@@ -58,8 +59,17 @@ def _extract_with_pypdf(pdf_bytes: bytes) -> str:
     return "\n".join(pages).strip()
 
 
+def _assert_pdf_not_encrypted(pdf_bytes: bytes) -> None:
+    from pypdf import PdfReader
+
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    if reader.is_encrypted:
+        raise PdfEncryptedError("PDF is password protected")
+
+
 def extract_pdf_full(pdf_bytes: bytes) -> PdfExtractResult:
     """Primary PDF extraction — ODL when available, else pymupdf → pdfplumber → pypdf."""
+    _assert_pdf_not_encrypted(pdf_bytes)
     if is_opendataloader_available():
         try:
             odl = extract_with_opendataloader(pdf_bytes)

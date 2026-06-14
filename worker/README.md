@@ -13,24 +13,22 @@ python -m venv .venv
 pip install -e ".[dev]"
 ```
 
-Copy env (never commit real keys):
+Copy env (never commit real keys). Prefer loading from the repo root `.env.local`:
 
 ```powershell
-# worker/.env — load before uvicorn or use your shell
 $env:ANTHROPIC_API_KEY="sk-ant-..."
 $env:FIREBASE_STORAGE_BUCKET="your-project.firebasestorage.app"
 $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\service-account.json"
+$env:INTERNAL_API_SECRET="local-dev-worker-secret-min-16"   # same value in Next.js .env.local
 ```
 
-**Dev without GCS:** place PDFs in `worker/fixtures/{filename}` matching the uploaded file name; the worker uses them when download fails or bucket is unset.
+**GCS vs fixtures:** the worker downloads from Storage first (`FIREBASE_STORAGE_BUCKET` + service account). `worker/fixtures/{filename}` is used only when GCS is unavailable or the object is missing — useful for offline pytest, not as a substitute for the user's upload in dev.
 
 ## Run worker locally
 
 ```powershell
 cd worker
 .\.venv\Scripts\Activate.ps1
-$env:ANTHROPIC_API_KEY="sk-ant-..."
-$env:FIREBASE_STORAGE_BUCKET="your-bucket"
 uvicorn main:app --reload --port 8080
 ```
 
@@ -51,16 +49,62 @@ npm run test
 
 ## Pipeline (F2)
 
-| Step          | Module                         | Notes                                                                        |
-| ------------- | ------------------------------ | ---------------------------------------------------------------------------- |
-| Download      | `pipeline/storage_loader.py`   | GCS via `FIREBASE_STORAGE_BUCKET`; `worker/fixtures/` fallback               |
-| Extract PDF   | `pipeline/text_extractors.py`  | OpenDataLoader CLI if installed (JDK), else **pymupdf → pdfplumber → pypdf** |
-| Quality gate  | `pipeline/quality_gate.py`     | &lt;100 words or no policy keywords → Surya fallback                         |
-| Surya         | `pipeline/text_extractors.py`  | **Stub** — logs warning, reuses pymupdf/pdfplumber                           |
-| Office/images | `pipeline/text_extractors.py`  | MarkItDown when installed                                                    |
-| Sanitize      | `pipeline/sanitizer.py`        | Zero-width strip + imperative pattern flags                                  |
-| Claude        | `pipeline/claude_extractor.py` | Anthropic tool-use / JSON schema; `ANTHROPIC_API_KEY` required               |
-| Validate      | `pipeline/validators.py`       | Post-IA regex + confidence per field                                         |
+| Step            | Module                                           | Notes                                                                                    |
+| --------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Download        | `pipeline/storage_loader.py`                     | GCS first; `worker/fixtures/` fallback on failure                                        |
+| Extract PDF     | `pipeline/text_extractors.py`                    | OpenDataLoader CLI if installed (JDK), else **pymupdf → pdfplumber → pypdf**             |
+| Quality gate    | `pipeline/quality_gate.py`                       | &lt;100 words, no policy keywords, or **image placeholders** (`![image N]`) → low signal |
+| Vision fallback | `pipeline/pdf_vision.py` + `claude_extractor.py` | Scanned PDFs: render pages → **Claude vision** + tool-use                                |
+| Surya           | `pipeline/text_extractors.py`                    | **Stub** — logs warning, reuses pymupdf/pdfplumber                                       |
+| Office/images   | `pipeline/text_extractors.py`                    | MarkItDown when installed                                                                |
+| Sanitize        | `pipeline/sanitizer.py`                          | Zero-width strip + imperative pattern flags                                              |
+| Lexicon         | `pipeline/policy_lexicon.py`                     | Labels ES/EN/PT (LATAM) in prompts + quality gate keywords                               |
+| Claude          | `pipeline/claude_extractor.py`                   | Text or vision; multilingual prompts; `hasNoExpiration` heuristics                       |
+| Validate        | `pipeline/validators.py`                         | Post-IA regex + confidence; duplicate start/end date → open-ended                        |
+| Merge API       | `pipeline/extract.py`                            | Full Claude fields + validated scalars (not only 7 critical fields)                      |
+
+### Extractable policy fields (parity with `PolicySchema`)
+
+All user-editable policy fields except app/system metadata. Canonical lists:
+
+- TypeScript: `lib/schemas/extraction-field-keys.ts`
+- Python: `worker/pipeline/extraction_fields.py`
+- CI: `lib/schemas/extraction-field-keys.test.ts`, `worker/tests/test_extraction_field_parity.py`
+
+| Field                | Type       | Notes                                                                   |
+| -------------------- | ---------- | ----------------------------------------------------------------------- |
+| `insurerName`        | string     | Aseguradora / carrier                                                   |
+| `policyNumber`       | string     | Nº póliza / certificado                                                 |
+| `policyType`         | enum       | life, health, auto, home, travel, pet, funeral, dental, business, other |
+| `holderName`         | string     | Tomador / asegurado (natural person)                                    |
+| `startDate`          | YYYY-MM-DD | Inicio vigencia                                                         |
+| `endDate`            | YYYY-MM-DD | Fin vigencia (omit if open-ended)                                       |
+| `hasNoExpiration`    | boolean    | Sin fecha fin (vida deudor, etc.)                                       |
+| `premium`            | number     | Prima sin símbolos de moneda                                            |
+| `currency`           | ISO 4217   | COP, MXN, BRL, USD, …                                                   |
+| `paymentFrequency`   | enum       | monthly, quarterly, semi_annual, annual, single                         |
+| `coverages`          | string     | Resumen texto de amparos                                                |
+| `beneficiaries`      | string     | Resumen texto de beneficiarios                                          |
+| `exclusions`         | string     | Exclusiones                                                             |
+| `waitingPeriods`     | string     | Periodos de carencia                                                    |
+| `notes`              | string     | Observaciones / NIT beneficiario                                        |
+| `agent`              | object     | name, phone, email (asesor / SAC)                                       |
+| `coverageEntries`    | array      | `{ name, amount }` coberturas estructuradas                             |
+| `deductibleEntries`  | array      | `{ incidentType, amount, isPercentage }`                                |
+| `beneficiaryEntries` | array      | `{ name, pct, notes? }` — banco en seguro deudor                        |
+| `benefitEntries`     | array      | `{ name, description?, category?, contactInfo?, quantity? }`            |
+
+**Never extracted from PDFs:** `ownerUid`, `sharedWith`, `status`, `createdAt`, `updatedAt`.
+
+**Reprocess stale extractions (dev):** `node scripts/reprocess-document.mjs <policyId>` or `POST /api/jobs/{jobId}/process?force=true`.
+
+### Scanned PDFs (seguro deudor, etc.)
+
+When ODL returns only image placeholders, `is_low_signal_text()` triggers the vision path (`pipeline: ['vision','claude']`). Prompts include regional rules (tomador ≠ banco beneficiario, NIT en notas, monedas COP/MXN/BRL, etc.).
+
+### Expiration fields
+
+If the model echoes `startDate` as `endDate`, post-processing sets `hasNoExpiration: true` and drops `endDate` (common on vida deudores sin fecha fin).
 
 ## Next.js integration
 
@@ -68,11 +112,15 @@ Set in root `.env.local` (server-only):
 
 ```
 WORKER_URL=http://localhost:8080
-ANTHROPIC_API_KEY=sk-ant-...   # worker process uses this; not NEXT_PUBLIC
-INTERNAL_API_SECRET=...        # optional shared secret
+INTERNAL_API_SECRET=local-dev-worker-secret-min-16
+GOOGLE_APPLICATION_CREDENTIALS=./service-account.json
+ANTHROPIC_API_KEY=sk-ant-...   # worker process; never NEXT_PUBLIC_
+FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
 ```
 
-Flow: Storage upload → `jobs/{jobId}` → `document-job-runner` POSTs to worker → extraction stored on `policies/{id}/documents/{docId}.extraction` → review UI shows confidence badges.
+Flow: Storage upload → `jobs/{jobId}` → `document-job-runner` POSTs to worker → extraction on `policies/{id}/documents/{docId}.extraction` → review UI merges documents (`mergePolicyExtractions`) and renders PDF via pdf.js.
+
+**Client parsing:** `lib/firebase/parse-document-extraction.ts` normalizes Firestore `Timestamp` dates in stored extraction; new writes use ISO date strings (`YYYY-MM-DD`) in extraction fields.
 
 ## OpenDataLoader (production)
 
@@ -107,19 +155,22 @@ The script verifies:
 | Production | `WORKER_OIDC_AUDIENCE` + optional `WORKER_ALLOWED_SERVICE_ACCOUNTS` | Google OIDC ID token (service account)      |
 | Smoke only | `WORKER_AUTH_DISABLED=true`                                         | Unauthenticated (do not use in prod)        |
 
-Set `WORKER_OIDC_AUDIENCE` to the Cloud Run service URL. Next.js uses `google-auth-library` when `GOOGLE_APPLICATION_CREDENTIALS` or `GCLOUD_PROJECT` is set; otherwise falls back to `INTERNAL_API_SECRET`.
+Set `WORKER_OIDC_AUDIENCE` to the Cloud Run service URL. Next.js uses `google-auth-library` when `GOOGLE_APPLICATION_CREDENTIALS` or `GCLOUD_PROJECT` is set; for **localhost** it prefers `INTERNAL_API_SECRET` even if GCP creds exist.
 
 ## Golden set (task 3.10)
 
 ```powershell
 cd worker
 pytest tests/test_golden.py -v
+pytest tests/test_expiration_heuristics.py tests/test_policy_lexicon.py -v
 ```
 
 CI gate: `.github/workflows/golden-ocr.yml` — critical fields ≥95% on `worker/tests/golden/manifest.json` (20 sample policies + PDF keyword fixtures).
+
+Fixture PDF for manual vision tests: `worker/fixtures/Alfa deudores.pdf` (Seguros Alfa GRD-482, scanned).
 
 ## Job creation
 
 Production: Storage finalize trigger creates `jobs/{jobId}`.
 
-Local fallback: `POST /api/jobs` with session cookie.
+Local fallback: `POST /api/jobs` with session cookie after upload.

@@ -7,6 +7,7 @@ import { DocumentProcessingStatus } from '@/components/policies/document-process
 import type { ProcessingState } from '@/lib/schemas/document'
 import {
   subscribeToDocumentJob,
+  subscribeToJob,
   type DocumentJobSnapshot,
 } from '@/lib/firebase/jobs'
 
@@ -15,6 +16,7 @@ type DocumentProcessingListenerProps = {
   policyId: string
   docId: string
   fileName: string
+  jobId?: string
   className?: string
   onReady?: (jobId: string) => void
   onFailed?: (message?: string) => void
@@ -39,6 +41,7 @@ export function DocumentProcessingListener({
   policyId,
   docId,
   fileName,
+  jobId,
   className,
   onReady,
   onFailed,
@@ -49,23 +52,30 @@ export function DocumentProcessingListener({
     loading: true,
     error: null,
   })
+  const [failureMessage, setFailureMessage] = useState<string | null>(null)
   const processRequestedRef = useRef(false)
+  const notifiedTerminalStateRef = useRef<'ready' | 'failed' | null>(null)
+  const onReadyRef = useRef(onReady)
+  const onFailedRef = useRef(onFailed)
+
+  useEffect(() => {
+    onReadyRef.current = onReady
+    onFailedRef.current = onFailed
+  }, [onReady, onFailed])
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
 
     void import('@/lib/firebase/client').then(({ db }) => {
-      unsubscribe = subscribeToDocumentJob(
-        db,
-        { ownerUid, policyId, docId },
-        setSnapshot
-      )
+      unsubscribe = jobId
+        ? subscribeToJob(db, jobId, setSnapshot)
+        : subscribeToDocumentJob(db, { ownerUid, policyId, docId }, setSnapshot)
     })
 
     return () => {
       unsubscribe?.()
     }
-  }, [ownerUid, policyId, docId])
+  }, [ownerUid, policyId, docId, jobId])
 
   const processingState = resolveProcessingState(snapshot)
 
@@ -87,27 +97,52 @@ export function DocumentProcessingListener({
     })
   }, [snapshot.job])
 
+  const processingStateValue = snapshot.job?.processingState
+  const jobError = snapshot.job?.error
+  const jobIdValue = snapshot.job?.id
+
   useEffect(() => {
-    if (!snapshot.job) {
+    if (!jobIdValue || !processingStateValue) {
       return
     }
 
-    if (snapshot.job.processingState === 'ready') {
-      onReady?.(snapshot.job.id)
+    if (processingStateValue !== 'ready' && processingStateValue !== 'failed') {
+      notifiedTerminalStateRef.current = null
+      return
     }
 
-    if (snapshot.job.processingState === 'failed') {
-      onFailed?.(snapshot.job.error)
+    if (
+      processingStateValue === 'ready' &&
+      notifiedTerminalStateRef.current !== 'ready'
+    ) {
+      notifiedTerminalStateRef.current = 'ready'
+      onReadyRef.current?.(jobIdValue)
+      return
     }
-  }, [snapshot.job, onReady, onFailed])
+
+    if (
+      processingStateValue === 'failed' &&
+      notifiedTerminalStateRef.current !== 'failed'
+    ) {
+      notifiedTerminalStateRef.current = 'failed'
+      setFailureMessage(jobError ?? null)
+      onFailedRef.current?.(jobError)
+    }
+  }, [jobIdValue, processingStateValue, jobError])
 
   return (
     <div className={className}>
-      <DocumentProcessingStatus state={processingState} fileName={fileName} />
+      <DocumentProcessingStatus
+        state={processingState}
+        fileName={fileName}
+        failureMessage={failureMessage}
+      />
 
       {snapshot.error ? (
         <p className="mt-3 text-sm text-[var(--primitive-danger)]">
-          {snapshot.error.message}
+          {snapshot.error.message.includes('insufficient permissions')
+            ? t('jobPermissionDenied')
+            : snapshot.error.message}
         </p>
       ) : null}
 

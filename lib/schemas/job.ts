@@ -10,7 +10,13 @@ export const JobStateSchema = z.enum([
 ])
 export type JobState = z.infer<typeof JobStateSchema>
 
-export const PipelineMethodSchema = z.enum(['odl', 'surya', 'markitdown'])
+export const PipelineMethodSchema = z.enum([
+  'odl',
+  'surya',
+  'markitdown',
+  'claude',
+  'vision',
+])
 export type PipelineMethod = z.infer<typeof PipelineMethodSchema>
 
 export const JobTimingsSchema = z

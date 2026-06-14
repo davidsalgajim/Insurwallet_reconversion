@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from pipeline.auth import verify_worker_authorization
 from pipeline.claude_extractor import ClaudeExtractionError
+from pipeline.errors import PdfEncryptedError
 from pipeline.extract import extract_document_safe
 from pipeline.odl_extract import is_opendataloader_available as odl_runtime_available
 
@@ -88,6 +89,12 @@ def process_job(request: ProcessJobRequest) -> ProcessJobResponse:
             request.storage_path,
             mime_type=request.mime_type,
         )
+    except PdfEncryptedError as exc:
+        logger.error("Encrypted PDF job=%s: %s", request.job_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": PdfEncryptedError.CODE, "message": str(exc)},
+        ) from exc
     except ClaudeExtractionError as exc:
         logger.error("Claude extraction error job=%s: %s", request.job_id, exc)
         raise HTTPException(

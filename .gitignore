@@ -62,3 +62,6 @@ test-results/
 
 # Python packaging
 *.egg-info/
+
+# Firebase
+*-service-account.json

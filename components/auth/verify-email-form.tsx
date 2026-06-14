@@ -8,6 +8,7 @@ import { AuthFooterText, AuthShell } from '@/components/auth/auth-shell'
 import { useAuth } from '@/components/auth/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Link, useRouter } from '@/i18n/navigation'
+import { safeRedirect } from '@/lib/utils/safe-redirect'
 import {
   getAuthErrorMessage,
   reloadCurrentUser,
@@ -36,7 +37,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
   const [checking, setChecking] = useState(false)
   const [cooldown, setCooldown] = useState(0)
 
-  const destination = redirectTo || '/dashboard'
+  const destination = safeRedirect(redirectTo, '/dashboard')
   const verificationRequired = isEmailVerificationRequired()
 
   const goToDestination = useCallback(() => {

@@ -46,18 +46,33 @@ def _read_local_fixture(storage_path: str) -> bytes | None:
 
 
 def download_document_bytes(storage_path: str) -> bytes:
+    bucket_name = os.environ.get("FIREBASE_STORAGE_BUCKET", "").strip()
+
+    if bucket_name:
+        try:
+            return _download_from_gcs(storage_path)
+        except ImportError as exc:
+            local = _read_local_fixture(storage_path)
+            if local is not None:
+                return local
+            raise StorageDownloadError(
+                "google-cloud-storage is not installed; place PDFs in worker/fixtures/"
+            ) from exc
+        except Exception as exc:
+            local = _read_local_fixture(storage_path)
+            if local is not None:
+                logger.warning(
+                    "GCS download failed for %s, using local fixture: %s",
+                    storage_path,
+                    exc,
+                )
+                return local
+            raise StorageDownloadError(str(exc)) from exc
+
     local = _read_local_fixture(storage_path)
     if local is not None:
         return local
 
-    try:
-        return _download_from_gcs(storage_path)
-    except ImportError as exc:
-        raise StorageDownloadError(
-            "google-cloud-storage is not installed; place PDFs in worker/fixtures/"
-        ) from exc
-    except Exception as exc:
-        local_retry = _read_local_fixture(storage_path)
-        if local_retry is not None:
-            return local_retry
-        raise StorageDownloadError(str(exc)) from exc
+    raise StorageDownloadError(
+        "FIREBASE_STORAGE_BUCKET is required to download documents"
+    )

@@ -27,9 +27,14 @@ import {
   type CoverageRow,
   type DeductibleRow,
 } from '@/components/policies/policy-structured-fields'
+import {
+  PdfUploadZone,
+  type SelectedUploadFile,
+} from '@/components/policies/pdf-upload-zone'
 import { Button } from '@/components/ui/button'
 import { useRouter } from '@/i18n/navigation'
 import { buildCreateInputFromForm } from '@/lib/policies/form-input'
+import { uploadDocumentsToPolicy } from '@/lib/policies/document-upload'
 import { cn } from '@/lib/utils/cn'
 
 import { policyFieldClassName } from './policy-form-styles'
@@ -78,6 +83,9 @@ export function PolicyManualForm() {
   const [beneficiaryRows, setBeneficiaryRows] = useState<
     ManualBeneficiaryFormRow[]
   >([])
+  const [supportingFiles, setSupportingFiles] = useState<SelectedUploadFile[]>(
+    []
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -140,6 +148,30 @@ export function PolicyManualForm() {
         await syncPolicyBeneficiaries(created.id, input.beneficiaryEntries)
       }
 
+      if (supportingFiles.length > 0) {
+        const [{ storage }] = await Promise.all([
+          import('@/lib/firebase/client'),
+        ])
+
+        const uploadResult = await uploadDocumentsToPolicy({
+          db,
+          storage,
+          ownerUid: user.uid,
+          policyId: created.id,
+          documents: supportingFiles.map((item) => ({
+            localId: item.id,
+            file: item.file,
+            documentRole: item.documentRole,
+          })),
+        })
+
+        if (!uploadResult.ok) {
+          setError(t('manual.supportingUploadFailed'))
+          router.push(`/policies/${created.id}`)
+          return
+        }
+      }
+
       router.push('/policies')
     } catch {
       setError(t('errors.saveFailed'))
@@ -174,6 +206,23 @@ export function PolicyManualForm() {
       />
 
       <PolicyAgentFields values={agent} onChange={handleAgentChange} />
+
+      <section className="space-y-3 border-t border-border/60 pt-6">
+        <div>
+          <h3 className="text-sm font-semibold">
+            {t('manual.supportingTitle')}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('manual.supportingDesc')}
+          </p>
+        </div>
+        <PdfUploadZone
+          disabled={submitting}
+          selectedFiles={supportingFiles}
+          onFilesChange={setSupportingFiles}
+          showRoleSelector
+        />
+      </section>
 
       {error ? (
         <p className="text-sm text-[var(--primitive-danger)]">{error}</p>

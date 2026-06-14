@@ -8,17 +8,17 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 
 ## Stack
 
-| Capa                | Tecnología                                                                  |
-| ------------------- | --------------------------------------------------------------------------- |
-| Frontend            | Next.js 16, React 19, TypeScript strict, Tailwind CSS v4, shadcn/ui (base)  |
-| Auth / DB / Storage | Firebase (Auth, Firestore, Storage, Functions, FCM, App Check reCAPTCHA v3) |
-| i18n                | next-intl (ES base, EN/PT — cobertura parcial en app)                       |
-| Validación          | Zod                                                                         |
-| Tests TS            | Vitest                                                                      |
-| Tests reglas        | Firebase emulators + `@firebase/rules-unit-testing`                         |
-| Backend             | Cloud Functions (Node), Cloud Run worker Python; MarIAna en Next.js API     |
-| Documentos (F2)     | OpenDataLoader PDF, Surya OCR, MarkItDown, Claude API                       |
-| Pagos (F4)          | Mercado Pago (Colombia); Wompi deprecated                                   |
+| Capa                | Tecnología                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| Frontend            | Next.js 16, React 19, TypeScript strict, Tailwind CSS v4, shadcn/ui (base)                            |
+| Auth / DB / Storage | Firebase (Auth, Firestore, Storage, Functions, FCM, App Check reCAPTCHA v3)                           |
+| i18n                | next-intl (ES base, EN/PT — cobertura parcial en app)                                                 |
+| Validación          | Zod                                                                                                   |
+| Tests TS            | Vitest                                                                                                |
+| Tests reglas        | Firebase emulators + `@firebase/rules-unit-testing`                                                   |
+| Backend             | Cloud Functions (Node), Cloud Run worker Python; MarIAna en Next.js API                               |
+| Documentos (F2)     | OpenDataLoader PDF, quality gate, **Claude vision** (PDF escaneado), Claude tool-use, léxico ES/EN/PT |
+| Pagos (F4)          | Mercado Pago (Colombia); Wompi deprecated                                                             |
 
 ## Fases
 
@@ -48,7 +48,7 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **Observability:** Sentry stub (no-op sin DSN)
 - **Configuración (settings):** `/settings` — perfil, moneda/preferencias, privacidad (export/delete cuenta), notificaciones; `/settings/contacts` — contactos de emergencia; `/settings/subscription` — plan y checkout **Mercado Pago**; `/settings/help` — ayuda
 - **Legal (F4):** páginas `/legal/terms`, `/legal/privacy`, `/legal/cookies`, `/legal/notice` (ES/EN/PT); datos centralizados en `lib/legal/company.ts`; versiones en `lib/legal/versions.ts`; API `/api/consents`; checklist pre go-live en [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md)
-- **Documentos (F2):** upload → job worker (`WORKER_URL`) → extracción Claude → pantalla de revisión split-view con confianza/bboxes
+- **Documentos (F2):** upload → job worker (`WORKER_URL`) → pipeline texto o **visión Claude** (PDF escaneado) → extracción estructurada ES/EN/PT → pantalla de revisión split-view (pdf.js + confianza/bboxes); PDF original en Storage por usuario; extracción en `policies/{id}/documents/{docId}`
 - **MarIAna (F3):** chat streaming SSE con avatar de marca, subtítulo **Asistente IA** (ES/EN/PT); Tier 0 determinístico; router situacional (`mariana/situational.ts`) + 5 agentes core + **10 especialistas por tipo de póliza**; tools read-only con prefetch de asistencias/beneficios; **120 evals estructurales** (router/tools/prompts, sin LLM) — ver [`mariana/evals/README.md`](mariana/evals/README.md); pendiente embeddings vectoriales completos y cost tracking
 - **Layout raíz:** `<html>`/`<body>` únicos en `app/layout.tsx` (locale + fuentes); `[locale]/layout.tsx` solo proveedores — evita anidación inválida en App Router
 - **Notificaciones (prefs):** canal email/push/ambos + tipos de aviso en Configuración; API `GET/PUT /api/notifications/prefs`; registro FCM si push activo — envío real email/push en F4 (ver [`docs/notifications.md`](docs/notifications.md))
@@ -159,12 +159,18 @@ cd worker
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-$env:ANTHROPIC_API_KEY="sk-ant-..."   # shell del worker, nunca NEXT_PUBLIC_*
+# Cargar desde .env.local de la raíz (mínimo):
+#   ANTHROPIC_API_KEY, FIREBASE_STORAGE_BUCKET, GOOGLE_APPLICATION_CREDENTIALS, INTERNAL_API_SECRET
+$env:ANTHROPIC_API_KEY="sk-ant-..."
 $env:FIREBASE_STORAGE_BUCKET="your-project.firebasestorage.app"
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\service-account.json"
+$env:INTERNAL_API_SECRET="local-dev-worker-secret-min-16"
 uvicorn main:app --reload --port 8080
 ```
 
-En la raíz del repo (Next.js, server-only): `WORKER_URL=http://localhost:8080` en `.env.local`. Detalle: [`worker/README.md`](worker/README.md).
+En la raíz del repo (Next.js, server-only): en `.env.local` define `WORKER_URL=http://localhost:8080` y el **mismo** `INTERNAL_API_SECRET` (mín. 16 caracteres). Sin secret compartido, el dispatch local del job puede fallar con 401/503. Detalle del pipeline: [`worker/README.md`](worker/README.md).
+
+**Revisión PDF en UI:** el visor usa pdf.js con worker estático en `public/pdf.worker.mjs` (copiado desde `pdfjs-dist` al actualizar la dependencia).
 
 ### Variables de entorno
 
@@ -175,7 +181,7 @@ Plantilla completa: [`.env.example`](.env.example) (copiar a `.env.local`). Vali
 | Firebase cliente | `NEXT_PUBLIC_FIREBASE_*`, emuladores, verify-email, App Check site key                                                                                                                                                |
 | Dev / App Check  | `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` o `FIREBASE_APPCHECK_DEBUG_TOKEN` registrado en consola                                                                                                                   |
 | Auth servidor    | `FIREBASE_SERVICE_ACCOUNT` o `GOOGLE_APPLICATION_CREDENTIALS` — sin ellas, **dev** guarda ID token verificado como cookie (ver tests `session-server`)                                                                |
-| Worker           | `WORKER_URL`, `INTERNAL_API_SECRET` (local), `WORKER_OIDC_AUDIENCE` (prod)                                                                                                                                            |
+| Worker           | `WORKER_URL`, `INTERNAL_API_SECRET` (**requerido en local**), `GOOGLE_APPLICATION_CREDENTIALS` o `FIREBASE_SERVICE_ACCOUNT`, `WORKER_OIDC_AUDIENCE` (prod)                                                            |
 | Claude           | `ANTHROPIC_API_KEY` en proceso worker y/o servidor MarIAna — Secret Manager en prod                                                                                                                                   |
 | Pagos            | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`                                                                                                                        |
 | Deploy           | [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · legal: [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md) · notificaciones: [`docs/notifications.md`](docs/notifications.md) |
@@ -246,19 +252,19 @@ Flujos en `e2e/`: `auth-policy.spec.ts`, `policy-flows.spec.ts`, `settings-maria
 
 ### Scripts
 
-| Script                                           | Descripción                                |
-| ------------------------------------------------ | ------------------------------------------ |
-| `npm run dev`                                    | Servidor de desarrollo                     |
-| `npm run build`                                  | Build de producción                        |
-| `npm run lint`                                   | ESLint                                     |
-| `npm run typecheck`                              | TypeScript                                 |
-| `npm run test`                                   | Vitest (unit)                              |
-| `npm run test:rules`                             | Tests Firestore rules (requiere emulador)  |
-| `npm run test:storage-rules`                     | Tests Storage rules (requiere emulador)    |
-| `npm run emulators`                              | Emuladores Firebase                        |
-| `npm run emulators:exec -- "npm run test:rules"` | Tests de reglas en emulador efímero        |
-| `npm run test:e2e`                               | Playwright smoke                           |
-| `npm run test:e2e:emulators`                     | Playwright + emuladores (flujos completos) |
+| Script                                           | Descripción                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `npm run dev`                                    | Servidor de desarrollo                                       |
+| `npm run build`                                  | Build de producción                                          |
+| `npm run lint`                                   | ESLint                                                       |
+| `npm run typecheck`                              | TypeScript                                                   |
+| `npm run test`                                   | Vitest (unit)                                                |
+| `npm run test:rules`                             | Tests Firestore rules (requiere emulador)                    |
+| `npm run test:storage-rules`                     | Tests Storage rules (requiere emulador)                      |
+| `npm run emulators`                              | Emuladores Firebase                                          |
+| `npm run emulators:exec -- "npm run test:rules"` | Tests de reglas en emulador efímero                          |
+| `npm run test:e2e`                               | Playwright smoke                                             |
+| `npm run sync-pdf-worker`                        | Copia pdf.js worker a `public/` (tras actualizar pdfjs-dist) |
 
 Variables de entorno validadas en `lib/env.ts` (Zod). En desarrollo faltan claves Firebase → fallbacks demo; en producción falla rápido si faltan.
 

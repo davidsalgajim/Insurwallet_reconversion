@@ -32,6 +32,31 @@ export const DocumentCategorySchema = z.enum([
 ])
 export type DocumentCategory = z.infer<typeof DocumentCategorySchema>
 
+/** Optional user-facing role for multi-document uploads (carátula, condicionado, etc.) */
+export const DocumentRoleSchema = z.enum([
+  'cover',
+  'conditions',
+  'endorsement',
+  'renewal',
+  'other',
+])
+export type DocumentRole = z.infer<typeof DocumentRoleSchema>
+
+export function documentRoleToCategory(role: DocumentRole): DocumentCategory {
+  switch (role) {
+    case 'cover':
+      return 'cover'
+    case 'conditions':
+      return 'clausulado'
+    case 'endorsement':
+      return 'endorsement'
+    case 'renewal':
+      return 'cover'
+    default:
+      return 'other'
+  }
+}
+
 export const ProcessingStateSchema = z.enum([
   'pending',
   'extracting',
@@ -52,6 +77,7 @@ export type DocumentProcessing = z.infer<typeof DocumentProcessingSchema>
 export const PolicyDocumentSchema = z.object({
   fileName: z.string().min(1),
   category: DocumentCategorySchema,
+  documentRole: DocumentRoleSchema.optional(),
   storagePath: z.string().min(1).regex(POLICY_DOCUMENT_STORAGE_PATH_PATTERN),
   fileSize: z.number().int().positive(),
   mimeType: z.enum(POLICY_UPLOAD_MIME_TYPES),

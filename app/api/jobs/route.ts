@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireSession } from '@/lib/api/require-session'
+import { adminFirestoreUnavailableResponse } from '@/lib/firebase/admin-required'
+import { hasFirebaseAdminCredentials } from '@/lib/firebase/admin'
 import { createDocumentProcessingJobAdmin } from '@/lib/firebase/jobs-server'
 import { isValidPolicyDocumentStoragePath } from '@/lib/schemas/document'
 
@@ -18,6 +20,11 @@ export async function POST(request: Request) {
 
   if (!session?.uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const adminUnavailable = adminFirestoreUnavailableResponse()
+  if (adminUnavailable) {
+    return adminUnavailable
   }
 
   let body: unknown
@@ -50,9 +57,23 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ jobId: job.id, state: job.state })
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[api/jobs] Failed to create job', error)
+    }
+
+    const message =
+      error instanceof Error ? error.message : 'Failed to create processing job'
+    const needsAdmin =
+      !hasFirebaseAdminCredentials() &&
+      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS !== 'true'
+
     return NextResponse.json(
-      { error: 'Failed to create processing job' },
+      {
+        error: needsAdmin
+          ? 'Server cannot create processing jobs. Set FIREBASE_SERVICE_ACCOUNT or enable Firebase emulators.'
+          : message,
+      },
       { status: 500 }
     )
   }

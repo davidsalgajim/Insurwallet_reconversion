@@ -146,6 +146,42 @@ export async function updateDocumentProcessingJob(
   })
 }
 
+export function subscribeToJob(
+  db: Firestore,
+  jobId: string,
+  onChange: (snapshot: DocumentJobSnapshot) => void
+): Unsubscribe {
+  onChange({ job: null, loading: true, error: null })
+
+  return onSnapshot(
+    doc(db, JOBS_COLLECTION, jobId),
+    (docSnap) => {
+      if (!docSnap.exists()) {
+        onChange({ job: null, loading: false, error: null })
+        return
+      }
+
+      try {
+        const job = parseJobFirestoreData(
+          docSnap.id,
+          docSnap.data() as Record<string, unknown>
+        )
+        onChange({ job, loading: false, error: null })
+      } catch (error) {
+        onChange({
+          job: null,
+          loading: false,
+          error:
+            error instanceof Error ? error : new Error('Invalid job document'),
+        })
+      }
+    },
+    (error) => {
+      onChange({ job: null, loading: false, error })
+    }
+  )
+}
+
 export function subscribeToDocumentJob(
   db: Firestore,
   input: SubscribeToDocumentJobInput,

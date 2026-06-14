@@ -14,7 +14,6 @@ import {
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import {
   ensureLegalConsentAfterLogin,
-  LoginLegalNotice,
   persistOnboardingLegalConsent,
   RegisterLegalConsent,
 } from '@/components/legal/auth-legal-consent'
@@ -28,6 +27,7 @@ import {
 } from '@/lib/firebase/auth'
 import { isEmailVerificationRequired } from '@/lib/firebase/email-verification-policy'
 import { type PreferredLanguage } from '@/lib/schemas/user'
+import { safeRedirect } from '@/lib/utils/safe-redirect'
 
 type RegisterFormProps = {
   redirectTo?: string
@@ -48,7 +48,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
   const [legalAccepted, setLegalAccepted] = useState(false)
   const [legalError, setLegalError] = useState(false)
 
-  const destination = redirectTo || '/dashboard'
+  const destination = safeRedirect(redirectTo, '/dashboard')
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()

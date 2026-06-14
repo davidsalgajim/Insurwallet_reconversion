@@ -2,17 +2,20 @@ import {
   collection,
   doc,
   getDocs,
+  onSnapshot,
   setDoc,
   Timestamp,
   type Firestore,
 } from 'firebase/firestore'
 
 import { createPolicy, type PolicyDocument } from '@/lib/firebase/policies'
-import { PolicyDocumentSchema } from '@/lib/schemas/document'
 import {
-  PolicyExtractionSchema,
-  type PolicyExtraction,
-} from '@/lib/schemas/extraction'
+  documentRoleToCategory,
+  PolicyDocumentSchema,
+  type DocumentRole,
+} from '@/lib/schemas/document'
+import { parseDocumentExtraction } from '@/lib/firebase/parse-document-extraction'
+import type { PolicyExtraction } from '@/lib/schemas/extraction'
 import type { PolicyUploadMimeType } from '@/lib/schemas/upload'
 
 export type CreateDraftPolicyForUploadInput = {
@@ -26,6 +29,7 @@ export type RegisterUploadedDocumentInput = {
   storagePath: string
   fileSize: number
   mimeType: PolicyUploadMimeType
+  documentRole?: DocumentRole
 }
 
 export async function createDraftPolicyForUpload(
@@ -49,15 +53,27 @@ export function documentToFirestoreData(
   input: RegisterUploadedDocumentInput,
   now: Date = new Date()
 ): Record<string, unknown> {
-  const payload = PolicyDocumentSchema.parse({
+  const parsed = PolicyDocumentSchema.safeParse({
     fileName: input.fileName,
-    category: 'cover',
+    category: input.documentRole
+      ? documentRoleToCategory(input.documentRole)
+      : 'cover',
+    ...(input.documentRole ? { documentRole: input.documentRole } : {}),
     storagePath: input.storagePath,
     fileSize: input.fileSize,
     mimeType: input.mimeType,
     processing: { state: 'pending' },
     createdAt: now,
   })
+
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    throw new Error(
+      `Invalid document metadata${issue?.message ? `: ${issue.message}` : ''}`
+    )
+  }
+
+  const payload = parsed.data
 
   return {
     ...payload,
@@ -79,31 +95,45 @@ export type PolicyFileDocument = {
   fileName: string
   storagePath: string
   fileSize: number
+  documentRole?: DocumentRole
   extraction?: PolicyExtraction
 }
 
-function parseDocumentExtraction(
-  data: Record<string, unknown>
-): PolicyExtraction | undefined {
-  if (!data.extraction || typeof data.extraction !== 'object') {
-    return undefined
+function mapPolicyDocumentSnapshot(docSnap: {
+  id: string
+  data: () => Record<string, unknown>
+}): PolicyFileDocument {
+  const data = docSnap.data()
+  return {
+    id: docSnap.id,
+    fileName: String(data.fileName),
+    storagePath: String(data.storagePath),
+    fileSize: Number(data.fileSize ?? 0),
+    documentRole:
+      typeof data.documentRole === 'string'
+        ? (data.documentRole as DocumentRole)
+        : undefined,
+    extraction: parseDocumentExtraction(data),
   }
+}
 
-  const raw = data.extraction as Record<string, unknown>
-  const extractedAt =
-    raw.extractedAt &&
-    typeof raw.extractedAt === 'object' &&
-    'toDate' in raw.extractedAt &&
-    typeof (raw.extractedAt as { toDate: () => Date }).toDate === 'function'
-      ? (raw.extractedAt as { toDate: () => Date }).toDate()
-      : raw.extractedAt
-
-  const parsed = PolicyExtractionSchema.safeParse({
-    ...raw,
-    extractedAt,
-  })
-
-  return parsed.success ? parsed.data : undefined
+export function subscribePolicyDocuments(
+  db: Firestore,
+  policyId: string,
+  onDocuments: (documents: PolicyFileDocument[]) => void,
+  onError?: (error: Error) => void
+): () => void {
+  return onSnapshot(
+    collection(db, 'policies', policyId, 'documents'),
+    (snapshot) => {
+      onDocuments(
+        snapshot.docs.map((docSnap) => mapPolicyDocumentSnapshot(docSnap))
+      )
+    },
+    (error) => {
+      onError?.(error)
+    }
+  )
 }
 
 export async function listPolicyDocuments(
@@ -114,14 +144,5 @@ export async function listPolicyDocuments(
     collection(db, 'policies', policyId, 'documents')
   )
 
-  return snapshot.docs.map((docSnap) => {
-    const data = docSnap.data()
-    return {
-      id: docSnap.id,
-      fileName: String(data.fileName),
-      storagePath: String(data.storagePath),
-      fileSize: Number(data.fileSize ?? 0),
-      extraction: parseDocumentExtraction(data),
-    }
-  })
+  return snapshot.docs.map((docSnap) => mapPolicyDocumentSnapshot(docSnap))
 }

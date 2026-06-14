@@ -104,10 +104,7 @@ async function compressPdfFile(
   }
 
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/legacy/build/pdf.worker.mjs',
-    import.meta.url
-  ).toString()
+  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs'
 
   const buffer = await file.arrayBuffer()
   const pdf = await pdfjs.getDocument({ data: buffer }).promise

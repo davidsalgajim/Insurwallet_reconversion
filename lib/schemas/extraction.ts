@@ -1,6 +1,9 @@
 /**
  * Claude / worker extraction output — fields map 1:1 to CreatePolicyInput (lib/firebase/policies.ts).
  * manual wizard ≡ extraction ≡ MarIAna readable fields (lib/schemas/policy.ts).
+ *
+ * Field parity: see `lib/schemas/extraction-field-keys.ts` (20 extractable fields).
+ * Never extracted from documents: ownerUid, sharedWith, status, createdAt, updatedAt.
  */
 import { z } from 'zod'
 
@@ -10,7 +13,7 @@ import {
   CoverageEntrySchema,
   DeductibleEntrySchema,
   PaymentFrequencySchema,
-  PolicyAgentPartialSchema,
+  PolicyAgentExtractionSchema,
   PolicyTypeSchema,
 } from '@/lib/schemas/policy'
 
@@ -42,7 +45,7 @@ export const PolicyExtractionFieldsSchema = z.object({
   exclusions: z.string().optional(),
   waitingPeriods: z.string().optional(),
   notes: z.string().optional(),
-  agent: PolicyAgentPartialSchema.optional(),
+  agent: PolicyAgentExtractionSchema.optional(),
   coverageEntries: z.array(CoverageEntrySchema).optional(),
   deductibleEntries: z.array(DeductibleEntrySchema).optional(),
   beneficiaryEntries: z.array(BeneficiaryEntrySchema).optional(),

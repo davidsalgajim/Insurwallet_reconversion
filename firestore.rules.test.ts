@@ -379,7 +379,16 @@ describe.runIf(RUN_RULES_TESTS)('firestore.rules', () => {
       await assertFails(
         setDoc(doc(ownerDb, 'policies', 'policy-1', 'documents', 'doc-3'), {
           ...documentFixture,
+          mimeType: 'text/plain',
+        })
+      )
+
+      await assertSucceeds(
+        setDoc(doc(ownerDb, 'policies', 'policy-1', 'documents', 'doc-4'), {
+          ...documentFixture,
           mimeType: 'image/png',
+          fileName: 'scan.png',
+          storagePath: `users/${OWNER_UID}/policies/policy-1/docs/doc-4/scan.png`,
         })
       )
     })

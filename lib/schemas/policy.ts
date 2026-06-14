@@ -83,6 +83,13 @@ export const PolicyAgentPartialSchema = z.object({
   phone: z.string().min(1).optional(),
   email: z.string().email().optional(),
 })
+
+/** Looser agent shape for IA extraction — invalid emails must not drop the whole payload. */
+export const PolicyAgentExtractionSchema = z.object({
+  name: z.string().min(1).optional(),
+  phone: z.string().min(1).optional(),
+  email: z.string().min(1).optional(),
+})
 export type PolicyAgentPartial = z.infer<typeof PolicyAgentPartialSchema>
 
 export const PolicySchema = z.object({

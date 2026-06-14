@@ -178,9 +178,9 @@
       "emailNotVerifiedYet": "Ainda não detectamos a verificação. Aguarde um momento e tente novamente."
     },
     "legalConsent": {
-      "registerLabel": "Aceito os {terms} e a {privacy}, e autorizo o tratamento dos meus dados pessoais conforme a legislação aplicável (incluindo Habeas Data — Colômbia).",
+      "registerLabel": "Aceito os <terms>Termos de Uso</terms> e a <privacy>Política de Privacidade</privacy>, e autorizo o tratamento dos meus dados pessoais conforme a legislação aplicável (incluindo Habeas Data — Colômbia).",
       "registerRequired": "Você deve aceitar os termos e a política de privacidade para continuar.",
-      "loginNotice": "Ao continuar, você aceita os {terms} e a {privacy}.",
+      "loginNotice": "Ao continuar, você aceita os <terms>Termos de Uso</terms> e a <privacy>Política de Privacidade</privacy>.",
       "termsLink": "Termos de Uso",
       "privacyLink": "Política de Privacidade"
     }
@@ -237,7 +237,10 @@
       "beneficiaryObservations": "Observações (opcional)",
       "beneficiaryObservationsPlaceholder": "Notas adicionais",
       "beneficiaryPctTotal": "Total atribuído: {pct}%",
-      "beneficiaryPctWarning": "A soma ultrapassa 100%. Revise os percentuais antes de salvar."
+      "beneficiaryPctWarning": "A soma ultrapassa 100%. Revise os percentuais antes de salvar.",
+      "supportingTitle": "Documentos de apoio (opcional)",
+      "supportingDesc": "Anexe carátula, condicionado ou outros PDFs deste seguro. Serão processados com IA em segundo plano.",
+      "supportingUploadFailed": "A apólice foi salva, mas alguns documentos não foram enviados. Você pode adicioná-los no detalhe."
     },
     "tabs": {
       "aria": "Seções de apólices",
@@ -378,31 +381,58 @@
     "upload": {
       "title": "Nova apólice",
       "subtitle": "Passo 2 de 4 — envie seu documento PDF",
+      "subtitleMulti": "Passo 2 de 4 — envie os documentos da apólice",
       "sectionTitle": "Documento da apólice",
+      "sectionTitleMulti": "Documentos da apólice",
       "sectionDesc": "Envie o PDF da sua apólice. Extrairemos os dados com IA; você revisa e confirma antes de salvar.",
+      "sectionDescMulti": "Envie um ou mais PDFs (carátula, condicionado, endosso, renovação). Cada arquivo é processado separadamente; na revisão mesclamos os campos com maior confiança.",
       "dropzoneTitle": "Arraste seu PDF aqui",
+      "dropzoneTitleMulti": "Arraste seus documentos aqui",
       "dropzoneHint": "PDF ou foto (JPG/PNG), máximo {maxSize} MB. Você também pode clicar para escolher um arquivo.",
+      "dropzoneHintMulti": "PDF ou foto (JPG/PNG), máx. {maxSize} MB por arquivo, até {maxFiles} arquivos.",
       "dropzoneAria": "Área para enviar PDF ou foto da apólice",
-      "browseFiles": "Escolher arquivo",
+      "fileListAria": "Arquivos selecionados",
+      "documentRoleLabel": "Tipo de documento",
+      "documentRoleAuto": "Detectar automaticamente",
+      "documentRoles": {
+        "cover": "Carátula",
+        "conditions": "Condicionado",
+        "endorsement": "Endosso",
+        "renewal": "Renovação",
+        "other": "Outro"
+      },
+      "browseFiles": "Escolher arquivos",
       "takePhoto": "Tirar foto",
-      "removeFile": "Remover arquivo",
+      "removeFile": "Remover",
       "startUpload": "Enviar e processar",
+      "startUploadMulti": "Enviar {count, plural, one {# documento} other {# documentos}} e processar",
       "validating": "Validando…",
       "optimizing": "Otimizando documento…",
       "uploading": "Enviando…",
       "back": "Voltar",
       "authRequired": "Faça login para enviar documentos à sua carteira.",
       "confirmNote": "Seu PDF está armazenado com segurança. A extração com IA estará disponível na tela de revisão — nenhum dado é salvo sem sua confirmação.",
+      "confirmNoteMulti": "Seus documentos estão armazenados com segurança. Quando o processamento terminar, você revisará os dados mesclados antes de confirmar.",
       "viewDraft": "Ver rascunho",
+      "protectedPdfWarning": "Não envie PDFs protegidos por senha. Se o documento estiver bloqueado, não conseguiremos extrair as informações.",
       "errors": {
         "emptyFile": "O arquivo está vazio.",
         "tooLarge": "O arquivo excede o limite de 2 MB após otimização.",
+        "tooManyFiles": "Você pode enviar no máximo 10 arquivos por lote.",
         "sourceTooLarge": "O arquivo excede 20 MB. Use um documento menor.",
         "compressionFailed": "Não foi possível otimizar o documento. Tente outro arquivo.",
         "compressionTooLarge": "Não conseguimos reduzir o documento abaixo de 2 MB. Recorte páginas ou use uma foto mais leve.",
         "invalidType": "Somente PDF ou imagens JPG/PNG/WebP são permitidos.",
         "invalidPdf": "O arquivo não parece ser um PDF válido.",
+        "protectedPdf": "Este PDF está protegido por senha. Envie uma cópia sem proteção.",
         "uploadFailed": "Não foi possível enviar o documento. Tente novamente.",
+        "permissionDenied": "Você não tem permissão para enviar este documento. Verifique sua sessão ou App Check em desenvolvimento.",
+        "appCheckRequired": "O Firebase App Check bloqueou o envio. Em local, ative NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN ou use emuladores.",
+        "networkError": "Erro de rede ao enviar. Verifique sua conexão e tente novamente.",
+        "uploadCanceled": "O envio foi cancelado.",
+        "quotaExceeded": "Limite de armazenamento atingido.",
+        "invalidDocumentMetadata": "Os metadados do documento são inválidos. Tente outro arquivo.",
+        "processingJobFailed": "O arquivo foi enviado, mas não foi possível enfileirar o processamento. Verifique a configuração do servidor.",
         "consentDeclined": "Você recusou o processamento com IA na nuvem. A extração automática de PDF não está disponível.",
         "consentDeclinedHint": "Você pode alterar sua preferência em",
         "consentSettingsLink": "Configurações → Legal"
@@ -412,12 +442,36 @@
         "pendingNote": "Seu documento está na fila. Avisaremos quando a extração estiver pronta para revisão.",
         "ready": "Extração pronta — você pode revisar e confirmar os dados.",
         "failed": "Não foi possível processar o documento. Tente enviar novamente.",
+        "failedProtectedPdf": "Este PDF está protegido por senha. Envie uma cópia sem proteção.",
         "waitingJob": "Aguardando fila de processamento…",
+        "jobPermissionDenied": "Não foi possível ler o status do processamento. Recarregue a página; se persistir, contate o suporte.",
+        "multiProgress": "Processados {ready} de {total} documentos",
+        "allReady": "Todos os documentos estão prontos para revisão.",
+        "goToReview": "Ir para revisão",
         "steps": {
           "pending": "Documento recebido",
           "extracting": "Extraindo texto do PDF",
           "analyzing": "Analisando com IA",
           "ready": "Pronto para revisão"
+        }
+      }
+    },
+    "documents": {
+      "title": "Documentos anexados",
+      "subtitle": "Carátula, condicionado, endossos e renovações desta apólice.",
+      "addDocuments": "Adicionar documento",
+      "addRenewalDocs": "Atualizar com novos papéis",
+      "uploadAndProcess": "Enviar e processar",
+      "expiredRenewalBanner": "Esta apólice está vencida. Envie documentos renovados para atualizar vigência e coberturas após revisar as mudanças.",
+      "updatePrompt": {
+        "title": "Atualizar a apólice com estes dados?",
+        "description": "Os novos documentos sugerem mudanças em relação à apólice atual. Revise o diff antes de confirmar.",
+        "change": "Atual: {current} → Proposto: {proposed}",
+        "fields": {
+          "endDate": "Fim da vigência",
+          "startDate": "Início da vigência",
+          "premium": "Prêmio",
+          "coverages": "Coberturas (quantidade)"
         }
       }
     },
@@ -442,6 +496,7 @@
       "confirmNote": "Nenhum dado é salvo na sua carteira até você confirmar. Campos com baixa confiança exigem revisão manual.",
       "draftNotice": "Esta apólice está em rascunho. Revise e corrija os campos antes de confirmar.",
       "draftSaved": "Rascunho salvo. Você pode continuar editando depois.",
+      "mergedFieldsHint": "Os campos combinam todos os documentos (maior confiança). Use as abas para ver cada PDF.",
       "saveDraft": "Salvar rascunho",
       "confirmPolicy": "Confirmar apólice",
       "errors": {
@@ -885,6 +940,7 @@
       "title": "Processamento com IA na nuvem",
       "description": "Para extrair dados do seu PDF e obter respostas avançadas da MarIAna, o documento ou sua pergunta será enviado com segurança aos nossos serviços de IA (Claude).",
       "consequences": "Se recusar, você ainda poderá usar o InsurWallet com dados manuais e MarIAna Tier 0 (respostas locais sem IA na nuvem). A extração automática de PDF e respostas avançadas ficarão bloqueadas.",
+      "protectedPdfNote": "PDFs protegidos por senha não podem ser processados. Envie uma cópia sem bloqueio.",
       "privacyLink": "Saiba mais na privacidade",
       "accept": "Aceito e continuar",
       "decline": "Não aceitar",

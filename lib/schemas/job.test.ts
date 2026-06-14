@@ -31,4 +31,15 @@ describe('JobSchema', () => {
     expect(job.state).toBe('queued')
     expect(job.processingState).toBe('pending')
   })
+
+  it('accepts worker pipeline steps including claude extraction', () => {
+    expect(
+      JobSchema.safeParse({
+        ...base,
+        state: 'completed',
+        processingState: 'ready',
+        pipeline: ['vision', 'claude'],
+      }).success
+    ).toBe(true)
+  })
 })

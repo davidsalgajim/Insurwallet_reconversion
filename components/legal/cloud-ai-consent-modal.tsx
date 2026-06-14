@@ -51,6 +51,9 @@ export function CloudAIConsentModal({
             <p className="text-sm leading-relaxed text-muted-foreground">
               {t('consequences')}
             </p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {t('protectedPdfNote')}
+            </p>
             {currentStatus ? (
               <p className="text-sm font-medium text-foreground">
                 {t('changeNotice', {

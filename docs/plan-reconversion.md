@@ -3,22 +3,22 @@ name: Migración InsurWallet a Web
 overview: Reconversión completa de InsurWallet (iOS nativa, SwiftData local) a una web app Next.js + Firebase, con pipeline de documentos en servidor (OpenDataLoader + Surya + MarkItDown + Claude), pagos Wompi/Mercado Pago, defensas anti prompt-injection y plan de diseño y testeo end-to-end.
 todos:
   - id: f0-setup
-    content: "F0: Crear proyecto insurwallet-web, mover agente, Firebase + emuladores, impeccable init + design system, POC OpenDataLoader con PDF Cancer Bancolombia"
+    content: 'F0: Crear proyecto insurwallet-web, mover agente, Firebase + emuladores, impeccable init + design system, POC OpenDataLoader con PDF Cancer Bancolombia'
     status: pending
   - id: f1-foundation
-    content: "F1: Auth (email/Google/Apple), schema Firestore + security rules + tests de reglas, CRUD pólizas manual, dashboard, i18n ES"
+    content: 'F1: Auth (email/Google/Apple), schema Firestore + security rules + tests de reglas, CRUD pólizas manual, dashboard, i18n ES'
     status: pending
   - id: f2-pipeline
-    content: "F2: Worker Cloud Run (OpenDataLoader→Surya→MarkItDown), sanitizador anti-injection, extracción Claude con prompts portados del Swift, golden set OCR en CI, UI de estados"
+    content: 'F2: Worker Cloud Run (OpenDataLoader→Surya→MarkItDown), sanitizador anti-injection, extracción Claude con prompts portados del Swift, golden set OCR en CI, UI de estados'
     status: pending
   - id: f3-ai-sharing
-    content: "F3: MarIAna multi-agente (Tier 0 + router + 5 especialistas read-only), RAG con chunks/embeddings, compartir pólizas con tokens/expiración, beneficiarios y beneficios"
+    content: 'F3: MarIAna multi-agente (Tier 0 + router + 5 especialistas read-only), RAG con chunks/embeddings, compartir pólizas con tokens/expiración, beneficiarios y beneficios'
     status: pending
   - id: f4-payments
-    content: "F4: Adapter de pagos Wompi/Mercado Pago + webhooks firmados, gates free/premium, FCM + emails de vencimiento, exportación GDPR"
+    content: 'F4: Adapter de pagos Wompi/Mercado Pago + webhooks firmados, gates free/premium, FCM + emails de vencimiento, exportación GDPR'
     status: pending
   - id: f5-hardening
-    content: "F5: Suite adversarial de prompt injection, impeccable audit + polish, Playwright E2E, k6, EN/PT, landing pública, beta cerrada"
+    content: 'F5: Suite adversarial de prompt injection, impeccable audit + polish, Playwright E2E, k6, EN/PT, landing pública, beta cerrada'
     status: pending
 isProject: false
 ---
@@ -123,7 +123,9 @@ jobs/{jobId}                            ← cola de procesamiento de documentos
   uid, policyId, docId, state, attempts, pipeline: [odl|surya|markitdown], timings
 ```
 
-**Storage:** `users/{uid}/policies/{policyId}/docs/{docId}.pdf` + `.../extracted/{docId}.md`. Reglas de Storage espejo de Firestore (solo dueño + compartidos con permiso download).
+**Storage:** `users/{uid}/policies/{policyId}/docs/{docId}/{fileName}` (PDF/imagen original, solo dueño). Texto extraído planificado en `.../extracted/{docId}.md`. Reglas de Storage espejo de Firestore (solo dueño; compartidos con permiso download en F3).
+
+**Extracción en Firestore:** `policies/{policyId}/documents/{docId}.extraction` — **20 campos** alineados con `PolicyExtractionFieldsSchema` y el wizard manual (`lib/schemas/extraction-field-keys.ts`); fechas como `YYYY-MM-DD` (ISO); el cliente normaliza `Timestamp` legado vía `parse-document-extraction.ts`. No se extraen del PDF: `ownerUid`, `sharedWith`, `status`, `createdAt`, `updatedAt`.
 
 ## 3. Pipeline de documentos (corrige el dolor actual de OCR)
 
@@ -134,16 +136,18 @@ flowchart LR
     TYPE -->|PDF| ODL[OpenDataLoader markdown+JSON+bboxes]
     TYPE -->|docx/xlsx/img| MID[MarkItDown]
     ODL --> QG{Quality gate}
-    QG -->|texto pobre / tablas rotas| SURYA[Surya OCR layout 90+ idiomas]
+    QG -->|texto pobre / placeholders imagen| VISION[Claude vision paginas PNG]
     QG -->|ok| SAN
-    SURYA --> SAN[Sanitizador anti-injection]
+    QG -->|tablas rotas sin vision| SURYA[Surya OCR stub]
+    SURYA --> SAN
+    VISION --> SAN[Sanitizador anti-injection]
     MID --> SAN
-    SAN --> CL[Claude extraccion JSON estructurado]
-    CL --> VAL[Validacion Zod + heuristicas portadas del Swift]
-    VAL --> FS[(Firestore + Storage)]
+    SAN --> CL[Claude extraccion JSON tool-use]
+    CL --> VAL[Validacion + heuristicas vigencia]
+    VAL --> FS[(Firestore document.extraction + policy merge)]
 ```
 
-- **Quality gate** (portar heurística de `DocumentProcessingService.swift` línea ~363): < 100 palabras o sin keywords de póliza → escalar a Surya.
+- **Quality gate** (portar heurística de `DocumentProcessingService.swift` línea ~363): &lt; 100 palabras, sin keywords de póliza (léxico ES/EN/PT en `policy_lexicon.py`), o líneas `![image N]` → **visión Claude** en PDF escaneado.
 - **Reutilizar del repo iOS:** prompts de `ClaudeDocumentService.swift` (casi verbatim), diccionario `insuranceCustomWords` (~200 términos ES/EN/PT) para post-corrección OCR, y los regex de `DocumentProcessingService+Extraction.swift` portados a Python/TS como **validadores** post-IA (no como extractor principal).
 - **Extracción con salida estructurada:** tool-use/JSON schema de Claude (no texto libre) — el modelo no puede ser desviado a otro formato.
 - Job queue con reintentos, estado visible en UI (pending → extracting → analyzing → ready/failed).
@@ -151,29 +155,33 @@ flowchart LR
 ## 3b. Flujos de usuario: cómo se guarda y procesa la información
 
 ### Flujo A — Captura manual (instantáneo)
+
 1. Wizard paso a paso (tipo → datos básicos → coberturas/deducibles → beneficiarios → agente)
 2. Validación en cliente (Zod) → escritura directa a Firestore
 3. La póliza queda `ready` de inmediato; sin pipeline
 
 ### Flujo B — Subir PDF/imagen (asistido por IA, el flujo estrella)
+
 1. Usuario arrastra el PDF o toma foto → upload a Storage (progreso visible)
 2. Se crea `jobs/{jobId}`; la UI muestra estados en vivo vía listener de Firestore:
    `subiendo → extrayendo texto → analizando con IA → listo para revisar`
 3. **Pantalla de revisión obligatoria:** los campos extraídos se muestran editables, con
    indicador de confianza por campo (alta/media/baja según validadores) y el documento
-   al lado (split-view con bounding boxes de OpenDataLoader para "ver de dónde salió el dato")
+   al lado (split-view: pdf.js + `public/pdf.worker.mjs`; bounding boxes ODL cuando existan)
 4. Usuario corrige lo necesario y confirma → se crea la póliza + documento adjunto
 5. El texto extraído queda indexado para MarIAna (embeddings por chunks en Firestore/Vertex)
 
 > Nada se guarda como póliza sin confirmación humana. La IA propone, el usuario dispone.
 
 ### Flujo C — Documentos adicionales a póliza existente
+
 1. Adjuntar recibo/endoso/clausulado a una póliza ya creada
 2. Pipeline extrae e indexa el texto (para consultas de MarIAna)
 3. Si la extracción detecta campos que difieren de la póliza (ej. nueva vigencia en un
    endoso), se ofrece banner "Detectamos cambios — ¿actualizar la póliza?" (diff visible)
 
 ### Flujo D — Pólizas compartidas
+
 1. Recibe link `app.insurwallet.com/share/{token}` → login → aceptación
 2. La póliza aparece en su lista como solo-lectura (badge "Compartida por X")
 3. MarIAna puede responder sobre compartidas solo si el permiso lo permite
@@ -203,14 +211,14 @@ flowchart TB
 
 ### Los agentes (especialistas)
 
-| Agente | Experto en | Contexto que carga | Modelo |
-|---|---|---|---|
-| **Router** | Clasificar intención + extraer entidades (qué póliza, qué tema) | Solo metadatos: lista de pólizas (tipo, aseguradora, vigencia) | Haiku (rápido/barato) |
-| **Documental** | Clausulados, exclusiones, letra pequeña; puede pedir re-extracción de un doc | Chunks relevantes del texto extraído (RAG top-k), nunca el doc completo | Sonnet |
-| **Coberturas y Beneficios** | "¿Estoy cubierto para X?", comparar pólizas, deducibles, beneficios | `coverageEntries`, `deductibleEntries`, `benefits` estructurados de las pólizas relevantes | Sonnet/Haiku según complejidad |
-| **Vencimientos y Finanzas** | Fechas, primas, frecuencias, renovaciones, costos totales | Campos de fechas/montos — mayoría resuelve en Tier 0 sin LLM | Tier 0 / Haiku |
-| **Aseguradoras y Asesores** | Contactos, procedimiento de siniestro, a quién llamar | `agent` de pólizas + `contacts` del usuario | Haiku |
-| **Emergencias** | "Tuve un accidente/robo" → póliza aplicable + teléfono + pasos inmediatos | Bypass del router (keywords); póliza del tipo relevante + contactos | Haiku (latencia mínima) |
+| Agente                      | Experto en                                                                   | Contexto que carga                                                                         | Modelo                         |
+| --------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------ |
+| **Router**                  | Clasificar intención + extraer entidades (qué póliza, qué tema)              | Solo metadatos: lista de pólizas (tipo, aseguradora, vigencia)                             | Haiku (rápido/barato)          |
+| **Documental**              | Clausulados, exclusiones, letra pequeña; puede pedir re-extracción de un doc | Chunks relevantes del texto extraído (RAG top-k), nunca el doc completo                    | Sonnet                         |
+| **Coberturas y Beneficios** | "¿Estoy cubierto para X?", comparar pólizas, deducibles, beneficios          | `coverageEntries`, `deductibleEntries`, `benefits` estructurados de las pólizas relevantes | Sonnet/Haiku según complejidad |
+| **Vencimientos y Finanzas** | Fechas, primas, frecuencias, renovaciones, costos totales                    | Campos de fechas/montos — mayoría resuelve en Tier 0 sin LLM                               | Tier 0 / Haiku                 |
+| **Aseguradoras y Asesores** | Contactos, procedimiento de siniestro, a quién llamar                        | `agent` de pólizas + `contacts` del usuario                                                | Haiku                          |
+| **Emergencias**             | "Tuve un accidente/robo" → póliza aplicable + teléfono + pasos inmediatos    | Bypass del router (keywords); póliza del tipo relevante + contactos                        | Haiku (latencia mínima)        |
 
 ### Implementación (clave para velocidad y costo)
 
@@ -230,8 +238,9 @@ flowchart TB
   (gracias a bounding boxes de OpenDataLoader) — confianza y verificabilidad.
 
 ### Seguridad del sistema de agentes
+
 - Todos los agentes son **read-only** (tools sin escritura); la única acción mutante que
-  pueden *proponer* es re-extraer un documento, y requiere confirmación del usuario
+  pueden _proponer_ es re-extraer un documento, y requiere confirmación del usuario
 - Scope server-side por `uid` autenticado — los tools jamás aceptan IDs arbitrarios del cliente
 - El texto de documentos en contexto sigue tratándose como data no confiable (delimitadores
   `<document_data>` + sanitizador, ver sección 4)
@@ -241,6 +250,7 @@ flowchart TB
 ## 4. Seguridad y anti prompt-injection
 
 ### Capas de plataforma
+
 - **Firestore Security Rules:** owner-only por `ownerUid`; lectura compartida vía `sharedWith` array; subcolecciones heredan; `shares` validado por Function (token hash, expiración). Tests de reglas con emulador.
 - **App Check** (reCAPTCHA v3) en Firestore/Storage/Functions — bloquea clientes no legítimos.
 - **Storage Rules** espejo + validación de mimeType y tamaño máx (20MB) en cliente y Function.
@@ -248,6 +258,7 @@ flowchart TB
 - Audit log de acciones sensibles (compartir, exportar, eliminar cuenta) — ya existe el concepto en `AuditLog.swift`.
 
 ### Anti prompt-injection (documentos y MarIAna)
+
 El texto extraído de PDFs es **input no confiable** (un PDF puede traer instrucciones ocultas, texto blanco-sobre-blanco, etc.):
 
 1. **Sanitizador pre-LLM:** strip de caracteres zero-width, normalización Unicode, detección de bloques con patrones imperativo-sospechosos ("ignore previous", "system:", etc.) → se marcan y registran, no se eliminan silenciosamente.
@@ -274,16 +285,16 @@ El texto extraído de PDFs es **input no confiable** (un PDF puede traer instruc
 
 ## 7. Plan de testeo
 
-| Capa | Herramienta | Qué cubre |
-|---|---|---|
-| Unit (TS) | Vitest | validadores, adapter pagos, helpers fechas/estados de póliza |
-| Unit (Python) | pytest | pipeline: quality gate, sanitizador, parsers |
-| Componentes | Testing Library | formularios, wizard, estados de procesamiento |
-| Reglas Firestore/Storage | Emulator + rules-unit-testing | owner/shared/anon en cada colección |
-| E2E | Playwright | flujos críticos: registro → crear póliza → subir PDF → ver extracción → compartir → MarIAna |
-| **Golden set OCR** | pytest + corpus | ~20 pólizas reales (incl. Cancer Bancolombia del repo) con JSON esperado; métrica: ≥95% en campos críticos (número, aseguradora, vigencias, prima) — gate de CI |
-| **Inyección** | suite adversarial | PDFs con instrucciones ocultas → assert: extracción no contaminada, MarIAna no obedece |
-| Carga | k6 | worker de documentos concurrente |
+| Capa                     | Herramienta                   | Qué cubre                                                                                                                                                       |
+| ------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit (TS)                | Vitest                        | validadores, adapter pagos, helpers fechas/estados de póliza                                                                                                    |
+| Unit (Python)            | pytest                        | pipeline: quality gate, sanitizador, parsers                                                                                                                    |
+| Componentes              | Testing Library               | formularios, wizard, estados de procesamiento                                                                                                                   |
+| Reglas Firestore/Storage | Emulator + rules-unit-testing | owner/shared/anon en cada colección                                                                                                                             |
+| E2E                      | Playwright                    | flujos críticos: registro → crear póliza → subir PDF → ver extracción → compartir → MarIAna                                                                     |
+| **Golden set OCR**       | pytest + corpus               | ~20 pólizas reales (incl. Cancer Bancolombia del repo) con JSON esperado; métrica: ≥95% en campos críticos (número, aseguradora, vigencias, prima) — gate de CI |
+| **Inyección**            | suite adversarial             | PDFs con instrucciones ocultas → assert: extracción no contaminada, MarIAna no obedece                                                                          |
+| Carga                    | k6                            | worker de documentos concurrente                                                                                                                                |
 
 Metodología: **Superpowers TDD** (red-green-refactor) + brainstorming/writing-plans por feature.
 

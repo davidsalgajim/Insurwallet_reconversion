@@ -49,6 +49,7 @@ function buildContentSecurityPolicy(): string {
   const directives = [
     "default-src 'self'",
     `script-src ${scriptSrc.join(' ')}`,
+    "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https://*.googleusercontent.com https://www.gstatic.com https://www.google.com",
     "font-src 'self' data:",

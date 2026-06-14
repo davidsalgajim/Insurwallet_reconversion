@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
@@ -12,15 +13,39 @@ import { usePolicyDocuments } from '@/hooks/usePolicyDocuments'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { usePolicy } from '@/hooks/usePolicy'
+import { mergePolicyExtractions } from '@/lib/policies/extraction-merge'
+import { cn } from '@/lib/utils/cn'
 
 export function PolicyReviewView() {
   const t = useTranslations('policies.review')
   const params = useParams<{ id: string }>()
   const policyId = params.id
   const { user, loading: authLoading } = useAuth()
-  const { policy, loading, error } = usePolicy(policyId)
+  const { policy, loading, error, refresh } = usePolicy(policyId)
   const { documents, loading: documentsLoading } = usePolicyDocuments(policyId)
-  const primaryDocument = documents[0]
+  const [activeDocId, setActiveDocId] = useState<string | null>(null)
+
+  const mergedExtraction = useMemo(
+    () => mergePolicyExtractions(documents.map((doc) => doc.extraction)),
+    [documents]
+  )
+
+  const extractionSyncToken =
+    mergedExtraction?.extractedAt?.toISOString() ?? null
+
+  useEffect(() => {
+    if (extractionSyncToken) {
+      void refresh()
+    }
+  }, [extractionSyncToken, refresh])
+
+  const activeDocument = useMemo(() => {
+    if (documents.length === 0) return undefined
+    if (activeDocId) {
+      return documents.find((doc) => doc.id === activeDocId) ?? documents[0]
+    }
+    return documents[0]
+  }, [activeDocId, documents])
 
   if (loading || authLoading) {
     return (
@@ -64,14 +89,39 @@ export function PolicyReviewView() {
           {!user || !policy ? t('authRequired') : t('pdfLoading')}
         </p>
       ) : (
-        <PolicyReviewForm
-          key={`${policy.id}-${primaryDocument?.extraction?.extractedAt?.toString() ?? 'none'}`}
-          policy={policy}
-          userUid={user.uid}
-          storagePath={primaryDocument?.storagePath}
-          fileName={primaryDocument?.fileName}
-          extraction={primaryDocument?.extraction}
-        />
+        <>
+          {documents.length > 1 ? (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {documents.map((doc) => (
+                <button
+                  key={doc.id}
+                  type="button"
+                  className={cn(
+                    'rounded-[var(--radius-pill)] border px-3 py-1.5 text-xs font-medium transition-colors',
+                    activeDocument?.id === doc.id
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border/70 bg-white/60 text-muted-foreground hover:text-foreground'
+                  )}
+                  onClick={() => setActiveDocId(doc.id)}
+                >
+                  {doc.fileName}
+                </button>
+              ))}
+              <span className="self-center text-xs text-muted-foreground">
+                {t('mergedFieldsHint')}
+              </span>
+            </div>
+          ) : null}
+
+          <PolicyReviewForm
+            key={`${policy.id}-${mergedExtraction?.extractedAt?.toString() ?? 'none'}`}
+            policy={policy}
+            userUid={user.uid}
+            storagePath={activeDocument?.storagePath}
+            fileName={activeDocument?.fileName}
+            extraction={mergedExtraction ?? activeDocument?.extraction}
+          />
+        </>
       )}
     </div>
   )

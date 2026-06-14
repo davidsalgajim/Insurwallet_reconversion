@@ -49,7 +49,7 @@ def _parse_date(value: str | None) -> date | None:
         match = pattern.match(trimmed)
         if not match:
             continue
-        if pattern.pattern.startswith("^(\d{4})"):
+        if pattern.pattern.startswith(r"^(\d{4})"):
             year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
         else:
             day, month, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
@@ -139,8 +139,32 @@ def validate_date_field(
     return ValidatedField(value, confidence, tuple(issues))
 
 
+def _coerce_expiration_raw(raw: dict[str, object]) -> dict[str, object]:
+    """Align start/end/hasNoExpiration before date validation."""
+    start_raw = raw.get("startDate")
+    end_raw = raw.get("endDate")
+    has_no = raw.get("hasNoExpiration")
+
+    if has_no is True:
+        return {**raw, "endDate": None, "hasNoExpiration": True}
+
+    if (
+        start_raw
+        and end_raw
+        and str(start_raw).strip()
+        and str(start_raw).strip() == str(end_raw).strip()
+    ):
+        adjusted = dict(raw)
+        adjusted.pop("endDate", None)
+        adjusted["hasNoExpiration"] = True
+        return adjusted
+
+    return raw
+
+
 def validate_extraction(raw: dict[str, object]) -> ValidationResult:
     """Validate Claude output and produce per-field confidence scores."""
+    raw = _coerce_expiration_raw(raw)
     policy_number = validate_policy_number(
         raw.get("policyNumber") if isinstance(raw.get("policyNumber"), str) else None
     )

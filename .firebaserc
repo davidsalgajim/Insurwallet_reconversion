@@ -1,7 +1,7 @@
 {
   "projects": {
-    "default": "insurwallet-staging",
-    "staging": "insurwallet-staging",
+    "default": "insurwallet-stagging",
+    "staging": "insurwallet-stagging",
     "prod": "insurwallet-prod"
   }
 }

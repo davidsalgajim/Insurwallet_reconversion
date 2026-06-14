@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import type { FieldBbox } from '@/lib/schemas/extraction'
@@ -15,6 +15,23 @@ type PolicyPdfViewerProps = {
   hoveredHighlightId?: string | null
 }
 
+type RenderedPage = {
+  pageNumber: number
+  width: number
+  height: number
+  canvas: HTMLCanvasElement
+}
+
+async function loadPdfBytes(storagePath: string): Promise<Uint8Array> {
+  const [{ storage }, { ref, getBytes }] = await Promise.all([
+    import('@/lib/firebase/client'),
+    import('firebase/storage'),
+  ])
+
+  const bytes = await getBytes(ref(storage, storagePath))
+  return new Uint8Array(bytes)
+}
+
 export function PolicyPdfViewer({
   storagePath,
   fileName,
@@ -24,12 +41,9 @@ export function PolicyPdfViewer({
   hoveredHighlightId,
 }: PolicyPdfViewerProps) {
   const t = useTranslations('policies.review')
-  const [url, setUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [pageSize, setPageSize] = useState({ width: 0, height: 0 })
-  const [activePage, setActivePage] = useState(1)
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const [pages, setPages] = useState<RenderedPage[]>([])
 
   const hasHighlights = Boolean(
     highlights && Object.keys(highlights).length > 0
@@ -37,21 +51,47 @@ export function PolicyPdfViewer({
 
   useEffect(() => {
     let cancelled = false
+    const renderedCanvases: HTMLCanvasElement[] = []
 
     void (async () => {
       setLoading(true)
       setError(null)
+      setPages([])
 
       try {
-        const [{ storage }, { ref, getDownloadURL }] = await Promise.all([
-          import('@/lib/firebase/client'),
-          import('firebase/storage'),
-        ])
+        const pdfBytes = await loadPdfBytes(storagePath)
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs'
 
-        const downloadUrl = await getDownloadURL(ref(storage, storagePath))
+        const pdf = await pdfjs.getDocument({ data: pdfBytes }).promise
+        const nextPages: RenderedPage[] = []
+
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          const page = await pdf.getPage(pageNumber)
+          const viewport = page.getViewport({ scale: 1.25 })
+          const canvas = document.createElement('canvas')
+          const context = canvas.getContext('2d')
+
+          if (!context) {
+            continue
+          }
+
+          canvas.width = viewport.width
+          canvas.height = viewport.height
+          await page.render({ canvasContext: context, viewport, canvas })
+            .promise
+
+          renderedCanvases.push(canvas)
+          nextPages.push({
+            pageNumber,
+            width: viewport.width,
+            height: viewport.height,
+            canvas,
+          })
+        }
 
         if (!cancelled) {
-          setUrl(downloadUrl)
+          setPages(nextPages)
         }
       } catch {
         if (!cancelled) {
@@ -66,62 +106,18 @@ export function PolicyPdfViewer({
 
     return () => {
       cancelled = true
+      for (const canvas of renderedCanvases) {
+        canvas.width = 0
+        canvas.height = 0
+      }
     }
   }, [storagePath, t])
 
-  useEffect(() => {
-    if (!url || !hasHighlights || !canvasRef.current) {
-      return
-    }
-
-    let cancelled = false
-
-    void (async () => {
-      try {
-        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/legacy/build/pdf.worker.mjs',
-          import.meta.url
-        ).toString()
-
-        const loadingTask = pdfjs.getDocument(url)
-        const pdf = await loadingTask.promise
-        const pageNumber =
-          activeHighlightId && highlights?.[activeHighlightId]
-            ? highlights[activeHighlightId].page
-            : hoveredHighlightId && highlights?.[hoveredHighlightId]
-              ? highlights[hoveredHighlightId].page
-              : 1
-
-        const page = await pdf.getPage(pageNumber)
-        const viewport = page.getViewport({ scale: 1.25 })
-        const canvas = canvasRef.current
-        if (!canvas || cancelled) {
-          return
-        }
-
-        const context = canvas.getContext('2d')
-        if (!context) {
-          return
-        }
-
-        canvas.width = viewport.width
-        canvas.height = viewport.height
-        setPageSize({ width: viewport.width, height: viewport.height })
-        setActivePage(pageNumber)
-
-        await page.render({ canvasContext: context, viewport, canvas }).promise
-      } catch {
-        if (!cancelled) {
-          setError(t('pdfLoadError'))
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [url, hasHighlights, highlights, activeHighlightId, hoveredHighlightId, t])
+  const visibleHighlightIds = new Set(
+    [activeHighlightId, hoveredHighlightId].filter(
+      (id): id is string => typeof id === 'string' && Boolean(id)
+    )
+  )
 
   if (loading) {
     return (
@@ -133,7 +129,7 @@ export function PolicyPdfViewer({
     )
   }
 
-  if (error || !url) {
+  if (error || pages.length === 0) {
     return (
       <div className={className}>
         <div className="flex h-full min-h-[360px] items-center justify-center rounded-[var(--radius-inner)] border border-dashed border-border/70 bg-white/40 p-6 text-center text-sm text-muted-foreground">
@@ -143,73 +139,58 @@ export function PolicyPdfViewer({
     )
   }
 
-  if (!hasHighlights) {
-    return (
-      <div className={className}>
-        <iframe
-          title={fileName}
-          src={url}
-          className="h-full min-h-[360px] w-full rounded-[var(--radius-inner)] border border-border/60 bg-white"
-        />
-      </div>
-    )
-  }
-
-  const visibleIds = new Set(
-    [activeHighlightId, hoveredHighlightId].filter(
-      (id): id is string => typeof id === 'string' && Boolean(id)
-    )
-  )
-
   return (
-    <div className={cn(className, 'relative overflow-auto')}>
-      <div
-        className="relative mx-auto w-fit rounded-[var(--radius-inner)] border border-border/60 bg-white"
-        style={{
-          width: pageSize.width || undefined,
-          height: pageSize.height || undefined,
-          minHeight: 360,
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          className="block max-w-full"
-          aria-label={fileName}
-        />
-        {pageSize.width > 0
-          ? Object.entries(highlights ?? {}).map(([fieldId, bbox]) => {
-              if (bbox.page !== activePage) {
-                return null
-              }
-              const isActive = visibleIds.has(fieldId)
-              if (!isActive) {
-                return null
-              }
+    <div
+      className={cn(className, 'overflow-auto rounded-[var(--radius-inner)]')}
+      aria-label={fileName}
+    >
+      <div className="space-y-4 p-1">
+        {pages.map((page) => (
+          <div
+            key={page.pageNumber}
+            className="relative mx-auto w-fit rounded-[var(--radius-inner)] border border-border/60 bg-white shadow-sm"
+            style={{ width: page.width, minHeight: page.height }}
+          >
+            <div
+              ref={(node) => {
+                if (node && node.childElementCount === 0) {
+                  node.appendChild(page.canvas)
+                }
+              }}
+              className="block"
+            />
+            {hasHighlights
+              ? Object.entries(highlights ?? {}).map(([fieldId, bbox]) => {
+                  if (
+                    bbox.page !== page.pageNumber ||
+                    !visibleHighlightIds.has(fieldId)
+                  ) {
+                    return null
+                  }
 
-              return (
-                <div
-                  key={fieldId}
-                  aria-hidden
-                  className={cn(
-                    'pointer-events-none absolute rounded-[2px] ring-2 transition-opacity',
-                    fieldId === activeHighlightId
-                      ? 'bg-primary/20 ring-primary'
-                      : 'bg-accent/15 ring-accent/80'
-                  )}
-                  style={{
-                    left: `${bbox.left * 100}%`,
-                    top: `${bbox.top * 100}%`,
-                    width: `${bbox.width * 100}%`,
-                    height: `${bbox.height * 100}%`,
-                  }}
-                />
-              )
-            })
-          : null}
+                  return (
+                    <div
+                      key={`${page.pageNumber}-${fieldId}`}
+                      aria-hidden
+                      className={cn(
+                        'pointer-events-none absolute rounded-[2px] ring-2 transition-opacity',
+                        fieldId === activeHighlightId
+                          ? 'bg-primary/20 ring-primary'
+                          : 'bg-accent/15 ring-accent/80'
+                      )}
+                      style={{
+                        left: `${bbox.left * 100}%`,
+                        top: `${bbox.top * 100}%`,
+                        width: `${bbox.width * 100}%`,
+                        height: `${bbox.height * 100}%`,
+                      }}
+                    />
+                  )
+                })
+              : null}
+          </div>
+        ))}
       </div>
-      <p className="mt-2 text-center text-xs text-muted-foreground">
-        {t('bboxPageHint', { page: activePage })}
-      </p>
     </div>
   )
 }

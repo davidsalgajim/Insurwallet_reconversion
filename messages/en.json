@@ -178,9 +178,9 @@
       "emailNotVerifiedYet": "We still don't see verification. Wait a moment and try again."
     },
     "legalConsent": {
-      "registerLabel": "I accept the {terms} and {privacy}, and authorize processing of my personal data under applicable data protection laws (including Colombia Law 1581/2012).",
+      "registerLabel": "I accept the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>, and authorize processing of my personal data under applicable data protection laws (including Colombia Law 1581/2012).",
       "registerRequired": "You must accept the terms and privacy policy to continue.",
-      "loginNotice": "By continuing, you accept the {terms} and {privacy}.",
+      "loginNotice": "By continuing, you accept the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
       "termsLink": "Terms of Service",
       "privacyLink": "Privacy Policy"
     }
@@ -237,7 +237,10 @@
       "beneficiaryObservations": "Notes (optional)",
       "beneficiaryObservationsPlaceholder": "Additional notes",
       "beneficiaryPctTotal": "Total allocated: {pct}%",
-      "beneficiaryPctWarning": "Total exceeds 100%. Review percentages before saving."
+      "beneficiaryPctWarning": "Total exceeds 100%. Review percentages before saving.",
+      "supportingTitle": "Supporting documents (optional)",
+      "supportingDesc": "Attach cover page, policy wording, or other PDFs for this policy. They will be processed with AI in the background.",
+      "supportingUploadFailed": "Policy saved, but some documents failed to upload. You can add them from the detail page."
     },
     "tabs": {
       "aria": "Policy sections",
@@ -378,31 +381,58 @@
     "upload": {
       "title": "New policy",
       "subtitle": "Step 2 of 4 — upload your PDF document",
+      "subtitleMulti": "Step 2 of 4 — upload your policy documents",
       "sectionTitle": "Policy document",
+      "sectionTitleMulti": "Policy documents",
       "sectionDesc": "Upload your policy PDF. We will extract data with AI; you review and confirm before saving.",
+      "sectionDescMulti": "Upload one or more PDFs (cover, wording, endorsement, renewal). Each file is processed separately; we merge higher-confidence fields on review.",
       "dropzoneTitle": "Drop your PDF here",
+      "dropzoneTitleMulti": "Drop your documents here",
       "dropzoneHint": "PDF or photo (JPG/PNG), up to {maxSize} MB. You can also click to choose a file.",
+      "dropzoneHintMulti": "PDF or photo (JPG/PNG), max {maxSize} MB per file, up to {maxFiles} files.",
       "dropzoneAria": "Policy PDF or photo upload area",
-      "browseFiles": "Choose file",
+      "fileListAria": "Selected files",
+      "documentRoleLabel": "Document type",
+      "documentRoleAuto": "Auto-detect",
+      "documentRoles": {
+        "cover": "Cover page",
+        "conditions": "Policy wording",
+        "endorsement": "Endorsement",
+        "renewal": "Renewal",
+        "other": "Other"
+      },
+      "browseFiles": "Choose files",
       "takePhoto": "Take photo",
-      "removeFile": "Remove file",
+      "removeFile": "Remove",
       "startUpload": "Upload and process",
+      "startUploadMulti": "Upload {count, plural, one {# document} other {# documents}} and process",
       "validating": "Validating…",
       "optimizing": "Optimizing document…",
       "uploading": "Uploading…",
       "back": "Back",
       "authRequired": "Sign in to upload documents to your portfolio.",
       "confirmNote": "Your PDF is stored securely. AI extraction will be available on the review screen — no data is saved without your confirmation.",
+      "confirmNoteMulti": "Your documents are stored securely. When processing finishes, you will review merged data before confirming.",
       "viewDraft": "View draft",
+      "protectedPdfWarning": "Do not upload password-protected PDFs. If the document is locked, we cannot extract the information.",
       "errors": {
         "emptyFile": "The file is empty.",
         "tooLarge": "The file exceeds the 2 MB limit after optimization.",
+        "tooManyFiles": "You can upload up to 10 files per batch.",
         "sourceTooLarge": "The file exceeds 20 MB. Use a smaller document.",
         "compressionFailed": "Could not optimize the document. Try another file.",
         "compressionTooLarge": "We could not reduce the document below 2 MB. Trim pages or use a lighter photo.",
         "invalidType": "Only PDF or JPG/PNG/WebP images are allowed.",
         "invalidPdf": "The file does not appear to be a valid PDF.",
+        "protectedPdf": "This PDF is password-protected. Upload an unprotected copy.",
         "uploadFailed": "Could not upload the document. Try again.",
+        "permissionDenied": "You do not have permission to upload this document. Check your session or App Check in development.",
+        "appCheckRequired": "Firebase App Check blocked the upload. For local dev, enable NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN or use emulators.",
+        "networkError": "Network error while uploading. Check your connection and try again.",
+        "uploadCanceled": "The upload was canceled.",
+        "quotaExceeded": "Storage quota exceeded.",
+        "invalidDocumentMetadata": "Document metadata is invalid. Try another file.",
+        "processingJobFailed": "The file uploaded, but we could not queue processing. Check server configuration.",
         "consentDeclined": "You declined cloud AI processing. Automatic PDF extraction is not available.",
         "consentDeclinedHint": "You can change your preference in",
         "consentSettingsLink": "Settings → Legal"
@@ -412,12 +442,36 @@
         "pendingNote": "Your document is queued. We will notify you when extraction is ready to review.",
         "ready": "Extraction ready — you can review and confirm the data.",
         "failed": "We could not process the document. Try uploading again.",
+        "failedProtectedPdf": "This PDF is password-protected. Upload an unprotected copy.",
         "waitingJob": "Waiting for processing queue…",
+        "jobPermissionDenied": "We could not read the processing status. Refresh the page; if it persists, contact support.",
+        "multiProgress": "Processed {ready} of {total} documents",
+        "allReady": "All documents are ready for review.",
+        "goToReview": "Go to review",
         "steps": {
           "pending": "Document received",
           "extracting": "Extracting text from PDF",
           "analyzing": "Analyzing with AI",
           "ready": "Ready for review"
+        }
+      }
+    },
+    "documents": {
+      "title": "Attached documents",
+      "subtitle": "Cover, wording, endorsements, and renewals for this policy.",
+      "addDocuments": "Add document",
+      "addRenewalDocs": "Update with new papers",
+      "uploadAndProcess": "Upload and process",
+      "expiredRenewalBanner": "This policy is expired. Upload renewed documents to update validity and coverages after reviewing the changes.",
+      "updatePrompt": {
+        "title": "Update the policy with this data?",
+        "description": "New documents suggest changes compared to the current policy. Review the diff before confirming.",
+        "change": "Current: {current} → Proposed: {proposed}",
+        "fields": {
+          "endDate": "End date",
+          "startDate": "Start date",
+          "premium": "Premium",
+          "coverages": "Coverages (count)"
         }
       }
     },
@@ -442,6 +496,7 @@
       "confirmNote": "Nothing is saved to your portfolio until you confirm. Low-confidence fields need manual review.",
       "draftNotice": "This policy is a draft. Review and correct the fields before confirming.",
       "draftSaved": "Draft saved. You can continue editing later.",
+      "mergedFieldsHint": "Fields merge all documents (highest confidence). Use tabs to view each PDF.",
       "saveDraft": "Save draft",
       "confirmPolicy": "Confirm policy",
       "errors": {
@@ -885,6 +940,7 @@
       "title": "Cloud AI processing",
       "description": "To extract data from your PDF and get advanced MarIAna answers, your document or question will be sent securely to our AI services (Claude).",
       "consequences": "If you decline, you can still use InsurWallet with manual data entry and MarIAna Tier 0 (local responses without cloud AI). Automatic PDF extraction and advanced answers will be blocked.",
+      "protectedPdfNote": "Password-protected PDFs cannot be processed. Upload an unprotected copy.",
       "privacyLink": "Learn more in privacy",
       "accept": "I agree and continue",
       "decline": "Decline",

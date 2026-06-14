@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { isProtectedPdfJobError } from '@/lib/policies/upload-errors'
 import {
   PolicyExtractionSchema,
   type PolicyExtraction,
@@ -43,7 +44,7 @@ const FieldBboxPayloadSchema = z.object({
 const WorkerExtractionPayloadSchema = z.object({
   fields: z.record(z.unknown()),
   confidence: z.record(z.string()),
-  bboxes: z.record(FieldBboxPayloadSchema).optional(),
+  bboxes: z.record(FieldBboxPayloadSchema).nullish(),
   method: z.string(),
   extractedAt: z.string(),
 })
@@ -69,7 +70,7 @@ export function parseWorkerExtraction(
   return PolicyExtractionSchema.parse({
     fields: payload.fields,
     confidence: payload.confidence,
-    bboxes: payload.bboxes,
+    bboxes: payload.bboxes ?? undefined,
     method,
     extractedAt: payload.extractedAt,
   })
@@ -88,7 +89,16 @@ async function buildWorkerAuthHeaders(
     process.env.GCLOUD_PROJECT?.trim()
   )
 
-  if (!hasGoogleCreds && internalSecret) {
+  const isLocalWorker = (() => {
+    try {
+      const host = new URL(workerUrl).hostname
+      return host === 'localhost' || host === '127.0.0.1'
+    } catch {
+      return false
+    }
+  })()
+
+  if (internalSecret && (isLocalWorker || !hasGoogleCreds)) {
     headers.Authorization = `Bearer ${internalSecret}`
     return headers
   }
@@ -143,6 +153,28 @@ export async function invokeWorkerProcessJob(input: {
   return WorkerProcessResponseSchema.parse(json)
 }
 
+export function mapWorkerFailureMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+
+  if (isProtectedPdfJobError(message)) {
+    return USER_FACING_JOB_ERRORS.protectedPdf
+  }
+
+  if (message.includes('WORKER_URL')) {
+    return USER_FACING_JOB_ERRORS.workerUnavailable
+  }
+
+  if (
+    message.includes('503') ||
+    message.includes('OIDC audience is not configured') ||
+    message.includes('401 Unauthorized')
+  ) {
+    return USER_FACING_JOB_ERRORS.workerUnavailable
+  }
+
+  return USER_FACING_JOB_ERRORS.extractionFailed
+}
+
 const BACKOFF_MS = [1_000, 3_000, 9_000] as const
 const MAX_WORKER_ATTEMPTS = 3
 
@@ -181,6 +213,8 @@ export const USER_FACING_JOB_ERRORS = {
     'No pudimos analizar tu documento. Verifica tu conexión e inténtalo de nuevo.',
   extractionFailed:
     'No pudimos extraer los datos de la póliza. Revisa que el PDF sea legible o ingresa los datos manualmente.',
+  protectedPdf:
+    'Este PDF está protegido con contraseña. Sube una copia sin protección.',
   policyNotFound: 'No encontramos la póliza asociada a este documento.',
   generic: 'Ocurrió un error al procesar el documento. Inténtalo más tarde.',
 } as const

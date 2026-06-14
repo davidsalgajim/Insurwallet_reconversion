@@ -2,29 +2,11 @@
 
 from __future__ import annotations
 
-# Subset of ~200 terms — ES/EN/PT insurance domain vocabulary.
-INSURANCE_CUSTOM_WORDS: frozenset[str] = frozenset(
+from pipeline.policy_lexicon import FIELD_LABEL_SYNONYMS, POLICY_DOCUMENT_KEYWORDS
+
+# Carrier and regional names (not in field-label synonyms)
+_CARRIER_AND_REGIONAL_WORDS: frozenset[str] = frozenset(
     {
-        "póliza",
-        "poliza",
-        "seguro",
-        "aseguradora",
-        "asegurado",
-        "tomador",
-        "beneficiario",
-        "prima",
-        "deducible",
-        "cobertura",
-        "clausulado",
-        "vigencia",
-        "certificado",
-        "endoso",
-        "siniestro",
-        "reclamación",
-        "reclamacion",
-        "exclusión",
-        "exclusion",
-        "suma asegurada",
         "bancolombia",
         "suramericana",
         "sura",
@@ -36,28 +18,37 @@ INSURANCE_CUSTOM_WORDS: frozenset[str] = frozenset(
         "bolivar",
         "liberty",
         "equidad",
-        "policy",
-        "insurance",
-        "insurer",
-        "insured",
-        "holder",
-        "premium",
-        "deductible",
-        "coverage",
-        "endorsement",
-        "claim",
-        "beneficiary",
-        "apólice",
-        "apolice",
-        "seguradora",
-        "segurado",
-        "prêmio",
-        "premio",
-        "franquia",
-        "cobertura",
-        "vigência",
-        "vigencia",
+        "seguros alfa",
+        "alfa",
+        "occidente",
+        "chubb",
+        "zurich",
+        "hdi",
+        "porto seguro",
+        "bradesco",
+        "itau",
+        "metlife",
+        "prudential",
+        "grupo nacional",
+        "gnp",
+        "qualitas",
+        "inbursa",
+        "rsa",
+        "sancor",
+        "la caja",
+        "federación patronal",
+        "federacion patronal",
     }
+)
+
+INSURANCE_CUSTOM_WORDS: frozenset[str] = frozenset(
+    dict.fromkeys(
+        [
+            *POLICY_DOCUMENT_KEYWORDS,
+            *(term.lower() for terms in FIELD_LABEL_SYNONYMS.values() for term in terms),
+            *_CARRIER_AND_REGIONAL_WORDS,
+        ]
+    )
 )
 
 

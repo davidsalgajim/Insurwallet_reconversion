@@ -38,10 +38,14 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 
 - `worker/Dockerfile` - Contenedor JDK 11 + Python 3.12 (OpenDataLoader requiere JVM).
 - `worker/main.py` - Endpoint del job de procesamiento.
-- `worker/pipeline/extract.py` - Orquestación OpenDataLoader → quality gate → Surya → MarkItDown + tests.
+- `worker/pipeline/extract.py` - Orquestación ODL → quality gate → visión Claude (PDF escaneado) → validate + merge campos.
 - `worker/pipeline/sanitizer.py` - Sanitizador anti prompt-injection + tests.
-- `worker/pipeline/claude_extractor.py` - Extracción estructurada con tool-use + prompts portados del Swift + tests.
+- `worker/pipeline/pdf_vision.py` - Render de páginas PDF a PNG para Claude vision.
+- `worker/pipeline/policy_lexicon.py` - Sinónimos de labels ES/EN/PT (LATAM) para prompts y quality gate.
+- `worker/pipeline/claude_extractor.py` - Extracción text/vision con tool-use + heurísticas `hasNoExpiration` + tests.
 - `worker/pipeline/validators.py` - Validadores post-IA portados de los regex Swift + tests.
+- `lib/firebase/parse-document-extraction.ts` - Parseo de `document.extraction` desde Firestore (Timestamp → Date).
+- `components/policies/policy-pdf-viewer.tsx` - Visor revisión con pdf.js (`public/pdf.worker.mjs`).
 - `worker/tests/golden/` - Golden set de ~20 pólizas reales con JSON esperado.
 - `worker/tests/adversarial/` - Corpus de PDFs maliciosos para suite de inyección.
 
@@ -106,12 +110,12 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 3.4 Portar quality gate del Swift (`DocumentProcessingService.swift` ~363): <100 palabras o sin keywords de póliza → escalar a Surya; tests con casos límite
   - [x] 3.5 Integrar Surya OCR como fallback para scans/PDFs complejos + MarkItDown para docx/xlsx/imágenes — **parcial:** Surya stub con log claro + pymupdf fallback; MarkItDown para no-PDF cuando instalado
   - [x] 3.6 Implementar sanitizador anti prompt-injection (zero-width chars, normalización Unicode, detección de patrones imperativos) — TDD con corpus de strings maliciosos; integrado en pipeline antes de Claude
-  - [x] 3.7 Implementar extracción Claude con tool-use/JSON schema obligatorio, portando los prompts de `ClaudeDocumentService.swift` y el diccionario `insuranceCustomWords` (~200 términos) para post-corrección
+  - [x] 3.7 Implementar extracción Claude con tool-use/JSON schema obligatorio, portando los prompts de `ClaudeDocumentService.swift` y el diccionario `insuranceCustomWords` (~200 términos) para post-corrección — **jun 2026:** `policy_lexicon.py` (ES/EN/PT LATAM); ruta **vision** para PDF escaneado; heurística `hasNoExpiration`; merge completo de campos en `extract.py`
   - [x] 3.8 Portar los regex de `DocumentProcessingService+Extraction.swift` como validadores post-IA (números de póliza plausibles, fechas coherentes, montos en rango) con score de confianza por campo — TDD
   - [x] 3.9 Job queue con reintentos (máx 3, backoff), timeout, estados en Firestore y manejo de fallos con mensaje accionable al usuario — **hecho jun 2026:** `invokeWorkerWithRetries` (1s/3s/9s) + estado `failed` con mensaje ES
   - [x] 3.10 Construir golden set: ~20 pólizas reales (incl. Cancer Bancolombia) con JSON esperado; workflow CI con métrica ≥95% en campos críticos como gate — **hecho jun 2026:** `worker/tests/golden/manifest.json` (20 casos + 3 PDF fixtures), `test_golden.py`, `.github/workflows/golden-ocr.yml`; PDFs reales de producción pendientes sustituir fixtures sintéticos
   - [x] 3.11 UI de estados de procesamiento en vivo (listener Firestore): subiendo → extrayendo → analizando → listo, con micro-interacciones emil-design-eng — **hecho jun 2026:** `DocumentProcessingListener` + barra de progreso + transiciones 200ms + `prefers-reduced-motion`
-  - [x] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto — **hecho jun 2026:** split-view + badges + visor pdf.js con overlay bbox al focus/hover; requiere ODL bboxes en extracción real para ver resaltados en prod
+  - [x] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto — **hecho jun 2026:** split-view + badges + visor pdf.js (`public/pdf.worker.mjs`, sin iframe Storage); parseo extracción `parse-document-extraction.ts`; bboxes ODL cuando existan
   - [x] 3.13 Flujo C — documentos adicionales a póliza existente: detección de diffs (ej. endoso con nueva vigencia) + banner "¿actualizar la póliza?" con diff visible — **hecho jun 2026:** panel en detalle (incl. vencida), upload multi-doc, `computePolicyExtractionDiff` + `PolicyUpdatePrompt` en revisión; merge extracciones por confianza (`mergePolicyExtractions`)
   - [ ] 3.14 Revisión con agentes (security-reviewer + python-reviewer + typescript-reviewer + Bugbot) y commit de cierre
 
@@ -269,7 +273,8 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - [x] **Root layout App Router (jun 2026):** `<html>`/`<body>` únicos en `app/layout.tsx`; `[locale]/layout.tsx` solo proveedores i18n/auth
 
 - [x] **Extracción real:** OpenDataLoader → quality gate → Surya/MarkItDown → Claude tool-use (3.3–3.8) — **jun 2026:** pipeline + Docker ODL + bboxes; Surya prod real pendiente
-- [x] **Visor PDF avanzado:** resaltado de bboxes por campo en revisión (3.12) — pdf.js overlay; datos bbox dependen de ODL en worker
+- [x] **Visor PDF avanzado:** resaltado de bboxes por campo en revisión (3.12) — pdf.js + worker en `public/`; parseo extracción Firestore; datos bbox dependen de ODL en worker
+- [x] **Paridad campos extracción (jun 2026):** 20 campos extraíbles = wizard manual (`lib/schemas/extraction-field-keys.ts`, `worker/pipeline/extraction_fields.py`); tests de paridad TS + pytest; policyType incluye pet/funeral/dental/business
 - [ ] **FCM end-to-end:** `NEXT_PUBLIC_FIREBASE_VAPID_KEY` + envío en `sendExpiryReminders` y al job `ready` (5.6, 5.8)
 - [ ] **Share completo:** ~~email Resend al destinatario, revocación UI, `view_download` (4.8)~~ hecho jun 2026; E2E share pendiente
 - [ ] **GDPR completo:** signed URLs de documentos en export + audit log delete (5.10)

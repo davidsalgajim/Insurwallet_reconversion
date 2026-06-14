@@ -45,6 +45,41 @@ describe('policies helpers', () => {
     expect(data.updatedAt).toBeInstanceOf(Timestamp)
   })
 
+  it('policyToFirestoreData omits undefined optional fields for Firestore', () => {
+    const policy = buildPolicyFromInput(baseInput, new Date('2025-06-01'))
+    const data = policyToFirestoreData(policy)
+
+    expect(data).not.toHaveProperty('coverages')
+    expect(data).not.toHaveProperty('beneficiaries')
+    expect(data).not.toHaveProperty('exclusions')
+    expect(data).not.toHaveProperty('waitingPeriods')
+    expect(Object.values(data)).not.toContain(undefined)
+  })
+
+  it('policyToFirestoreData strips undefined nested entry fields', () => {
+    const policy = buildPolicyFromInput(
+      {
+        ...baseInput,
+        benefitEntries: [
+          {
+            name: 'Asistencia',
+            description: undefined,
+            category: 'travel',
+          },
+        ],
+        beneficiaryEntries: [{ name: 'Ana', pct: 100, notes: undefined }],
+      },
+      new Date('2025-06-01')
+    )
+    const data = policyToFirestoreData(policy)
+
+    expect(data.benefitEntries).toEqual([
+      { name: 'Asistencia', category: 'travel' },
+    ])
+    expect(data.beneficiaryEntries).toEqual([{ name: 'Ana', pct: 100 }])
+    expect(Object.values(data)).not.toContain(undefined)
+  })
+
   it('parsePolicyDocument round-trips Firestore-shaped data', () => {
     const policy = buildPolicyFromInput(baseInput, new Date('2025-06-01'))
     const firestoreData = policyToFirestoreData(policy)
@@ -78,6 +113,26 @@ describe('policies helpers', () => {
     expect(updated.status).toBe('expiring')
     expect(updated.updatedAt).toEqual(now)
     expect(updated.policyNumber).toBe('POL-001')
+  })
+
+  it('mergePolicyUpdate does not overwrite existing optional fields with undefined', () => {
+    const existing = buildPolicyFromInput(
+      { ...baseInput, coverages: 'Hospitalización' },
+      new Date('2025-06-01')
+    )
+
+    const updated = mergePolicyUpdate(
+      existing,
+      { coverages: undefined, premium: 250_000 },
+      new Date('2025-06-02')
+    )
+
+    expect(updated.coverages).toBe('Hospitalización')
+    expect(updated.premium).toBe(250_000)
+    expect(policyToFirestoreData(updated).coverages).toBe('Hospitalización')
+    expect(Object.values(policyToFirestoreData(updated))).not.toContain(
+      undefined
+    )
   })
 
   it('parsePolicyDocument recomputes stale stored status on read', () => {

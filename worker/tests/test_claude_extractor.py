@@ -74,10 +74,13 @@ def test_extract_policy_fields_uses_tool_use_and_wraps_document():
         "name": "extract_policy_fields",
     }
     user_content = client.messages.last_kwargs["messages"][0]["content"]
-    assert "<document_data>" in user_content
+    user_text = user_content[0]["text"] if isinstance(user_content, list) else user_content
+    assert "<document_data>" in user_text
+    assert "Portuguese" in user_text
 
 
-def test_extract_policy_fields_requires_api_key_without_client():
+def test_extract_policy_fields_requires_api_key_without_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     with pytest.raises(ClaudeExtractionError, match="ANTHROPIC_API_KEY"):
         extract_policy_fields("some text", api_key="")
 

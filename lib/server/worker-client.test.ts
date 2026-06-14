@@ -83,4 +83,27 @@ describe('worker-client', () => {
 
     expect(parsed.extraction?.fields.insurerName).toBe('Mapfre')
   })
+
+  it('accepts null bboxes from worker extraction payload', () => {
+    const parsed = WorkerProcessResponseSchema.parse({
+      job_id: 'job-2',
+      status: 'completed',
+      message: 'ok',
+      word_count: 388,
+      pipeline_method: 'surya',
+      pipeline_steps: ['surya', 'claude'],
+      has_suspicious_content: false,
+      extraction: {
+        fields: { insurerName: 'Zurich' },
+        confidence: { insurerName: 'high' },
+        bboxes: null,
+        method: 'surya',
+        extractedAt: '2026-06-14T15:07:48.786495+00:00',
+      },
+    })
+
+    const extraction = parseWorkerExtraction(parsed.extraction!)
+    expect(extraction.fields.insurerName).toBe('Zurich')
+    expect(extraction.bboxes).toBeUndefined()
+  })
 })

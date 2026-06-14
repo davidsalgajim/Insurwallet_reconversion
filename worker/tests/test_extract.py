@@ -16,10 +16,12 @@ SAMPLE_POLICY_TEXT = (
     "Tomador: Juan Pérez\n"
     "Prima anual: COP $1.200.000\n"
     "Vigencia: 01/01/2025 - 31/12/2025\n"
-    + " cobertura clausulado beneficiario deducible certificado " * 8
+    + " cobertura clausulado beneficiario deducible certificado prima aseguradora tomador poliza seguro "
+    * 15
 )
 
 
+@patch("pipeline.extract.run_surya_ocr")
 @patch("pipeline.extract.extract_policy_fields")
 @patch("pipeline.extract.download_document_bytes")
 @patch("pipeline.extract.extract_pdf_full")
@@ -27,10 +29,12 @@ def test_extract_document_runs_sanitize_and_claude(
     mock_pdf_full,
     mock_download,
     mock_claude,
+    mock_surya,
 ):
     from pipeline.text_extractors import PdfExtractResult
 
     mock_download.return_value = b"%PDF-1.4 fake"
+    mock_surya.return_value = ("", "surya")
     mock_pdf_full.return_value = PdfExtractResult(
         text=SAMPLE_POLICY_TEXT,
         backend="pymupdf",
@@ -55,6 +59,46 @@ def test_extract_document_runs_sanitize_and_claude(
     mock_claude.assert_called_once()
     sanitized_arg = mock_claude.call_args.kwargs.get("sanitized_text") or mock_claude.call_args[0][0]
     assert "Bancolombia" in sanitized_arg
+
+
+@patch("pipeline.extract.run_surya_ocr")
+@patch("pipeline.extract.extract_policy_fields")
+@patch("pipeline.extract.download_document_bytes")
+@patch("pipeline.extract.extract_pdf_full")
+def test_extract_document_merges_non_validated_fields(
+    mock_pdf_full,
+    mock_download,
+    mock_claude,
+    mock_surya,
+):
+    from pipeline.text_extractors import PdfExtractResult
+
+    mock_download.return_value = b"%PDF-1.4 fake"
+    mock_surya.return_value = ("", "surya")
+    mock_pdf_full.return_value = PdfExtractResult(
+        text=SAMPLE_POLICY_TEXT,
+        backend="pymupdf",
+    )
+    mock_claude.return_value = SimpleNamespace(
+        fields={
+            "insurerName": "Bancolombia Seguros",
+            "policyNumber": "POL-12345678",
+            "holderName": "Juan Pérez",
+            "startDate": "2025-03-28",
+            "endDate": "2025-03-28",
+            "hasNoExpiration": True,
+            "policyType": "life",
+            "beneficiaryEntries": [{"name": "Banco", "pct": 100}],
+        }
+    )
+
+    result = extract_document("users/u/policies/p/docs/d/policy.pdf")
+
+    fields = result.extraction["fields"]
+    assert fields.get("hasNoExpiration") is True
+    assert "endDate" not in fields
+    assert fields.get("policyType") == "life"
+    assert fields.get("beneficiaryEntries")
 
 
 @patch("pipeline.extract.download_document_bytes")

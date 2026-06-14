@@ -48,9 +48,16 @@ service cloud.firestore {
       );
     }
 
+    function isAllowedDocumentMimeType(mimeType) {
+      return mimeType == 'application/pdf'
+        || mimeType == 'image/jpeg'
+        || mimeType == 'image/png'
+        || mimeType == 'image/webp';
+    }
+
     function isValidDocumentData(policyId, docId, data) {
       return data.keys().hasAll(['storagePath', 'mimeType'])
-        && data.mimeType == 'application/pdf'
+        && isAllowedDocumentMimeType(data.mimeType)
         && isValidDocumentStoragePath(policyId, docId, data.storagePath);
     }
 

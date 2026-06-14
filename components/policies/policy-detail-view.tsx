@@ -16,6 +16,7 @@ import { useParams } from 'next/navigation'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { DeletePolicyDialog } from '@/components/policies/delete-policy-dialog'
+import { AddPolicyDocumentsPanel } from '@/components/policies/add-policy-documents-panel'
 import { BeneficiariesPanel } from '@/components/policies/beneficiaries-panel'
 import { PolicySharesPanel } from '@/components/policies/policy-shares-panel'
 import { SharePolicyDialog } from '@/components/policies/share-policy-dialog'
@@ -344,6 +345,15 @@ export function PolicyDetailView() {
               </p>
             ) : null}
           </div>
+
+          {isOwner ? (
+            <div className="mb-4">
+              <AddPolicyDocumentsPanel
+                policyId={policy.id}
+                isExpired={policy.status === 'expired'}
+              />
+            </div>
+          ) : null}
 
           {isOwner ? (
             <div className="elevated-card mb-4 space-y-4 p-6">

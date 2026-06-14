@@ -32,6 +32,7 @@ import {
 } from '@/lib/schemas/policy'
 import { resolveEndDateForStorage } from '@/lib/utils/policy-dates'
 import { computePolicyStatus } from '@/lib/utils/policy-status'
+import { stripUndefined } from '@/lib/utils/strip-undefined'
 
 export type PolicyDocument = Policy & { id: string }
 
@@ -200,13 +201,13 @@ export function firestoreDateToDate(value: unknown): Date {
 }
 
 export function policyToFirestoreData(policy: Policy): Record<string, unknown> {
-  return {
+  return stripUndefined({
     ...policy,
     startDate: Timestamp.fromDate(policy.startDate),
     endDate: Timestamp.fromDate(policy.endDate),
     createdAt: Timestamp.fromDate(policy.createdAt),
     updatedAt: Timestamp.fromDate(policy.updatedAt),
-  }
+  })
 }
 
 export function parsePolicyDocument(
@@ -242,20 +243,24 @@ export function mergePolicyUpdate(
   now: Date = new Date()
 ): Policy {
   const parsed = UpdatePolicyInputSchema.parse(input)
-  const startDate = parsed.startDate ?? existing.startDate
-  const hasNoExpiration = parsed.hasNoExpiration ?? existing.hasNoExpiration
+  const definedUpdates = stripUndefined(parsed)
+  const startDate = definedUpdates.startDate ?? existing.startDate
+  const hasNoExpiration =
+    definedUpdates.hasNoExpiration ?? existing.hasNoExpiration
   const endDate = resolveEndDateForStorage(
-    parsed.endDate ?? existing.endDate,
+    definedUpdates.endDate ?? existing.endDate,
     hasNoExpiration
   )
 
   return {
     ...existing,
-    ...parsed,
+    ...definedUpdates,
     startDate,
     endDate,
     hasNoExpiration,
-    agent: parsed.agent ? resolveAgent(parsed.agent) : existing.agent,
+    agent: definedUpdates.agent
+      ? resolveAgent(definedUpdates.agent)
+      : existing.agent,
     status: computePolicyStatus(startDate, endDate, now, hasNoExpiration),
     updatedAt: now,
   }

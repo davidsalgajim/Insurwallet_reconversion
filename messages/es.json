@@ -178,9 +178,9 @@
       "emailNotVerifiedYet": "Aún no detectamos la verificación. Espera un momento y vuelve a intentar."
     },
     "legalConsent": {
-      "registerLabel": "Acepto los {terms} y la {privacy}, y autorizo el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Habeas Data).",
+      "registerLabel": "Acepto los <terms>Términos y Condiciones</terms> y la <privacy>Política de Privacidad</privacy>, y autorizo el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Habeas Data).",
       "registerRequired": "Debes aceptar los términos y la política de privacidad para continuar.",
-      "loginNotice": "Al continuar, aceptas los {terms} y la {privacy}.",
+      "loginNotice": "Al continuar, aceptas los <terms>Términos y Condiciones</terms> y la <privacy>Política de Privacidad</privacy>.",
       "termsLink": "Términos y Condiciones",
       "privacyLink": "Política de Privacidad"
     }
@@ -237,7 +237,10 @@
       "beneficiaryObservations": "Observaciones (opcional)",
       "beneficiaryObservationsPlaceholder": "Notas adicionales",
       "beneficiaryPctTotal": "Total asignado: {pct}%",
-      "beneficiaryPctWarning": "La suma supera 100%. Revisa los porcentajes antes de guardar."
+      "beneficiaryPctWarning": "La suma supera 100%. Revisa los porcentajes antes de guardar.",
+      "supportingTitle": "Documentos de respaldo (opcional)",
+      "supportingDesc": "Puedes adjuntar carátula, condicionado u otros PDF que respalden este seguro. Se procesarán con IA en segundo plano.",
+      "supportingUploadFailed": "La póliza se guardó, pero algunos documentos no se subieron. Puedes agregarlos desde el detalle."
     },
     "tabs": {
       "aria": "Secciones de pólizas",
@@ -378,31 +381,58 @@
     "upload": {
       "title": "Nueva póliza",
       "subtitle": "Paso 2 de 4 — sube tu documento PDF",
+      "subtitleMulti": "Paso 2 de 4 — sube los documentos de tu póliza",
       "sectionTitle": "Documento de la póliza",
+      "sectionTitleMulti": "Documentos de la póliza",
       "sectionDesc": "Sube el PDF de tu póliza. Extraeremos los datos con IA; tú revisarás y confirmarás antes de guardar.",
+      "sectionDescMulti": "Sube uno o varios PDF (carátula, condicionado, endoso, renovación). Cada archivo se procesa por separado y fusionamos los datos con mayor confianza en la revisión.",
       "dropzoneTitle": "Arrastra tu PDF aquí",
+      "dropzoneTitleMulti": "Arrastra tus documentos aquí",
       "dropzoneHint": "PDF o foto (JPG/PNG), máximo {maxSize} MB. También puedes hacer clic para elegir un archivo.",
+      "dropzoneHintMulti": "PDF o foto (JPG/PNG), máx. {maxSize} MB por archivo, hasta {maxFiles} archivos.",
       "dropzoneAria": "Zona para subir PDF o foto de póliza",
-      "browseFiles": "Elegir archivo",
+      "fileListAria": "Archivos seleccionados",
+      "documentRoleLabel": "Tipo de documento",
+      "documentRoleAuto": "Detectar automáticamente",
+      "documentRoles": {
+        "cover": "Carátula",
+        "conditions": "Condicionado",
+        "endorsement": "Endoso",
+        "renewal": "Renovación",
+        "other": "Otro"
+      },
+      "browseFiles": "Elegir archivos",
       "takePhoto": "Tomar foto",
-      "removeFile": "Quitar archivo",
+      "removeFile": "Quitar",
       "startUpload": "Subir y procesar",
+      "startUploadMulti": "Subir {count, plural, one {# documento} other {# documentos}} y procesar",
       "validating": "Validando…",
       "optimizing": "Optimizando documento…",
       "uploading": "Subiendo…",
       "back": "Volver",
       "authRequired": "Inicia sesión para subir documentos a tu cartera.",
       "confirmNote": "Tu PDF está guardado de forma segura. La extracción con IA estará disponible en la pantalla de revisión — ningún dato se guardará sin tu confirmación.",
+      "confirmNoteMulti": "Tus documentos están guardados de forma segura. Cuando termine el procesamiento, revisarás los datos fusionados antes de confirmar.",
       "viewDraft": "Ver borrador",
+      "protectedPdfWarning": "No subas PDFs protegidos con contraseña. Si el documento está bloqueado, no podremos extraer la información.",
       "errors": {
         "emptyFile": "El archivo está vacío.",
         "tooLarge": "El archivo supera el límite de 2 MB tras optimización.",
+        "tooManyFiles": "Puedes subir como máximo 10 archivos por lote.",
         "sourceTooLarge": "El archivo supera 20 MB. Usa un documento más pequeño.",
         "compressionFailed": "No se pudo optimizar el documento. Intenta con otro archivo.",
         "compressionTooLarge": "No pudimos reducir el documento bajo 2 MB. Recorta páginas o usa una foto más ligera.",
         "invalidType": "Solo se permiten PDF o imágenes JPG/PNG/WebP.",
         "invalidPdf": "El archivo no parece ser un PDF válido.",
+        "protectedPdf": "Este PDF está protegido con contraseña. Sube una copia sin protección.",
         "uploadFailed": "No se pudo subir el documento. Intenta de nuevo.",
+        "permissionDenied": "No tienes permiso para subir este documento. Verifica tu sesión o App Check en desarrollo.",
+        "appCheckRequired": "Firebase App Check bloqueó la subida. En local, activa NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN o usa emuladores.",
+        "networkError": "Error de red al subir. Revisa tu conexión e inténtalo de nuevo.",
+        "uploadCanceled": "La subida fue cancelada.",
+        "quotaExceeded": "Se alcanzó el límite de almacenamiento.",
+        "invalidDocumentMetadata": "Los metadatos del documento no son válidos. Intenta con otro archivo.",
+        "processingJobFailed": "El archivo se subió, pero no pudimos encolar el procesamiento. Revisa la configuración del servidor.",
         "consentDeclined": "Rechazaste el procesamiento con IA en la nube. La extracción automática de PDF no está disponible.",
         "consentDeclinedHint": "Puedes cambiar tu preferencia en",
         "consentSettingsLink": "Configuración → Legal"
@@ -412,12 +442,36 @@
         "pendingNote": "Tu documento está en cola. Te avisaremos cuando la extracción esté lista para revisar.",
         "ready": "Extracción lista — puedes revisar y confirmar los datos.",
         "failed": "No pudimos procesar el documento. Intenta subirlo de nuevo.",
+        "failedProtectedPdf": "Este PDF está protegido con contraseña. Sube una copia sin protección.",
         "waitingJob": "Esperando cola de procesamiento…",
+        "jobPermissionDenied": "No pudimos leer el estado del procesamiento. Recarga la página; si persiste, contacta soporte.",
+        "multiProgress": "Procesados {ready} de {total} documentos",
+        "allReady": "Todos los documentos están listos para revisión.",
+        "goToReview": "Ir a revisión",
         "steps": {
           "pending": "Documento recibido",
           "extracting": "Extrayendo texto del PDF",
           "analyzing": "Analizando con IA",
           "ready": "Listo para revisión"
+        }
+      }
+    },
+    "documents": {
+      "title": "Documentos adjuntos",
+      "subtitle": "Carátula, condicionado, endosos y renovaciones de esta póliza.",
+      "addDocuments": "Agregar documento",
+      "addRenewalDocs": "Actualizar con nuevos papeles",
+      "uploadAndProcess": "Subir y procesar",
+      "expiredRenewalBanner": "Esta póliza está vencida. Puedes subir documentos renovados para actualizar vigencia y coberturas tras revisar los cambios.",
+      "updatePrompt": {
+        "title": "¿Actualizar la póliza con estos datos?",
+        "description": "Los nuevos documentos sugieren cambios respecto a la póliza actual. Revisa el diff antes de confirmar.",
+        "change": "Actual: {current} → Propuesto: {proposed}",
+        "fields": {
+          "endDate": "Fin de vigencia",
+          "startDate": "Inicio de vigencia",
+          "premium": "Prima",
+          "coverages": "Coberturas (cantidad)"
         }
       }
     },
@@ -442,6 +496,7 @@
       "confirmNote": "Ningún dato se guardará en tu cartera hasta que confirmes. Los campos con confianza baja requieren revisión manual.",
       "draftNotice": "Esta póliza está en borrador. Revisa y corrige los campos antes de confirmar.",
       "draftSaved": "Borrador guardado. Puedes continuar editando más tarde.",
+      "mergedFieldsHint": "Los campos combinan todos los documentos (mayor confianza). Usa las pestañas para ver cada PDF.",
       "saveDraft": "Guardar borrador",
       "confirmPolicy": "Confirmar póliza",
       "errors": {
@@ -885,6 +940,7 @@
       "title": "Procesamiento con IA en la nube",
       "description": "Para extraer datos de tu PDF y responder con MarIAna avanzada, el documento o tu pregunta se enviarán de forma segura a nuestros servicios de IA (Claude).",
       "consequences": "Si no aceptas, podrás usar InsurWallet con datos manuales y MarIAna Tier 0 (respuestas locales sin IA en nube). La extracción automática de PDF y las respuestas avanzadas quedarán bloqueadas.",
+      "protectedPdfNote": "Los PDFs protegidos con contraseña no se pueden procesar. Sube una copia sin bloqueo.",
       "privacyLink": "Más en privacidad",
       "accept": "Acepto y continuar",
       "decline": "No aceptar",

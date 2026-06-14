@@ -82,7 +82,11 @@ export function mergeBasicValuesFromExtraction(
     startDate: fields.startDate
       ? toDateInputValue(fields.startDate)
       : base.startDate,
-    endDate: fields.endDate ? toDateInputValue(fields.endDate) : base.endDate,
+    endDate: fields.endDate
+      ? toDateInputValue(fields.endDate)
+      : fields.hasNoExpiration
+        ? ''
+        : base.endDate,
     hasNoExpiration: fields.hasNoExpiration ?? base.hasNoExpiration,
     premium:
       fields.premium != null && fields.premium > 0

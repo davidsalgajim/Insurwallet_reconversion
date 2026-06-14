@@ -16,6 +16,9 @@ export type PolicyUploadMimeType = (typeof POLICY_UPLOAD_MIME_TYPES)[number]
 
 export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 
+/** Max files per multi-document upload batch */
+export const MAX_UPLOAD_FILES = 10
+
 /** Max size accepted before client-side compression is attempted */
 export const MAX_PRE_COMPRESS_BYTES = 20 * 1024 * 1024
 
@@ -96,6 +99,13 @@ export async function validatePolicyUploadFile(
   const mimeType = resolveUploadMimeType(sourceParsed.data)
   if (!mimeType) {
     return { ok: false, errorKey: 'errors.invalidType' }
+  }
+
+  if (mimeType === PDF_MIME_TYPE) {
+    const { isPdfEncrypted } = await import('@/lib/utils/pdf-encryption')
+    if (await isPdfEncrypted(sourceParsed.data)) {
+      return { ok: false, errorKey: 'errors.protectedPdf' }
+    }
   }
 
   const { preparePolicyUploadFile } =
@@ -180,3 +190,61 @@ export function isImageUploadMimeType(
 }
 
 export { IMAGE_EXTENSIONS }
+
+export type MultiFileValidationItem =
+  | { ok: true; file: PolicyUploadFile; mimeType: PolicyUploadMimeType }
+  | { ok: false; fileName: string; errorKey: string }
+
+export type MultiFileValidationResult =
+  | {
+      ok: true
+      items: Array<{ file: PolicyUploadFile; mimeType: PolicyUploadMimeType }>
+    }
+  | { ok: false; items: MultiFileValidationItem[] }
+
+export async function validatePolicyUploadFiles(
+  files: File[]
+): Promise<MultiFileValidationResult> {
+  if (files.length === 0) {
+    return {
+      ok: false,
+      items: [{ ok: false, fileName: '', errorKey: 'errors.emptyFile' }],
+    }
+  }
+
+  if (files.length > MAX_UPLOAD_FILES) {
+    return {
+      ok: false,
+      items: [
+        {
+          ok: false,
+          fileName: files[0]?.name ?? '',
+          errorKey: 'errors.tooManyFiles',
+        },
+      ],
+    }
+  }
+
+  const items: MultiFileValidationItem[] = []
+  const valid: Array<{
+    file: PolicyUploadFile
+    mimeType: PolicyUploadMimeType
+  }> = []
+
+  for (const file of files) {
+    const result = await validatePolicyUploadFile(file)
+    if (result.ok) {
+      valid.push({ file: result.file, mimeType: result.mimeType })
+      items.push({ ok: true, file: result.file, mimeType: result.mimeType })
+    } else {
+      items.push({ ok: false, fileName: file.name, errorKey: result.errorKey })
+    }
+  }
+
+  const failed = items.filter((item) => !item.ok)
+  if (failed.length > 0) {
+    return { ok: false, items }
+  }
+
+  return { ok: true, items: valid }
+}

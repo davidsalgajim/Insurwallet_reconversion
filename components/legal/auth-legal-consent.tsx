@@ -82,28 +82,32 @@ type LegalConsentRichTextProps = {
 function LegalConsentRichText({ messageKey }: LegalConsentRichTextProps) {
   const t = useTranslations('auth.legalConsent')
 
-  return t.rich(messageKey, {
-    terms: (chunks) => (
-      <Link
-        href="/legal/terms"
-        className={legalLinkClassName}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {chunks}
-      </Link>
-    ),
-    privacy: (chunks) => (
-      <Link
-        href="/legal/privacy"
-        className={legalLinkClassName}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {chunks}
-      </Link>
-    ),
-  })
+  return (
+    <>
+      {t.rich(messageKey, {
+        terms: (chunks) => (
+          <Link
+            href="/legal/terms"
+            className={legalLinkClassName}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {chunks}
+          </Link>
+        ),
+        privacy: (chunks) => (
+          <Link
+            href="/legal/privacy"
+            className={legalLinkClassName}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {chunks}
+          </Link>
+        ),
+      })}
+    </>
+  )
 }
 
 export async function persistOnboardingLegalConsent(

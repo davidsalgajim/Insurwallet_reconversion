@@ -2,12 +2,16 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import {
+  extractionFieldsToAdminFirestore,
+  policyToAdminFirestoreData,
+} from '@/lib/firebase/policies-admin'
+import {
   mergePolicyUpdate,
   parsePolicyDocument,
-  policyToFirestoreData,
   type PolicyDocument,
 } from '@/lib/firebase/policies'
 import { JOBS_COLLECTION } from '@/lib/firebase/jobs'
+import { parseDocumentExtraction } from '@/lib/firebase/parse-document-extraction'
 import { extractionFieldsToCreateInput } from '@/lib/policies/extraction-mapping'
 import {
   PolicyExtractionSchema,
@@ -17,6 +21,7 @@ import type { ProcessingState } from '@/lib/schemas/document'
 import type { Job } from '@/lib/schemas/job'
 import {
   invokeWorkerWithRetries,
+  mapWorkerFailureMessage,
   parseWorkerExtraction,
   USER_FACING_JOB_ERRORS,
 } from '@/lib/server/worker-client'
@@ -111,7 +116,8 @@ export type ProcessDocumentJobResult = {
 
 export async function processDocumentJob(
   jobId: string,
-  actorUid: string
+  actorUid: string,
+  options?: { force?: boolean }
 ): Promise<ProcessDocumentJobResult> {
   const db = getAdminFirestore()
   const jobRef = db.collection(JOBS_COLLECTION).doc(jobId)
@@ -136,18 +142,18 @@ export async function processDocumentJob(
     .collection('documents')
     .doc(job.docId)
 
-  if (job.processingState === 'ready') {
+  if (job.processingState === 'ready' && !options?.force) {
     const docSnap = await docRef.get()
     const stored = docSnap.data()?.extraction
 
     if (stored) {
-      return {
-        jobId,
-        processingState: 'ready',
-        extraction: PolicyExtractionSchema.parse({
-          ...stored,
-          extractedAt: stored.extractedAt?.toDate?.() ?? stored.extractedAt,
-        }),
+      const extraction = parseDocumentExtraction({ extraction: stored })
+      if (extraction) {
+        return {
+          jobId,
+          processingState: 'ready',
+          extraction,
+        }
       }
     }
 
@@ -219,10 +225,7 @@ export async function processDocumentJob(
     pipelineMethod = extraction.method
     pipelineSteps = workerResult.pipeline_steps ?? [pipelineMethod]
   } catch (error) {
-    const message = error instanceof Error ? error.message : ''
-    const userMessage = message.includes('WORKER_URL')
-      ? USER_FACING_JOB_ERRORS.workerUnavailable
-      : USER_FACING_JOB_ERRORS.extractionFailed
+    const userMessage = mapWorkerFailureMessage(error)
 
     await updateJobAndDocumentState(job, 'failed', {
       attempts: attemptNumber,
@@ -233,55 +236,70 @@ export async function processDocumentJob(
 
   await updateJobAndDocumentState(job, 'analyzing')
 
-  const policySnap = await db.collection('policies').doc(job.policyId).get()
+  try {
+    const policySnap = await db.collection('policies').doc(job.policyId).get()
 
-  if (!policySnap.exists) {
-    await updateJobAndDocumentState(job, 'failed', {
-      error: USER_FACING_JOB_ERRORS.policyNotFound,
+    if (!policySnap.exists) {
+      await updateJobAndDocumentState(job, 'failed', {
+        error: USER_FACING_JOB_ERRORS.policyNotFound,
+      })
+      throw new Error(USER_FACING_JOB_ERRORS.policyNotFound)
+    }
+
+    const policy = parsePolicyDocument(
+      policySnap.id,
+      policySnap.data() as Record<string, unknown>
+    )
+    const updatedPolicy = mergeExtractionIntoPolicy(policy, extraction)
+
+    await db.runTransaction(async (transaction) => {
+      transaction.update(
+        db.collection('policies').doc(job.policyId),
+        policyToAdminFirestoreData(updatedPolicy)
+      )
+
+      transaction.set(
+        docRef,
+        {
+          extraction: {
+            fields: extractionFieldsToAdminFirestore(extraction.fields),
+            confidence: extraction.confidence,
+            ...(extraction.bboxes ? { bboxes: extraction.bboxes } : {}),
+            method: pipelineMethod,
+            extractedAt: Timestamp.fromDate(extraction.extractedAt),
+          },
+          processing: {
+            state: 'ready',
+            jobId,
+            method: pipelineMethod,
+          },
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      )
+
+      transaction.update(jobRef, {
+        processingState: 'ready',
+        state: 'completed',
+        pipeline: pipelineSteps.length > 0 ? pipelineSteps : [pipelineMethod],
+        error: FieldValue.delete(),
+        updatedAt: Timestamp.now(),
+      })
     })
-    throw new Error(USER_FACING_JOB_ERRORS.policyNotFound)
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : USER_FACING_JOB_ERRORS.generic
+
+    if (message !== USER_FACING_JOB_ERRORS.policyNotFound) {
+      await updateJobAndDocumentState(job, 'failed', {
+        attempts: attemptNumber,
+        error: USER_FACING_JOB_ERRORS.generic,
+      })
+      throw new Error(USER_FACING_JOB_ERRORS.generic)
+    }
+
+    throw error
   }
-
-  const policy = parsePolicyDocument(
-    policySnap.id,
-    policySnap.data() as Record<string, unknown>
-  )
-  const updatedPolicy = mergeExtractionIntoPolicy(policy, extraction)
-
-  await db.runTransaction(async (transaction) => {
-    transaction.update(
-      db.collection('policies').doc(job.policyId),
-      policyToFirestoreData(updatedPolicy)
-    )
-
-    transaction.set(
-      docRef,
-      {
-        extraction: {
-          fields: extraction.fields,
-          confidence: extraction.confidence,
-          ...(extraction.bboxes ? { bboxes: extraction.bboxes } : {}),
-          method: pipelineMethod,
-          extractedAt: Timestamp.fromDate(extraction.extractedAt),
-        },
-        processing: {
-          state: 'ready',
-          jobId,
-          method: pipelineMethod,
-        },
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    )
-
-    transaction.update(jobRef, {
-      processingState: 'ready',
-      state: 'completed',
-      pipeline: pipelineSteps.length > 0 ? pipelineSteps : [pipelineMethod],
-      error: FieldValue.delete(),
-      updatedAt: Timestamp.now(),
-    })
-  })
 
   const docSnap = await docRef.get()
   const fileName =

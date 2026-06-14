@@ -35,7 +35,9 @@ import {
   mergeBasicValuesFromExtraction,
   mergeStructuredRowsFromExtraction,
 } from '@/lib/policies/review-form-state'
+import { computePolicyExtractionDiff } from '@/lib/policies/policy-diff'
 import type { PolicyExtraction } from '@/lib/schemas/extraction'
+import { PolicyUpdatePrompt } from '@/components/policies/policy-update-prompt'
 
 type PolicyReviewFormProps = {
   policy: PolicyDocument
@@ -80,11 +82,16 @@ export function PolicyReviewForm({
       key: `beneficiary-${index}`,
     }))
   )
+
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const isDraft = policy.policyNumber.startsWith('DRAFT-')
+  const renewalDiffs =
+    !isDraft && extraction
+      ? computePolicyExtractionDiff(policy, extraction.fields)
+      : []
 
   async function persistPolicy(mode: 'draft' | 'confirm') {
     setFormError(null)
@@ -216,6 +223,8 @@ export function PolicyReviewForm({
             {t('draftNotice')}
           </p>
         ) : null}
+
+        <PolicyUpdatePrompt diffs={renewalDiffs} />
 
         <PolicyBasicFields
           values={values}

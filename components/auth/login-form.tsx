@@ -24,6 +24,7 @@ import {
   signInWithGoogle,
   userNeedsEmailVerification,
 } from '@/lib/firebase/auth'
+import { createServerSession } from '@/lib/firebase/session-cookie'
 import { isEmailVerificationRequired } from '@/lib/firebase/email-verification-policy'
 import { type PreferredLanguage } from '@/lib/schemas/user'
 import { safeRedirect } from '@/lib/utils/safe-redirect'
@@ -63,6 +64,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         return
       }
 
+      await createServerSession(await user.getIdToken())
       await ensureLegalConsentAfterLogin()
       router.replace(destination)
     } catch (error) {

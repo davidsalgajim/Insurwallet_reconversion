@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase-admin/firestore'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import {
@@ -22,11 +22,28 @@ export async function createDocumentProcessingJobAdmin(
   input: CreateDocumentProcessingJobInput
 ): Promise<JobDocument> {
   const { jobId, job } = createDocumentProcessingJobInput(input)
+  const db = getAdminFirestore()
+  const jobRef = db.collection(JOBS_COLLECTION).doc(jobId)
+  const documentRef = db
+    .collection('policies')
+    .doc(input.policyId)
+    .collection('documents')
+    .doc(input.docId)
 
-  await getAdminFirestore()
-    .collection(JOBS_COLLECTION)
-    .doc(jobId)
-    .set(jobToAdminFirestoreData(job))
+  await db.runTransaction(async (transaction) => {
+    transaction.set(jobRef, jobToAdminFirestoreData(job))
+    transaction.set(
+      documentRef,
+      {
+        processing: {
+          state: 'pending',
+          jobId,
+        },
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    )
+  })
 
   return { id: jobId, ...job }
 }

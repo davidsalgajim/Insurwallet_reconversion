@@ -20,7 +20,7 @@ InsurWallet centraliza pólizas de seguro en un solo lugar seguro para usuarios 
 
 1. **Dashboard** — resumen de pólizas, alertas de vencimiento, acceso rápido a MarIAna
 2. **CRUD de pólizas** — manual o asistido por PDF
-3. **Pipeline de documentos** — upload → estados en vivo → revisión con confianza por campo
+3. **Pipeline de documentos** — upload → estados en vivo → revisión con confianza por campo; PDF escaneado vía Claude vision; labels ES/EN/PT; **20 campos** extraíbles (paridad con wizard manual — ver `lib/schemas/extraction-field-keys.ts`)
 4. **MarIAna** — chat multi-agente read-only con citas a documentos
 5. **Compartir** — enlaces con permisos y expiración
 6. **Perfil / privacidad** — GDPR, exportar, eliminar
@@ -45,7 +45,7 @@ InsurWallet centraliza pólizas de seguro en un solo lugar seguro para usuarios 
 
 ## Strategic Design Principles
 
-1. **La IA propone, el usuario dispone** — nada se guarda sin revisión humana en extracción de documentos
+1. **La IA propone, el usuario dispone** — nada se guarda sin revisión humana en extracción de documentos; el PDF original permanece en Storage del usuario para consulta posterior
 2. **Estados siempre visibles** — procesamiento, confianza, errores y permisos compartidos
 3. **Continuidad con iOS** — misma paleta azul/cyan; light mode en la app; marketing con registro editorial claro (body blanco) y hero navy enmarcado; auth mantiene navy + glass card
 4. **Liquid glass con criterio** — solo en superficies flotantes (nav, paneles, chat, overlays), no en tablas ni formularios densos

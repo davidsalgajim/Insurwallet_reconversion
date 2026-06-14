@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils/cn'
 type DocumentProcessingStatusProps = {
   state: ProcessingState
   fileName: string
+  failureMessage?: string | null
   className?: string
 }
 
@@ -28,6 +29,7 @@ function stepIndex(state: ProcessingState): number {
 export function DocumentProcessingStatus({
   state,
   fileName,
+  failureMessage,
   className,
 }: DocumentProcessingStatusProps) {
   const t = useTranslations('policies.upload.processing')
@@ -101,7 +103,7 @@ export function DocumentProcessingStatus({
 
       {isFailed ? (
         <p className="text-sm text-[var(--primitive-danger)] motion-safe:animate-fade-up motion-reduce:animate-none">
-          {t('failed')}
+          {failureMessage ?? t('failed')}
         </p>
       ) : state === 'ready' ? (
         <p className="text-sm text-[var(--primitive-success)] motion-safe:animate-fade-up motion-reduce:animate-none">

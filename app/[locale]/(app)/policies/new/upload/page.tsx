@@ -8,28 +8,19 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { AppTopbar } from '@/components/layout/app-topbar'
 import { CloudAIConsentModal } from '@/components/legal/cloud-ai-consent-modal'
 import { useCloudAIConsent } from '@/components/legal/consent'
-import { DocumentProcessingListener } from '@/components/policies/document-processing-listener'
-import { PdfUploadZone } from '@/components/policies/pdf-upload-zone'
+import { MultiDocumentProcessingList } from '@/components/policies/multi-document-processing-list'
+import {
+  PdfUploadZone,
+  type SelectedUploadFile,
+} from '@/components/policies/pdf-upload-zone'
 import { PolicyWizardProgress } from '@/components/policies/policy-wizard-progress'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
-import {
-  createDraftPolicyForUpload,
-  registerUploadedDocument,
-} from '@/lib/firebase/documents'
-import { uploadPolicyPdf } from '@/lib/firebase/storage'
-import {
-  MAX_UPLOAD_BYTES,
-  validatePolicyUploadFile,
-} from '@/lib/schemas/upload'
+import { createDraftPolicyForUpload } from '@/lib/firebase/documents'
+import { uploadDocumentsToPolicy } from '@/lib/policies/document-upload'
+import { resolveUploadErrorKey } from '@/lib/policies/upload-errors'
 
-type UploadPhase =
-  | 'idle'
-  | 'validating'
-  | 'optimizing'
-  | 'uploading'
-  | 'processing'
-  | 'error'
+type UploadPhase = 'idle' | 'uploading' | 'processing' | 'error'
 
 export default function UploadPolicyPage() {
   const t = useTranslations('policies.upload')
@@ -44,20 +35,22 @@ export default function UploadPolicyPage() {
   } = useCloudAIConsent()
   const [consentOpen, setConsentOpen] = useState(false)
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<SelectedUploadFile[]>([])
   const [phase, setPhase] = useState<UploadPhase>('idle')
-  const [progress, setProgress] = useState(0)
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
+    {}
+  )
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
   const [policyId, setPolicyId] = useState<string | null>(null)
-  const [docId, setDocId] = useState<string | null>(null)
+  const [uploadedDocs, setUploadedDocs] = useState<
+    Array<{ docId: string; fileName: string; jobId?: string }>
+  >([])
 
-  const isBusy =
-    phase === 'validating' || phase === 'optimizing' || phase === 'uploading'
+  const isBusy = phase === 'uploading'
 
-  const handleFileSelect = useCallback(
-    (file: File | null) => {
-      setSelectedFile(file)
+  const handleFilesChange = useCallback(
+    (files: SelectedUploadFile[]) => {
+      setSelectedFiles(files)
       setErrorMessage(null)
       if (phase === 'error') {
         setPhase('idle')
@@ -67,27 +60,13 @@ export default function UploadPolicyPage() {
   )
 
   async function performUpload() {
-    if (!selectedFile || !user) return
+    if (selectedFiles.length === 0 || !user) return
 
     setErrorMessage(null)
-    setPhase('validating')
+    setPhase('uploading')
+    setUploadProgress({})
 
     try {
-      if (selectedFile.size > MAX_UPLOAD_BYTES) {
-        setPhase('optimizing')
-      }
-
-      const validation = await validatePolicyUploadFile(selectedFile)
-
-      if (!validation.ok) {
-        setErrorMessage(t(validation.errorKey))
-        setPhase('error')
-        return
-      }
-
-      setPhase('uploading')
-      setProgress(0)
-
       const [{ db, storage }] = await Promise.all([
         import('@/lib/firebase/client'),
       ])
@@ -95,44 +74,49 @@ export default function UploadPolicyPage() {
       const draftPolicy = await createDraftPolicyForUpload(db, {
         ownerUid: user.uid,
       })
-      const docId = crypto.randomUUID()
 
-      const { storagePath } = await uploadPolicyPdf({
+      const result = await uploadDocumentsToPolicy({
+        db,
         storage,
-        file: validation.file,
-        docId,
-        input: {
-          ownerUid: user.uid,
-          policyId: draftPolicy.id,
-          fileName: validation.file.name,
-          fileSize: validation.file.size,
-          mimeType: validation.mimeType,
+        ownerUid: user.uid,
+        policyId: draftPolicy.id,
+        documents: selectedFiles.map((item) => ({
+          localId: item.id,
+          file: item.file,
+          documentRole: item.documentRole,
+        })),
+        onFileProgress: (localId, progress) => {
+          setUploadProgress((current) => ({ ...current, [localId]: progress }))
         },
-        onProgress: ({ progress: value }) => setProgress(value),
       })
 
-      await registerUploadedDocument(db, {
-        policyId: draftPolicy.id,
-        docId,
-        fileName: validation.file.name,
-        storagePath,
-        fileSize: validation.file.size,
-        mimeType: validation.mimeType,
-      })
+      if (!result.ok) {
+        setErrorMessage(t(result.errorKey))
+        setPhase('error')
+        return
+      }
 
       setPolicyId(draftPolicy.id)
-      setDocId(docId)
-      setUploadedFileName(validation.file.name)
+      setUploadedDocs(
+        result.uploaded.map((item) => ({
+          docId: item.docId,
+          fileName: item.fileName,
+          jobId: item.jobId,
+        }))
+      )
+      setSelectedFiles([])
       setPhase('processing')
-      setSelectedFile(null)
-    } catch {
-      setErrorMessage(t('errors.uploadFailed'))
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[upload] performUpload failed', error)
+      }
+      setErrorMessage(t(resolveUploadErrorKey(error)))
       setPhase('error')
     }
   }
 
   function handleUpload() {
-    if (!selectedFile || !user) return
+    if (selectedFiles.length === 0 || !user) return
 
     if (!consentLoading && isDeclined) {
       setErrorMessage(t('errors.consentDeclined'))
@@ -169,28 +153,21 @@ export default function UploadPolicyPage() {
         onDecline={() => void handleConsentDecline()}
         onCancel={() => setConsentOpen(false)}
       />
-      <AppTopbar title={t('title')} subtitle={t('subtitle')} />
+      <AppTopbar title={t('title')} subtitle={t('subtitleMulti')} />
       <PolicyWizardProgress currentStep={2} />
 
-      {phase === 'processing' &&
-      uploadedFileName &&
-      user &&
-      policyId &&
-      docId ? (
+      {phase === 'processing' && user && policyId ? (
         <div className="space-y-6">
-          <DocumentProcessingListener
+          <MultiDocumentProcessingList
             ownerUid={user.uid}
             policyId={policyId}
-            docId={docId}
-            fileName={uploadedFileName}
-            onReady={() => {
-              router.push(`/policies/${policyId}/review`)
-            }}
+            documents={uploadedDocs}
+            reviewHref={`/policies/${policyId}/review`}
           />
 
           <div className="rounded-[var(--radius-card)] border border-accent/20 bg-accent/5 p-4">
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {t('confirmNote')}
+              {t('confirmNoteMulti')}
             </p>
           </div>
 
@@ -222,42 +199,41 @@ export default function UploadPolicyPage() {
         <div className="glass-panel space-y-6 p-6">
           <div>
             <h2 className="text-base font-semibold tracking-tight">
-              {t('sectionTitle')}
+              {t('sectionTitleMulti')}
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              {t('sectionDesc')}
+              {t('sectionDescMulti')}
             </p>
           </div>
 
           <PdfUploadZone
             disabled={isBusy || authLoading || !user}
-            selectedFile={selectedFile}
-            onFileSelect={handleFileSelect}
+            selectedFiles={selectedFiles}
+            onFilesChange={handleFilesChange}
             errorMessage={errorMessage}
+            showRoleSelector
           />
 
-          {phase === 'uploading' || phase === 'optimizing' ? (
-            <div className="space-y-2" aria-live="polite">
-              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                <span>
-                  {phase === 'optimizing' ? t('optimizing') : t('uploading')}
-                </span>
-                {phase === 'uploading' ? (
-                  <span>{Math.round(progress * 100)}%</span>
-                ) : null}
-              </div>
-              {phase === 'uploading' ? (
-                <div className="h-2 overflow-hidden rounded-full bg-white/60 ring-1 ring-border">
-                  <div
-                    className="h-full rounded-full bg-primary transition-[width] duration-200"
-                    style={{ width: `${Math.round(progress * 100)}%` }}
-                  />
+          {phase === 'uploading' ? (
+            <div className="space-y-3" aria-live="polite">
+              {selectedFiles.map((item) => (
+                <div key={item.id} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                    <span className="truncate">{item.file.name}</span>
+                    <span>
+                      {Math.round((uploadProgress[item.id] ?? 0) * 100)}%
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/60 ring-1 ring-border">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-200"
+                      style={{
+                        width: `${Math.round((uploadProgress[item.id] ?? 0) * 100)}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-              ) : (
-                <div className="h-2 overflow-hidden rounded-full bg-white/60 ring-1 ring-border">
-                  <div className="h-full w-1/2 animate-pulse rounded-full bg-primary/70" />
-                </div>
-              )}
+              ))}
             </div>
           ) : null}
 
@@ -291,16 +267,14 @@ export default function UploadPolicyPage() {
               type="button"
               variant="ink"
               className="rounded-[var(--radius-pill)]"
-              disabled={!selectedFile || isBusy || authLoading || !user}
+              disabled={
+                selectedFiles.length === 0 || isBusy || authLoading || !user
+              }
               onClick={handleUpload}
             >
-              {phase === 'validating'
-                ? t('validating')
-                : phase === 'optimizing'
-                  ? t('optimizing')
-                  : phase === 'uploading'
-                    ? t('uploading')
-                    : t('startUpload')}
+              {phase === 'uploading'
+                ? t('uploading')
+                : t('startUploadMulti', { count: selectedFiles.length })}
             </Button>
           </div>
         </div>

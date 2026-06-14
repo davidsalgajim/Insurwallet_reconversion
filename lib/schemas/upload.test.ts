@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   buildPolicyDocumentStoragePath,
   MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_FILES,
   PolicyUploadFileSchema,
   validatePdfMagicBytes,
   validatePolicyUploadFile,
+  validatePolicyUploadFiles,
 } from './upload'
 
 function makePdfFile(name: string, size: number, content = '%PDF-1.4\n'): File {
@@ -65,5 +67,38 @@ describe('upload schema', () => {
     expect(
       buildPolicyDocumentStoragePath('uid-1', 'pol-1', 'doc-1', 'My Policy.pdf')
     ).toBe('users/uid-1/policies/pol-1/docs/doc-1/My Policy.pdf')
+  })
+
+  it('rejects empty multi-file batches', async () => {
+    const result = await validatePolicyUploadFiles([])
+    expect(result.ok).toBe(false)
+  })
+
+  it('rejects batches over MAX_UPLOAD_FILES', async () => {
+    const files = Array.from({ length: MAX_UPLOAD_FILES + 1 }, (_, index) =>
+      makePdfFile(`policy-${index}.pdf`, 512)
+    )
+
+    const result = await validatePolicyUploadFiles(files)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.items[0]?.ok).toBe(false)
+      if (!result.items[0]?.ok) {
+        expect(result.items[0].errorKey).toBe('errors.tooManyFiles')
+      }
+    }
+  })
+
+  it('validates each file in a multi-file batch', async () => {
+    const files = [
+      makePdfFile('cover.pdf', 512),
+      makePdfFile('conditions.pdf', 768),
+    ]
+
+    const result = await validatePolicyUploadFiles(files)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.items).toHaveLength(2)
+    }
   })
 })

@@ -22,35 +22,33 @@ export function usePolicyDocuments(policyId: string | undefined) {
       return
     }
 
-    let cancelled = false
+    let unsubscribe: (() => void) | undefined
 
-    void (async () => {
-      setState((current) => ({ ...current, loading: true, error: null }))
+    void import('@/lib/firebase/client').then(({ db }) => {
+      void import('@/lib/firebase/documents').then(
+        ({ subscribePolicyDocuments }) => {
+          setState((current) => ({ ...current, loading: true, error: null }))
 
-      try {
-        const [{ db }, { listPolicyDocuments }] = await Promise.all([
-          import('@/lib/firebase/client'),
-          import('@/lib/firebase/documents'),
-        ])
-
-        const documents = await listPolicyDocuments(db, policyId)
-
-        if (!cancelled) {
-          setState({ documents, loading: false, error: null })
+          unsubscribe = subscribePolicyDocuments(
+            db,
+            policyId,
+            (documents) => {
+              setState({ documents, loading: false, error: null })
+            },
+            () => {
+              setState({
+                documents: [],
+                loading: false,
+                error: 'load_failed',
+              })
+            }
+          )
         }
-      } catch {
-        if (!cancelled) {
-          setState({
-            documents: [],
-            loading: false,
-            error: 'load_failed',
-          })
-        }
-      }
-    })()
+      )
+    })
 
     return () => {
-      cancelled = true
+      unsubscribe?.()
     }
   }, [policyId])
 
