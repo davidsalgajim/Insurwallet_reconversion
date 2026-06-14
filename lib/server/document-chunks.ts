@@ -2,6 +2,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { DocumentChunkSchema, type DocumentChunk } from '@/lib/schemas/chunk'
+import { embedTexts, isEmbeddingsConfigured } from '@/lib/server/embeddings'
 
 const TARGET_CHARS = 2_000
 const OVERLAP_CHARS = 200
@@ -63,9 +64,16 @@ export async function indexDocumentChunks(input: {
   docId: string
   text: string
   fileName?: string
+  generateEmbeddings?: boolean
 }): Promise<number> {
   const db = getAdminFirestore()
   const chunks = chunkText(input.text, input.docId, input.fileName)
+  const shouldEmbed =
+    input.generateEmbeddings === true && isEmbeddingsConfigured()
+  const embeddings = shouldEmbed
+    ? await embedTexts(chunks.map((chunk) => chunk.text))
+    : []
+
   const chunksRef = db
     .collection('policies')
     .doc(input.policyId)
@@ -82,7 +90,12 @@ export async function indexDocumentChunks(input: {
 
   const now = new Date()
   for (const [index, chunk] of chunks.entries()) {
-    const parsed = DocumentChunkSchema.parse({ ...chunk, indexedAt: now })
+    const embedding = embeddings[index] ?? undefined
+    const parsed = DocumentChunkSchema.parse({
+      ...chunk,
+      ...(embedding ? { embedding } : {}),
+      indexedAt: now,
+    })
     batch.set(chunksRef.doc(String(index).padStart(4, '0')), {
       ...parsed,
       indexedAt: Timestamp.fromDate(parsed.indexedAt),
@@ -142,7 +155,10 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB))
 }
 
-function combineChunkScores(termScore: number, vectorScore: number): number {
+export function combineChunkScores(
+  termScore: number,
+  vectorScore: number
+): number {
   if (vectorScore <= 0) {
     return termScore
   }
@@ -150,15 +166,32 @@ function combineChunkScores(termScore: number, vectorScore: number): number {
   return Math.max(termScore, termScore * 0.35 + vectorScore * 0.65)
 }
 
-export async function searchDocumentChunks(input: {
+async function assertPolicyReadable(
+  uid: string,
+  policyId: string
+): Promise<boolean> {
+  const db = getAdminFirestore()
+  const policySnap = await db.collection('policies').doc(policyId).get()
+  if (!policySnap.exists) {
+    return false
+  }
+
+  const data = policySnap.data() ?? {}
+  if (data.ownerUid === uid) {
+    return true
+  }
+
+  const sharedWith = Array.isArray(data.sharedWith) ? data.sharedWith : []
+  return sharedWith.includes(uid)
+}
+
+async function searchPolicyDocumentChunks(input: {
   policyId: string
   docId?: string
   query: string
-  limit?: number
   queryEmbedding?: number[]
 }): Promise<ChunkSearchResult[]> {
   const db = getAdminFirestore()
-  const limit = input.limit ?? 5
   const results: ChunkSearchResult[] = []
 
   const documentsSnap = await db
@@ -204,11 +237,49 @@ export async function searchDocumentChunks(input: {
     }
   }
 
+  return results
+}
+
+export async function searchDocumentChunks(input: {
+  uid: string
+  policyId?: string
+  policyIds?: string[]
+  docId?: string
+  query: string
+  limit?: number
+  queryEmbedding?: number[]
+}): Promise<ChunkSearchResult[]> {
+  const limit = input.limit ?? 5
+  const requestedIds =
+    input.policyIds ?? (input.policyId ? [input.policyId] : [])
+
+  if (requestedIds.length === 0) {
+    return []
+  }
+
+  const results: ChunkSearchResult[] = []
+
+  for (const policyId of requestedIds) {
+    const allowed = await assertPolicyReadable(input.uid, policyId)
+    if (!allowed) {
+      continue
+    }
+
+    const policyResults = await searchPolicyDocumentChunks({
+      policyId,
+      docId: input.docId,
+      query: input.query,
+      queryEmbedding: input.queryEmbedding,
+    })
+    results.push(...policyResults)
+  }
+
   return results.sort((a, b) => b.score - a.score).slice(0, limit)
 }
 
 export async function indexPolicyDocumentsForRag(
-  policyId: string
+  policyId: string,
+  options?: { generateEmbeddings?: boolean }
 ): Promise<{ indexedDocuments: number; indexedChunks: number }> {
   const db = getAdminFirestore()
   const policySnap = await db.collection('policies').doc(policyId).get()
@@ -247,6 +318,7 @@ export async function indexPolicyDocumentsForRag(
       docId: docSnap.id,
       text,
       fileName: typeof data.fileName === 'string' ? data.fileName : undefined,
+      generateEmbeddings: options?.generateEmbeddings,
     })
 
     if (count > 0) {
@@ -273,6 +345,7 @@ export async function indexPolicyDocumentsForRag(
         docId: 'policy-summary',
         text: syntheticText,
         fileName: 'policy-summary.txt',
+        generateEmbeddings: options?.generateEmbeddings,
       })
       indexedDocuments = 1
       indexedChunks = count

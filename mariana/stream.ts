@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 
 import type { MarianaPolicyContext } from '@/lib/server/mariana-context'
 import { prefetchToolsForAgent } from '@/lib/server/mariana-tools'
+import { embedText, isEmbeddingsConfigured } from '@/lib/server/embeddings'
 import { getAgentSystemPromptWithSpecialist } from '@/mariana/agents'
 import { buildCachedSystemBlocks } from '@/mariana/agents/prompt-cache'
 import { classifyWithHaiku } from '@/mariana/haiku-router'
@@ -165,6 +166,11 @@ async function streamSpecialist(
         locale: input.locale,
       })!
 
+    const queryEmbedding =
+      input.cloudAiConsented !== false && isEmbeddingsConfigured()
+        ? ((await embedText(input.message)) ?? undefined)
+        : undefined
+
     const toolResults = await prefetchToolsForAgent({
       agent: decision.agent,
       policyHint: decision.entities.policyHint,
@@ -173,6 +179,8 @@ async function streamSpecialist(
       policies: input.policies,
       metadata: input.metadata,
       decision,
+      cloudAiConsented: input.cloudAiConsented,
+      queryEmbedding,
     })
 
     const citations = extractCitationsFromTools(

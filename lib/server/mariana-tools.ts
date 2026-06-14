@@ -1,5 +1,6 @@
 import type { MarianaPolicyContext } from '@/lib/server/mariana-context'
 import { searchDocumentChunks } from '@/lib/server/document-chunks'
+import { embedText, isEmbeddingsConfigured } from '@/lib/server/embeddings'
 import {
   collectContactsForPolicies,
   filterPoliciesByType,
@@ -37,11 +38,17 @@ function scopedPolicies(
   return policies.filter((policy) => allowed.has(policy.id))
 }
 
+export type AsyncToolOptions = {
+  cloudAiConsented?: boolean
+  queryEmbedding?: number[]
+}
+
 export async function executeToolAsync(
   call: ToolCall,
   context: ToolContext,
   policies: MarianaPolicyContext[],
-  metadata: PolicyMetadata[]
+  metadata: PolicyMetadata[],
+  options: AsyncToolOptions = {}
 ): Promise<ToolResult> {
   if (!MARIANA_TOOL_NAMES.includes(call.name)) {
     throw new Error(`Unknown tool: ${call.name}`)
@@ -108,7 +115,13 @@ export async function executeToolAsync(
       }
     }
     case 'search_document_chunks': {
-      if (!call.policyId) {
+      const allowedPolicyIds = [
+        ...context.ownedPolicyIds,
+        ...context.sharedPolicyIds,
+      ]
+      const targetPolicyIds = call.policyId ? [call.policyId] : allowedPolicyIds
+
+      if (targetPolicyIds.length === 0) {
         return {
           name: call.name,
           readOnly: true,
@@ -116,16 +129,28 @@ export async function executeToolAsync(
         }
       }
 
+      let queryEmbedding = options.queryEmbedding
+      if (
+        !queryEmbedding &&
+        options.cloudAiConsented !== false &&
+        isEmbeddingsConfigured()
+      ) {
+        queryEmbedding = (await embedText(call.query ?? '')) ?? undefined
+      }
+
       const chunks = await searchDocumentChunks({
-        policyId: call.policyId,
+        uid: context.uid,
+        policyIds: targetPolicyIds,
         query: call.query ?? '',
+        queryEmbedding,
+        limit: call.policyId ? 5 : 8,
       })
 
       return {
         name: call.name,
         readOnly: true,
         data: {
-          policyId: call.policyId,
+          policyId: call.policyId ?? null,
           query: call.query ?? '',
           chunks: chunks.map((chunk) => ({
             chunkId: chunk.chunkId,
@@ -173,6 +198,21 @@ export async function executeToolAsync(
   }
 }
 
+function resolveExplicitPolicyId(
+  context: ToolContext,
+  policyHint?: string
+): string | undefined {
+  if (
+    policyHint &&
+    (context.ownedPolicyIds.includes(policyHint) ||
+      context.sharedPolicyIds.includes(policyHint))
+  ) {
+    return policyHint
+  }
+
+  return undefined
+}
+
 function resolvePolicyId(
   context: ToolContext,
   policyHint?: string
@@ -198,6 +238,10 @@ export function planPrefetchToolCalls(input: {
   const situationalIntent = input.decision?.entities.situationalIntent
   const policyTypes = input.decision?.entities.policyTypes
   const policyId = resolvePolicyId(input.context, input.policyHint)
+  const explicitPolicyId = resolveExplicitPolicyId(
+    input.context,
+    input.policyHint
+  )
 
   const calls: ToolCall[] = [{ name: 'get_policies_summary' }]
 
@@ -223,10 +267,15 @@ export function planPrefetchToolCalls(input: {
       policyId,
     })
 
-    if (policyId && situationalIntent !== 'emergency_accident') {
+    if (explicitPolicyId && situationalIntent !== 'emergency_accident') {
       calls.push({
         name: 'search_document_chunks',
-        policyId,
+        policyId: explicitPolicyId,
+        query: input.message,
+      })
+    } else if (situationalIntent !== 'emergency_accident') {
+      calls.push({
+        name: 'search_document_chunks',
         query: input.message,
       })
     }
@@ -239,17 +288,17 @@ export function planPrefetchToolCalls(input: {
       calls.push({ name: 'get_coverage_details', policyId })
     }
 
-    if (input.agent === 'coverage' || input.agent === 'documental') {
-      calls.push({
-        name: 'search_document_chunks',
-        policyId,
-        query: input.message,
-      })
-    }
-
     if (input.agent === 'insurers' || input.agent === 'emergency') {
       calls.push({ name: 'get_contacts', policyId })
     }
+  }
+
+  if (input.agent === 'coverage' || input.agent === 'documental') {
+    calls.push({
+      name: 'search_document_chunks',
+      policyId: explicitPolicyId,
+      query: input.message,
+    })
   }
 
   return calls
@@ -263,6 +312,8 @@ export async function prefetchToolsForAgent(input: {
   policies: MarianaPolicyContext[]
   metadata: PolicyMetadata[]
   decision?: RouteDecision
+  cloudAiConsented?: boolean
+  queryEmbedding?: number[]
 }): Promise<ToolResult[]> {
   const calls = planPrefetchToolCalls({
     agent: input.agent,
@@ -272,9 +323,20 @@ export async function prefetchToolsForAgent(input: {
     decision: input.decision,
   })
 
+  const toolOptions: AsyncToolOptions = {
+    cloudAiConsented: input.cloudAiConsented,
+    queryEmbedding: input.queryEmbedding,
+  }
+
   return Promise.all(
     calls.map((call) =>
-      executeToolAsync(call, input.context, input.policies, input.metadata)
+      executeToolAsync(
+        call,
+        input.context,
+        input.policies,
+        input.metadata,
+        toolOptions
+      )
     )
   )
 }

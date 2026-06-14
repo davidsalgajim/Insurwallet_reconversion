@@ -4,7 +4,10 @@ import { getApiSession } from '@/lib/firebase/api-auth'
 import { adminFirestoreUnavailableResponse } from '@/lib/firebase/admin-required'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { parsePolicyDocument } from '@/lib/firebase/policies'
+import { readUserDocument } from '@/lib/firebase/user-doc-server'
+import { hasCloudAIConsent, UserConsentsSchema } from '@/lib/schemas/consents'
 import { indexPolicyDocumentsForRag } from '@/lib/server/document-chunks'
+import { isEmbeddingsConfigured } from '@/lib/server/embeddings'
 
 export const runtime = 'nodejs'
 
@@ -41,8 +44,19 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   try {
-    const result = await indexPolicyDocumentsForRag(policyId)
-    return NextResponse.json(result)
+    const userData = await readUserDocument(session.uid)
+    const consents = UserConsentsSchema.safeParse(userData?.consents)
+    const generateEmbeddings =
+      hasCloudAIConsent(consents.success ? consents.data : null) &&
+      isEmbeddingsConfigured()
+
+    const result = await indexPolicyDocumentsForRag(policyId, {
+      generateEmbeddings,
+    })
+    return NextResponse.json({
+      ...result,
+      embeddingsGenerated: generateEmbeddings,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Index failed'
     return NextResponse.json({ error: message }, { status: 500 })

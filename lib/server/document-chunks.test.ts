@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   chunkText,
+  combineChunkScores,
   cosineSimilarity,
   estimateTokenCount,
   scoreChunkMatch,
 } from '@/lib/server/document-chunks'
+import { EMBEDDING_DIMENSION } from '@/lib/server/embeddings'
 
 describe('document chunking', () => {
   it('splits long text into ~500-token chunks', () => {
@@ -34,5 +36,28 @@ describe('scoreChunkMatch', () => {
 describe('cosineSimilarity', () => {
   it('returns 1 for identical vectors', () => {
     expect(cosineSimilarity([1, 0, 0], [1, 0, 0])).toBeCloseTo(1)
+  })
+
+  it('returns 0 for orthogonal vectors', () => {
+    expect(cosineSimilarity([1, 0, 0], [0, 1, 0])).toBeCloseTo(0)
+  })
+})
+
+describe('combineChunkScores', () => {
+  it('uses keyword score alone when vector score is zero', () => {
+    expect(combineChunkScores(0.8, 0)).toBe(0.8)
+  })
+
+  it('boosts ranking with vector similarity', () => {
+    const hybrid = combineChunkScores(0.2, 0.9)
+    const keywordOnly = combineChunkScores(0.2, 0)
+    expect(hybrid).toBeGreaterThan(keywordOnly)
+  })
+})
+
+describe('chunk embeddings shape', () => {
+  it('expects 768-dimensional vectors per schema', () => {
+    const vector = Array.from({ length: EMBEDDING_DIMENSION }, () => 0.01)
+    expect(vector).toHaveLength(768)
   })
 })
