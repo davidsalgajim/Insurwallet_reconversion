@@ -62,14 +62,14 @@ type LoginLegalNoticeProps = {
 
 export function LoginLegalNotice({ className }: LoginLegalNoticeProps) {
   return (
-    <p
+    <div
       className={cn(
         'text-center text-xs leading-relaxed text-muted-foreground',
         className
       )}
     >
       <LegalConsentRichText messageKey="loginNotice" />
-    </p>
+    </div>
   )
 }
 
@@ -83,24 +83,24 @@ function LegalConsentRichText({ messageKey }: LegalConsentRichTextProps) {
   const t = useTranslations('auth.legalConsent')
 
   return t.rich(messageKey, {
-    terms: () => (
+    terms: (chunks) => (
       <Link
         href="/legal/terms"
         className={legalLinkClassName}
         target="_blank"
         rel="noopener noreferrer"
       >
-        {t('termsLink')}
+        {chunks}
       </Link>
     ),
-    privacy: () => (
+    privacy: (chunks) => (
       <Link
         href="/legal/privacy"
         className={legalLinkClassName}
         target="_blank"
         rel="noopener noreferrer"
       >
-        {t('privacyLink')}
+        {chunks}
       </Link>
     ),
   })

@@ -58,5 +58,7 @@ export function AuthDivider({ label }: { label: string }) {
 }
 
 export function AuthFooterText({ children }: { children: ReactNode }) {
-  return <p className="text-center text-sm text-muted-foreground">{children}</p>
+  return (
+    <div className="text-center text-sm text-muted-foreground">{children}</div>
+  )
 }
