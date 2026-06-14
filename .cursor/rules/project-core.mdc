@@ -40,7 +40,7 @@ docs/          # Plan maestro
 tasks/         # Task list de implementación
 ```
 
-**Estado jun 2026:** F0 ~85%, F1 ~75% — auth, CRUD manual, dashboard, rules testeadas; upload PDF, worker, MarIAna backend y pagos pendientes.
+**Estado jun 2026:** F0 ~90%, F1 ~92% — auth, CRUD manual, dashboard, rules testeadas; upload PDF, worker con transcript RAG, MarIAna con chunks indexados; pagos MP integrados; deploy staging pendiente.
 
 - Separar concerns: componentes presentacionales vs hooks de datos vs lógica en `lib/`
 - **Máximo ~400 líneas por archivo** — refactorizar en submódulos/hooks/componentes

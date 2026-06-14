@@ -2,23 +2,23 @@
 
 Migración de InsurWallet (iOS nativa) a una web app moderna para LATAM.
 
-**Estado actual (jun 2026):** F0 ~90% · F1 ~92% · F2 ~90% (worker + revisión IA) · F3 ~90% (MarIAna situacional + share) · F4 ~85% (legal, Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Schema Zod unificado (manual, extracción Claude, tools MarIAna), compresión cliente a 2 MB, beneficiarios con % en wizard/edición, agregador **Beneficios y asistencias**, upload→worker, settings hub, páginas legales + consentimiento, reglas en CI. Pendiente: deploy staging, App Check Enforce, embeddings vectoriales completos, backups/iOS import, revisión abogado/NIT.
+**Estado actual (jun 2026):** F0 ~90% · F1 ~92% · F2 ~92% (worker + revisión IA + transcript RAG) · F3 ~92% (MarIAna situacional + RAG transcript + share) · F4 ~85% (legal, Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Schema Zod unificado (manual, extracción Claude, tools MarIAna), compresión cliente a 2 MB, beneficiarios con % en wizard/edición, agregador **Beneficios y asistencias**, upload→worker, settings hub, páginas legales + consentimiento, reglas en CI. Pendiente: deploy staging, App Check Enforce, re-index pólizas legacy, backups/iOS import, revisión abogado/NIT.
 
 Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md). Plan de tareas: [`tasks/tasks-plan-reconversion-insurwallet.md`](tasks/tasks-plan-reconversion-insurwallet.md).
 
 ## Stack
 
-| Capa                | Tecnología                                                                                            |
-| ------------------- | ----------------------------------------------------------------------------------------------------- |
-| Frontend            | Next.js 16, React 19, TypeScript strict, Tailwind CSS v4, shadcn/ui (base)                            |
-| Auth / DB / Storage | Firebase (Auth, Firestore, Storage, Functions, FCM, App Check reCAPTCHA v3)                           |
-| i18n                | next-intl (ES base, EN/PT — cobertura parcial en app)                                                 |
-| Validación          | Zod                                                                                                   |
-| Tests TS            | Vitest                                                                                                |
-| Tests reglas        | Firebase emulators + `@firebase/rules-unit-testing`                                                   |
-| Backend             | Cloud Functions (Node), Cloud Run worker Python; MarIAna en Next.js API                               |
-| Documentos (F2)     | OpenDataLoader PDF, quality gate, **Claude vision** (PDF escaneado), Claude tool-use, léxico ES/EN/PT |
-| Pagos (F4)          | Mercado Pago (Colombia); Wompi deprecated                                                             |
+| Capa                | Tecnología                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Frontend            | Next.js 16, React 19, TypeScript strict, Tailwind CSS v4, shadcn/ui (base)                                                                             |
+| Auth / DB / Storage | Firebase (Auth, Firestore, Storage, Functions, FCM, App Check reCAPTCHA v3)                                                                            |
+| i18n                | next-intl (ES base, EN/PT — cobertura parcial en app)                                                                                                  |
+| Validación          | Zod                                                                                                                                                    |
+| Tests TS            | Vitest                                                                                                                                                 |
+| Tests reglas        | Firebase emulators + `@firebase/rules-unit-testing`                                                                                                    |
+| Backend             | Cloud Functions (Node), Cloud Run worker Python; MarIAna en Next.js API                                                                                |
+| Documentos (F2)     | OpenDataLoader PDF, quality gate, **Claude vision** (PDF escaneado), **transcripción RAG** (`claude_transcriber.py`), Claude tool-use, léxico ES/EN/PT |
+| Pagos (F4)          | Mercado Pago (Colombia); Wompi deprecated                                                                                                              |
 
 ## Fases
 
@@ -26,8 +26,8 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 | ---- | ----------------------------------------------------------- | ------- |
 | F0   | Setup, Firebase, design system, CI, i18n, App Check         | ~90%    |
 | F1   | Auth, Firestore schema, CRUD pólizas, dashboard, upload PDF | ~90%    |
-| F2   | Pipeline de documentos + UI de revisión                     | ~90%    |
-| F3   | MarIAna multi-agente, compartir pólizas                     | ~90%    |
+| F2   | Pipeline de documentos + UI de revisión + transcript RAG    | ~92%    |
+| F3   | MarIAna multi-agente, RAG híbrido, compartir pólizas        | ~92%    |
 | F4   | Pagos (Mercado Pago), notificaciones, GDPR                  | ~85%    |
 | F5   | Hardening, E2E, beta                                        | Parcial |
 
@@ -48,8 +48,8 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **Observability:** Sentry stub (no-op sin DSN)
 - **Configuración (settings):** `/settings` — perfil, moneda/preferencias, privacidad (export/delete cuenta), notificaciones; `/settings/contacts` — contactos de emergencia; `/settings/subscription` — plan y checkout **Mercado Pago**; `/settings/help` — ayuda
 - **Legal (F4):** páginas `/legal/terms`, `/legal/privacy`, `/legal/cookies`, `/legal/notice` (ES/EN/PT); datos centralizados en `lib/legal/company.ts`; versiones en `lib/legal/versions.ts`; API `/api/consents`; checklist pre go-live en [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md)
-- **Documentos (F2):** upload → job worker (`WORKER_URL`) → pipeline texto o **visión Claude** (PDF escaneado) → extracción estructurada ES/EN/PT → pantalla de revisión split-view (pdf.js + confianza/bboxes); PDF original en Storage por usuario; extracción en `policies/{id}/documents/{docId}`
-- **MarIAna (F3):** chat streaming SSE con avatar de marca, subtítulo **Asistente IA** (ES/EN/PT); Tier 0 determinístico; router situacional (`mariana/situational.ts`) + 5 agentes core + **10 especialistas por tipo de póliza**; tools read-only con prefetch de asistencias/beneficios; **120 evals estructurales** (router/tools/prompts, sin LLM) — ver [`mariana/evals/README.md`](mariana/evals/README.md); pendiente embeddings vectoriales completos y cost tracking
+- **Documentos (F2):** upload → job worker (`WORKER_URL`) → pipeline texto o **visión Claude** (PDF escaneado) → extracción estructurada ES/EN/PT → **transcript completo** (`document_text`) persistido en `extractedSummary` / Storage (`extracted/document.txt`) → pantalla de revisión split-view (pdf.js + confianza/bboxes); PDF original en Storage por usuario; extracción en `policies/{id}/documents/{docId}`
+- **MarIAna (F3):** chat streaming SSE con avatar de marca, subtítulo **Asistente IA** (ES/EN/PT); Tier 0 determinístico; router situacional (`mariana/situational.ts`) + 5 agentes core + **10 especialistas por tipo de póliza**; tools read-only con prefetch de asistencias/beneficios; RAG híbrido keyword+embedding sobre **transcript indexado** (`lib/server/document-chunks.ts`); indexación al confirmar revisión (`POST /api/policies/{id}/index-documents`); **120 evals estructurales** — ver [`mariana/evals/README.md`](mariana/evals/README.md); pendiente cost tracking (4.10) y re-index batch pólizas legacy
 - **Layout raíz:** `<html>`/`<body>` únicos en `app/layout.tsx` (locale + fuentes); `[locale]/layout.tsx` solo proveedores — evita anidación inválida en App Router
 - **Notificaciones (prefs):** canal email/push/ambos + tipos de aviso en Configuración; API `GET/PUT /api/notifications/prefs`; registro FCM si push activo — envío real email/push en F4 (ver [`docs/notifications.md`](docs/notifications.md))
 
@@ -57,7 +57,8 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 
 - Deploy staging (checklists: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · legal: [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md))
 - Deploy worker Cloud Run en staging/prod + OIDC (`WORKER_OIDC_AUDIENCE`)
-- MarIAna: embeddings vectoriales completos, cost tracking (4.10)
+- Re-indexar pólizas existentes sin transcript (`node scripts/reprocess-document.mjs` + `index-documents`)
+- MarIAna: cost tracking (4.10)
 - Ejecutar evals estructurales en CI local: `npm run test -- mariana/evals`
 - Backups Firestore, import iOS, recibo email post-pago
 - App Check **Enforce** en Firebase Console (checklist documentado en 6.13)
@@ -169,6 +170,8 @@ uvicorn main:app --reload --port 8080
 ```
 
 En la raíz del repo (Next.js, server-only): en `.env.local` define `WORKER_URL=http://localhost:8080` y el **mismo** `INTERNAL_API_SECRET` (mín. 16 caracteres). Sin secret compartido, el dispatch local del job puede fallar con 401/503. Detalle del pipeline: [`worker/README.md`](worker/README.md).
+
+**Reprocesar extracción + transcript RAG (dev):** `node scripts/reprocess-document.mjs <policyId> [docId]` — luego `POST /api/policies/{id}/index-documents` para reconstruir chunks MarIAna.
 
 **Revisión PDF en UI:** el visor usa pdf.js con worker estático en `public/pdf.worker.mjs` (copiado desde `pdfjs-dist` al actualizar la dependencia).
 

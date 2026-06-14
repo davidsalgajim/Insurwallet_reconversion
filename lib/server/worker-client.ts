@@ -27,9 +27,11 @@ export type WorkerProcessResponse = {
   status: string
   message: string
   word_count: number
+  rag_word_count?: number
   pipeline_method: string
   pipeline_steps?: string[]
   has_suspicious_content: boolean
+  document_text?: string
   extraction?: WorkerExtractionPayload | null
 }
 
@@ -54,9 +56,11 @@ export const WorkerProcessResponseSchema = z.object({
   status: z.string(),
   message: z.string(),
   word_count: z.number(),
+  rag_word_count: z.number().optional(),
   pipeline_method: z.string(),
   pipeline_steps: z.array(z.string()).optional(),
   has_suspicious_content: z.boolean(),
+  document_text: z.string().optional(),
   extraction: WorkerExtractionPayloadSchema.nullable().optional(),
 })
 

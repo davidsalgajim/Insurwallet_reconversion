@@ -103,8 +103,11 @@ policies/{policyId}/documents/{docId}
   fileName, category (cover|clausulado|benefits|receipt|claim|endorsement|...),
   storagePath, fileSize, mimeType,
   processing: { state: pending|extracting|analyzing|ready|failed, method, error },
-  extractedTextPath (Storage, por límite 1MB de Firestore),
-  extractedSummary (primeros ~10KB para RAG rápido), createdAt
+  extraction: { fields, confidence, method, extractedAt, bboxes? }   ← 20 campos PolicySchema
+  extractedTextPath (Storage si transcript >10KB),
+  extractedSummary (primeros 10KB para preview/indexación rápida),
+  ragWordCount (conteo de palabras del transcript),
+  createdAt
 
 policies/{policyId}/benefits/{benefitId}
   name, category, contact, url, isCustom
@@ -123,9 +126,15 @@ jobs/{jobId}                            ← cola de procesamiento de documentos
   uid, policyId, docId, state, attempts, pipeline: [odl|surya|markitdown], timings
 ```
 
-**Storage:** `users/{uid}/policies/{policyId}/docs/{docId}/{fileName}` (PDF/imagen original, solo dueño). Texto extraído planificado en `.../extracted/{docId}.md`. Reglas de Storage espejo de Firestore (solo dueño; compartidos con permiso download en F3).
+**Storage:**
+
+- Original: `users/{uid}/policies/{policyId}/docs/{docId}/{fileName}` (PDF/imagen, solo dueño)
+- Transcript RAG (si >10KB): `users/{uid}/policies/{policyId}/docs/{docId}/extracted/document.txt`
+- Reglas de Storage espejo de Firestore (solo dueño; compartidos con permiso download en F3)
 
 **Extracción en Firestore:** `policies/{policyId}/documents/{docId}.extraction` — **20 campos** alineados con `PolicyExtractionFieldsSchema` y el wizard manual (`lib/schemas/extraction-field-keys.ts`); fechas como `YYYY-MM-DD` (ISO); el cliente normaliza `Timestamp` legado vía `parse-document-extraction.ts`. No se extraen del PDF: `ownerUid`, `sharedWith`, `status`, `createdAt`, `updatedAt`.
+
+**Transcript RAG (MarIAna):** el worker devuelve `document_text` (transcripción visión página a página en PDFs escaneados, o texto sanitizado en PDFs con capa de texto). `document-job-runner` persiste vía `lib/server/document-text-storage.ts`: resumen ≤10KB en Firestore; cuerpo completo en Storage cuando supera ese umbral. La indexación (`indexPolicyDocumentsForRag`) carga el texto completo antes de chunkear.
 
 ## 3. Pipeline de documentos (corrige el dolor actual de OCR)
 
@@ -140,11 +149,13 @@ flowchart LR
     QG -->|ok| SAN
     QG -->|tablas rotas sin vision| SURYA[Surya OCR stub]
     SURYA --> SAN
-    VISION --> SAN[Sanitizador anti-injection]
+    VISION --> CLV[Claude vision: campos JSON + transcribe RAG]
     MID --> SAN
     SAN --> CL[Claude extraccion JSON tool-use]
     CL --> VAL[Validacion + heuristicas vigencia]
-    VAL --> FS[(Firestore document.extraction + policy merge)]
+    CLV --> VAL
+    VAL --> PERSIST[Persistir extraction + transcript]
+    PERSIST --> FS[(Firestore + Storage extracted/document.txt)]
 ```
 
 - **Quality gate** (portar heurística de `DocumentProcessingService.swift` línea ~363): &lt; 100 palabras, sin keywords de póliza (léxico ES/EN/PT en `policy_lexicon.py`), o líneas `![image N]` → **visión Claude** en PDF escaneado.
@@ -169,7 +180,7 @@ flowchart LR
    indicador de confianza por campo (alta/media/baja según validadores) y el documento
    al lado (split-view: pdf.js + `public/pdf.worker.mjs`; bounding boxes ODL cuando existan)
 4. Usuario corrige lo necesario y confirma → se crea la póliza + documento adjunto
-5. El texto extraído queda indexado para MarIAna (embeddings por chunks en Firestore/Vertex)
+5. `POST /api/policies/{id}/index-documents` indexa el **transcript completo** del documento (Storage o `extractedSummary`) en chunks ~500 tokens con embeddings opcionales → MarIAna responde exclusiones/coberturas del clausulado vía `search_document_chunks`
 
 > Nada se guarda como póliza sin confirmación humana. La IA propone, el usuario dispone.
 
@@ -211,14 +222,14 @@ flowchart TB
 
 ### Los agentes (especialistas)
 
-| Agente                      | Experto en                                                                   | Contexto que carga                                                                         | Modelo                         |
-| --------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------ |
-| **Router**                  | Clasificar intención + extraer entidades (qué póliza, qué tema)              | Solo metadatos: lista de pólizas (tipo, aseguradora, vigencia)                             | Haiku (rápido/barato)          |
-| **Documental**              | Clausulados, exclusiones, letra pequeña; puede pedir re-extracción de un doc | Chunks relevantes del texto extraído (RAG top-k), nunca el doc completo                    | Sonnet                         |
-| **Coberturas y Beneficios** | "¿Estoy cubierto para X?", comparar pólizas, deducibles, beneficios          | `coverageEntries`, `deductibleEntries`, `benefits` estructurados de las pólizas relevantes | Sonnet/Haiku según complejidad |
-| **Vencimientos y Finanzas** | Fechas, primas, frecuencias, renovaciones, costos totales                    | Campos de fechas/montos — mayoría resuelve en Tier 0 sin LLM                               | Tier 0 / Haiku                 |
-| **Aseguradoras y Asesores** | Contactos, procedimiento de siniestro, a quién llamar                        | `agent` de pólizas + `contacts` del usuario                                                | Haiku                          |
-| **Emergencias**             | "Tuve un accidente/robo" → póliza aplicable + teléfono + pasos inmediatos    | Bypass del router (keywords); póliza del tipo relevante + contactos                        | Haiku (latencia mínima)        |
+| Agente                      | Experto en                                                                   | Contexto que carga                                                                                  | Modelo                         |
+| --------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------ |
+| **Router**                  | Clasificar intención + extraer entidades (qué póliza, qué tema)              | Solo metadatos: lista de pólizas (tipo, aseguradora, vigencia)                                      | Haiku (rápido/barato)          |
+| **Documental**              | Clausulados, exclusiones, letra pequeña; puede pedir re-extracción de un doc | Chunks del **transcript completo** indexado (RAG top-k), nunca el PDF ni el doc entero en el prompt | Sonnet                         |
+| **Coberturas y Beneficios** | "¿Estoy cubierto para X?", comparar pólizas, deducibles, beneficios          | `coverageEntries`, `deductibleEntries`, `benefits` estructurados de las pólizas relevantes          | Sonnet/Haiku según complejidad |
+| **Vencimientos y Finanzas** | Fechas, primas, frecuencias, renovaciones, costos totales                    | Campos de fechas/montos — mayoría resuelve en Tier 0 sin LLM                                        | Tier 0 / Haiku                 |
+| **Aseguradoras y Asesores** | Contactos, procedimiento de siniestro, a quién llamar                        | `agent` de pólizas + `contacts` del usuario                                                         | Haiku                          |
+| **Emergencias**             | "Tuve un accidente/robo" → póliza aplicable + teléfono + pasos inmediatos    | Bypass del router (keywords); póliza del tipo relevante + contactos                                 | Haiku (latencia mínima)        |
 
 ### Implementación (clave para velocidad y costo)
 

@@ -70,9 +70,11 @@ describe('worker-client', () => {
       status: 'completed',
       message: 'ok',
       word_count: 120,
+      rag_word_count: 2400,
       pipeline_method: 'odl',
-      pipeline_steps: ['odl', 'claude'],
+      pipeline_steps: ['vision', 'claude', 'transcribe'],
       has_suspicious_content: false,
+      document_text: '--- Page 1 ---\nExclusión por deportes extremos.',
       extraction: {
         fields: { insurerName: 'Mapfre' },
         confidence: { insurerName: 'high' },
@@ -82,6 +84,8 @@ describe('worker-client', () => {
     })
 
     expect(parsed.extraction?.fields.insurerName).toBe('Mapfre')
+    expect(parsed.document_text).toContain('Exclusión')
+    expect(parsed.rag_word_count).toBe(2400)
   })
 
   it('accepts null bboxes from worker extraction payload', () => {

@@ -20,8 +20,8 @@ InsurWallet centraliza pólizas de seguro en un solo lugar seguro para usuarios 
 
 1. **Dashboard** — resumen de pólizas, alertas de vencimiento, acceso rápido a MarIAna
 2. **CRUD de pólizas** — manual o asistido por PDF
-3. **Pipeline de documentos** — upload → estados en vivo → revisión con confianza por campo; PDF escaneado vía Claude vision; labels ES/EN/PT; **20 campos** extraíbles (paridad con wizard manual — ver `lib/schemas/extraction-field-keys.ts`)
-4. **MarIAna** — chat multi-agente read-only con citas a documentos
+3. **Pipeline de documentos** — upload → estados en vivo → revisión con confianza por campo; PDF escaneado vía Claude vision; transcripción página a página para RAG (exclusiones, clausulado); labels ES/EN/PT; **20 campos** extraíbles (paridad con wizard manual — ver `lib/schemas/extraction-field-keys.ts`)
+4. **MarIAna** — chat multi-agente read-only con citas a chunks del transcript indexado (`search_document_chunks`)
 5. **Compartir** — enlaces con permisos y expiración
 6. **Perfil / privacidad** — GDPR, exportar, eliminar
 

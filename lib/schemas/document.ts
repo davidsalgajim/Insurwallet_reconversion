@@ -85,6 +85,7 @@ export const PolicyDocumentSchema = z.object({
   extraction: PolicyExtractionSchema.optional(),
   extractedTextPath: z.string().min(1).optional(),
   extractedSummary: z.string().max(10_000).optional(),
+  ragWordCount: z.number().int().nonnegative().optional(),
   createdAt: z.coerce.date(),
 })
 export type PolicyDocument = z.infer<typeof PolicyDocumentSchema>

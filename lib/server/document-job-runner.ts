@@ -26,6 +26,7 @@ import {
   USER_FACING_JOB_ERRORS,
 } from '@/lib/server/worker-client'
 import { notifyDocumentJobReady } from '@/lib/server/push-notifications'
+import { persistExtractedDocumentText } from '@/lib/server/document-text-storage'
 
 function buildFallbackExtraction(
   policy: PolicyDocument,
@@ -214,6 +215,9 @@ export async function processDocumentJob(
   let extraction: PolicyExtraction
   let pipelineMethod: PolicyExtraction['method'] = 'odl'
   let pipelineSteps: string[] = []
+  let documentTextPayload: Awaited<
+    ReturnType<typeof persistExtractedDocumentText>
+  > = null
 
   try {
     const workerResult = await invokeWorkerWithRetries({
@@ -224,6 +228,13 @@ export async function processDocumentJob(
     extraction = parseWorkerExtraction(workerResult.extraction!)
     pipelineMethod = extraction.method
     pipelineSteps = workerResult.pipeline_steps ?? [pipelineMethod]
+
+    if (workerResult.document_text?.trim()) {
+      documentTextPayload = await persistExtractedDocumentText({
+        pdfStoragePath: job.storagePath,
+        text: workerResult.document_text,
+      })
+    }
   } catch (error) {
     const userMessage = mapWorkerFailureMessage(error)
 
@@ -268,6 +279,17 @@ export async function processDocumentJob(
             method: pipelineMethod,
             extractedAt: Timestamp.fromDate(extraction.extractedAt),
           },
+          ...(documentTextPayload
+            ? {
+                extractedSummary: documentTextPayload.extractedSummary,
+                ...(documentTextPayload.extractedTextPath
+                  ? {
+                      extractedTextPath: documentTextPayload.extractedTextPath,
+                    }
+                  : {}),
+                ragWordCount: documentTextPayload.ragWordCount,
+              }
+            : {}),
           processing: {
             state: 'ready',
             jobId,

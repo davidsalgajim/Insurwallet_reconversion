@@ -52,9 +52,11 @@ class ProcessJobResponse(BaseModel):
     status: str
     message: str
     word_count: int = 0
+    rag_word_count: int = 0
     pipeline_method: str = "odl"
     pipeline_steps: list[str] = Field(default_factory=list)
     has_suspicious_content: bool = False
+    document_text: str = ""
     extraction: ExtractionPayload | None = None
 
 
@@ -123,9 +125,11 @@ def process_job(request: ProcessJobRequest) -> ProcessJobResponse:
         status="completed",
         message="Document processed successfully",
         word_count=result.word_count,
+        rag_word_count=result.rag_word_count,
         pipeline_method=api_method,
         pipeline_steps=list(result.pipeline_steps),
         has_suspicious_content=result.sanitized.has_suspicious_content,
+        document_text=result.rag_text,
         extraction=ExtractionPayload(
             fields=dict(extraction_data.get("fields", {})),
             confidence=dict(extraction_data.get("confidence", {})),

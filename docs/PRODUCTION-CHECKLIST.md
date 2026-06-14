@@ -135,7 +135,7 @@ Repetir Fase 1–2 con proyecto Firebase **prod** y entorno Vercel **Production*
 - [ ] reCAPTCHA Admin → dominio prod en **Allowed domains** (antes de Enforce)
 - [ ] Resend: dominio verificado (SPF/DKIM); `RESEND_FROM_EMAIL` prod
 
-### Fase 6 — MarIAna RAG (Google embeddings)
+### Fase 6 — MarIAna RAG (Google embeddings + transcript)
 
 Requisitos en prod:
 
@@ -144,18 +144,19 @@ Requisitos en prod:
 | `GOOGLE_AI_API_KEY` o `EMBEDDING_API_KEY` | Vercel Production (server) | Google Generative Language API; modelo **text-embedding-004**, 768 dims |
 | Consentimiento `users.consents.cloudAI`   | Firestore                  | Modal IA en upload/registro                                             |
 | Índice vector                             | Firestore                  | `firestore.indexes.json` → `chunks.embedding` 768-dim                   |
+| Transcript en documento                   | Firestore + Storage        | `extractedSummary` (≤10KB) + `extractedTextPath` si mayor               |
 
 Pasos:
 
 - [ ] Confirmar `GOOGLE_AI_API_KEY` en Vercel Production (Secret Manager recomendado)
 - [ ] Confirmar índice vector **Enabled** en consola Firestore
 - [ ] Tras go-live: **re-indexar** pólizas con documentos ya confirmados:
-  - Por póliza: `POST /api/policies/{policyId}/index-documents` (usuario con consentimiento IA), o
-  - Script batch admin (una vez) para migración desde iOS/beta
-- [ ] Smoke: upload + confirmar revisión → preguntar a MarIAna → respuesta con cita a chunk
+  - Pólizas sin transcript (pre-jun 2026): `node scripts/reprocess-document.mjs <policyId>` luego `POST /api/policies/{policyId}/index-documents`
+  - Pólizas con transcript ya persistido: solo `index-documents` por póliza o script batch admin
+- [ ] Smoke: upload PDF escaneado → confirmar revisión → preguntar exclusiones a MarIAna → respuesta con cita a chunk del clausulado
 - [ ] Sin API key: MarIAna sigue con búsqueda keyword (degradación aceptable pero peor calidad RAG)
 
-Detalle técnico: [`mariana/README.md`](../mariana/README.md) § RAG.
+Detalle técnico: [`mariana/README.md`](../mariana/README.md) § RAG · [`worker/README.md`](../worker/README.md) § RAG text.
 
 ### Fase 7 — App Check Enforce (solo prod, tras Monitor estable)
 

@@ -60,6 +60,7 @@ npm run test
 | Sanitize        | `pipeline/sanitizer.py`                          | Zero-width strip + imperative pattern flags                                              |
 | Lexicon         | `pipeline/policy_lexicon.py`                     | Labels ES/EN/PT (LATAM) in prompts + quality gate keywords                               |
 | Claude          | `pipeline/claude_extractor.py`                   | Text or vision; multilingual prompts; `hasNoExpiration` heuristics                       |
+| RAG transcribe  | `pipeline/claude_transcriber.py`                 | Vision page transcription for MarIAna (`document_text` / `rag_word_count` in API)        |
 | Validate        | `pipeline/validators.py`                         | Post-IA regex + confidence; duplicate start/end date → open-ended                        |
 | Merge API       | `pipeline/extract.py`                            | Full Claude fields + validated scalars (not only 7 critical fields)                      |
 
@@ -96,11 +97,24 @@ All user-editable policy fields except app/system metadata. Canonical lists:
 
 **Never extracted from PDFs:** `ownerUid`, `sharedWith`, `status`, `createdAt`, `updatedAt`.
 
-**Reprocess stale extractions (dev):** `node scripts/reprocess-document.mjs <policyId>` or `POST /api/jobs/{jobId}/process?force=true`.
+**Reprocess stale extractions (dev):** see flow above — then `POST /api/policies/{id}/index-documents` to rebuild chunks.
+
+**Client parsing:** `lib/firebase/parse-document-extraction.ts` normalizes Firestore `Timestamp` dates in stored extraction; new writes use ISO date strings (`YYYY-MM-DD`) in extraction fields.
 
 ### Scanned PDFs (seguro deudor, etc.)
 
-When ODL returns only image placeholders, `is_low_signal_text()` triggers the vision path (`pipeline: ['vision','claude']`). Prompts include regional rules (tomador ≠ banco beneficiario, NIT en notas, monedas COP/MXN/BRL, etc.).
+When ODL returns only image placeholders, `is_low_signal_text()` triggers the vision path (`pipeline: ['vision','claude','transcribe']`). Prompts include regional rules (tomador ≠ banco beneficiario, NIT en notas, monedas COP/MXN/BRL, etc.).
+
+### Worker API (`POST /jobs/process`)
+
+Response fields relevant to RAG:
+
+| Field            | Description                                                      |
+| ---------------- | ---------------------------------------------------------------- |
+| `document_text`  | Full transcript for indexing (vision pages or sanitized extract) |
+| `rag_word_count` | Word count of `document_text`                                    |
+| `extraction`     | Structured policy fields (20-field schema)                       |
+| `pipeline_steps` | e.g. `['vision','claude','transcribe']` on scanned PDFs          |
 
 ### Expiration fields
 
@@ -118,9 +132,11 @@ ANTHROPIC_API_KEY=sk-ant-...   # worker process; never NEXT_PUBLIC_
 FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
 ```
 
-Flow: Storage upload → `jobs/{jobId}` → `document-job-runner` POSTs to worker → extraction on `policies/{id}/documents/{docId}.extraction` → review UI merges documents (`mergePolicyExtractions`) and renders PDF via pdf.js.
+Flow: Storage upload → `jobs/{jobId}` → `document-job-runner` POSTs to worker → extraction on `policies/{id}/documents/{docId}.extraction` → **full transcript** in `extractedSummary` / `extractedTextPath` (Storage when &gt;10KB) → review UI merges documents (`mergePolicyExtractions`) and renders PDF via pdf.js.
 
-**Client parsing:** `lib/firebase/parse-document-extraction.ts` normalizes Firestore `Timestamp` dates in stored extraction; new writes use ISO date strings (`YYYY-MM-DD`) in extraction fields.
+**RAG text:** worker returns `document_text` (vision transcription on scanned PDFs, else sanitized extract). `lib/server/document-text-storage.ts` persists it; `indexPolicyDocumentsForRag` loads full text from Storage before chunking.
+
+**Reprocess stale extractions (dev):** `node scripts/reprocess-document.mjs <policyId>` persists fields + RAG transcript, or `POST /api/jobs/{jobId}/process?force=true`.
 
 ## OpenDataLoader (production)
 

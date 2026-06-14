@@ -2,10 +2,64 @@ import { Timestamp } from 'firebase-admin/firestore'
 
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { DocumentChunkSchema, type DocumentChunk } from '@/lib/schemas/chunk'
+import { resolveDocumentRagText } from '@/lib/server/document-text-storage'
 import { embedTexts, isEmbeddingsConfigured } from '@/lib/server/embeddings'
 
 const TARGET_CHARS = 2_000
 const OVERLAP_CHARS = 200
+const MIN_FULL_TEXT_CHARS = 200
+
+export function buildPolicyRagSupplement(
+  policy: Record<string, unknown>
+): string {
+  const parts = [
+    typeof policy.coverages === 'string' ? policy.coverages : '',
+    typeof policy.exclusions === 'string' ? policy.exclusions : '',
+    typeof policy.waitingPeriods === 'string' ? policy.waitingPeriods : '',
+    typeof policy.notes === 'string' ? policy.notes : '',
+  ].filter(Boolean)
+
+  return parts.join('\n\n').trim()
+}
+
+export function buildPolicySyntheticRagText(
+  policy: Record<string, unknown>
+): string {
+  return [
+    typeof policy.insurerName === 'string' ? policy.insurerName : '',
+    typeof policy.policyNumber === 'string' ? policy.policyNumber : '',
+    typeof policy.coverages === 'string' ? policy.coverages : '',
+    typeof policy.exclusions === 'string' ? policy.exclusions : '',
+    typeof policy.waitingPeriods === 'string' ? policy.waitingPeriods : '',
+    typeof policy.notes === 'string' ? policy.notes : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .trim()
+}
+
+export async function resolveIndexingText(input: {
+  document: Record<string, unknown>
+  policy: Record<string, unknown>
+}): Promise<string> {
+  const docText = await resolveDocumentRagText({
+    extractedSummary:
+      typeof input.document.extractedSummary === 'string'
+        ? input.document.extractedSummary
+        : undefined,
+    extractedTextPath:
+      typeof input.document.extractedTextPath === 'string'
+        ? input.document.extractedTextPath
+        : undefined,
+  })
+
+  if (docText.length >= MIN_FULL_TEXT_CHARS) {
+    return docText
+  }
+
+  const supplement = buildPolicyRagSupplement(input.policy)
+  return [docText, supplement].filter(Boolean).join('\n\n').trim()
+}
 
 export function estimateTokenCount(text: string): number {
   return Math.ceil(text.length / 4)
@@ -299,16 +353,11 @@ export async function indexPolicyDocumentsForRag(
 
   for (const docSnap of documentsSnap.docs) {
     const data = docSnap.data()
-    const summary =
-      typeof data.extractedSummary === 'string' ? data.extractedSummary : ''
-    const fallbackParts = [
-      summary,
-      typeof policy.coverages === 'string' ? policy.coverages : '',
-      typeof policy.exclusions === 'string' ? policy.exclusions : '',
-      typeof policy.notes === 'string' ? policy.notes : '',
-    ].filter(Boolean)
+    const text = await resolveIndexingText({
+      document: data,
+      policy,
+    })
 
-    const text = fallbackParts.join('\n\n').trim()
     if (!text) {
       continue
     }
@@ -328,16 +377,7 @@ export async function indexPolicyDocumentsForRag(
   }
 
   if (indexedDocuments === 0) {
-    const syntheticText = [
-      typeof policy.insurerName === 'string' ? policy.insurerName : '',
-      typeof policy.policyNumber === 'string' ? policy.policyNumber : '',
-      typeof policy.coverages === 'string' ? policy.coverages : '',
-      typeof policy.exclusions === 'string' ? policy.exclusions : '',
-      typeof policy.waitingPeriods === 'string' ? policy.waitingPeriods : '',
-      typeof policy.notes === 'string' ? policy.notes : '',
-    ]
-      .filter(Boolean)
-      .join('\n\n')
+    const syntheticText = buildPolicySyntheticRagText(policy)
 
     if (syntheticText.trim()) {
       const count = await indexDocumentChunks({

@@ -109,3 +109,45 @@ def test_extract_document_propagates_download_errors(mock_download):
 
     with pytest.raises(StorageDownloadError):
         extract_document("users/u/policies/p/docs/d/missing.pdf")
+
+
+@patch("pipeline.extract.transcribe_document_from_images")
+@patch("pipeline.extract.extract_policy_fields_from_images")
+@patch("pipeline.extract.render_pdf_page_images")
+@patch("pipeline.extract.run_surya_ocr")
+@patch("pipeline.extract.download_document_bytes")
+@patch("pipeline.extract.extract_pdf_full")
+def test_extract_document_uses_vision_transcription_for_rag(
+    mock_pdf_full,
+    mock_download,
+    mock_surya,
+    mock_render,
+    mock_claude_vision,
+    mock_transcribe,
+):
+    from pipeline.text_extractors import PdfExtractResult
+
+    mock_download.return_value = b"%PDF-1.4 fake"
+    mock_surya.return_value = ("", "surya")
+    mock_pdf_full.return_value = PdfExtractResult(text="x", backend="pymupdf")
+    mock_render.return_value = [b"page-1"]
+    mock_claude_vision.return_value = SimpleNamespace(
+        fields={
+            "insurerName": "Seguros Alfa",
+            "policyNumber": "GRD-482",
+            "holderName": "Banco",
+            "startDate": "2025-01-01",
+            "endDate": "2025-12-31",
+        }
+    )
+    mock_transcribe.return_value = (
+        "--- Page 1 ---\nExclusión por deportes extremos y guerra."
+    )
+
+    result = extract_document("users/u/policies/p/docs/d/policy.pdf")
+
+    assert result.rag_text.startswith("--- Page 1 ---")
+    assert "Exclusión por deportes" in result.rag_text
+    assert result.rag_word_count > 0
+    assert "transcribe" in result.pipeline_steps
+    mock_transcribe.assert_called_once()

@@ -65,7 +65,11 @@ async function runWorkerExtraction(storagePath, mimeType) {
     'from pipeline.extract import extract_document_safe',
     'import json',
     `r = extract_document_safe(${JSON.stringify(storagePath)}, mime_type=${JSON.stringify(mimeType)})`,
-    'print(json.dumps(r.extraction, default=str))',
+    'print(json.dumps({',
+    '  "extraction": r.extraction,',
+    '  "document_text": r.rag_text,',
+    '  "rag_word_count": r.rag_word_count,',
+    '}, default=str))',
   ].join('\n')
 
   const { spawnSync } = await import('node:child_process')
@@ -100,6 +104,51 @@ async function runWorkerExtraction(storagePath, mimeType) {
   return JSON.parse(jsonLine)
 }
 
+const EXTRACTED_SUMMARY_MAX_CHARS = 10_000
+
+function buildExtractedTextStoragePath(pdfStoragePath) {
+  const lastSlash = pdfStoragePath.lastIndexOf('/')
+  if (lastSlash <= 0) {
+    throw new Error('Invalid policy document storage path')
+  }
+  const docDir = pdfStoragePath.slice(0, lastSlash)
+  return `${docDir}/extracted/document.txt`
+}
+
+async function persistDocumentText(pdfStoragePath, text) {
+  const normalized = text.replace(/\r\n/g, '\n').trim()
+  if (!normalized) {
+    return null
+  }
+
+  const ragWordCount = normalized.split(/\s+/).filter(Boolean).length
+  const extractedSummary = normalized.slice(0, EXTRACTED_SUMMARY_MAX_CHARS)
+
+  if (normalized.length <= EXTRACTED_SUMMARY_MAX_CHARS) {
+    return { extractedSummary, ragWordCount }
+  }
+
+  const { getStorage } = await import('firebase-admin/storage')
+  const bucketName =
+    process.env.FIREBASE_STORAGE_BUCKET?.trim() ??
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim()
+
+  if (!bucketName) {
+    throw new Error('FIREBASE_STORAGE_BUCKET is not configured')
+  }
+
+  const extractedTextPath = buildExtractedTextStoragePath(pdfStoragePath)
+  const bucket = getStorage().bucket(bucketName)
+  await bucket.file(extractedTextPath).save(normalized, {
+    contentType: 'text/plain; charset=utf-8',
+    metadata: {
+      cacheControl: 'private, max-age=3600',
+    },
+  })
+
+  return { extractedSummary, extractedTextPath, ragWordCount }
+}
+
 const db = getFirestore()
 
 const docsSnap = docIdArg
@@ -132,7 +181,11 @@ const workerPayload = await runWorkerExtraction(
   storagePath,
   docData.mimeType ?? 'application/pdf'
 )
-const extraction = workerPayload
+const extraction = workerPayload.extraction ?? workerPayload
+const documentText =
+  typeof workerPayload.document_text === 'string'
+    ? workerPayload.document_text
+    : ''
 
 if (!extraction?.fields) {
   console.error('Worker returned no extraction fields')
@@ -140,6 +193,13 @@ if (!extraction?.fields) {
 }
 
 console.log('Worker fields:', Object.keys(extraction.fields))
+if (documentText) {
+  console.log('RAG transcript words:', workerPayload.rag_word_count ?? 'n/a')
+}
+
+const documentTextPayload = documentText
+  ? await persistDocumentText(storagePath, documentText)
+  : null
 
 const policyRef = db.collection('policies').doc(policyId)
 const docRef = policyRef.collection('documents').doc(docId)
@@ -214,6 +274,15 @@ await db.runTransaction(async (tx) => {
         method: extraction.method ?? 'odl',
         extractedAt: Timestamp.now(),
       },
+      ...(documentTextPayload
+        ? {
+            extractedSummary: documentTextPayload.extractedSummary,
+            ...(documentTextPayload.extractedTextPath
+              ? { extractedTextPath: documentTextPayload.extractedTextPath }
+              : {}),
+            ragWordCount: documentTextPayload.ragWordCount,
+          }
+        : {}),
       processing: {
         state: 'ready',
         method: extraction.method ?? 'odl',
@@ -225,6 +294,12 @@ await db.runTransaction(async (tx) => {
 })
 
 console.log('Updated policy + document extraction')
+if (documentTextPayload) {
+  console.log('Persisted RAG text:', {
+    ragWordCount: documentTextPayload.ragWordCount,
+    extractedTextPath: documentTextPayload.extractedTextPath ?? '(inline summary)',
+  })
+}
 console.log('Merged policy snapshot:', {
   insurerName: mergedPolicy.insurerName,
   policyNumber: mergedPolicy.policyNumber,

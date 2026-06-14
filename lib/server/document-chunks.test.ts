@@ -5,6 +5,7 @@ import {
   combineChunkScores,
   cosineSimilarity,
   estimateTokenCount,
+  resolveIndexingText,
   scoreChunkMatch,
 } from '@/lib/server/document-chunks'
 import { EMBEDDING_DIMENSION } from '@/lib/server/embeddings'
@@ -52,6 +53,33 @@ describe('combineChunkScores', () => {
     const hybrid = combineChunkScores(0.2, 0.9)
     const keywordOnly = combineChunkScores(0.2, 0)
     expect(hybrid).toBeGreaterThan(keywordOnly)
+  })
+})
+
+describe('resolveIndexingText', () => {
+  it('prefers full document transcript over policy supplement', async () => {
+    const longTranscript = `Exclusión por deportes extremos. ${'Cobertura amplia. '.repeat(40)}`
+    const text = await resolveIndexingText({
+      document: { extractedSummary: longTranscript },
+      policy: { exclusions: 'Exclusión por guerra' },
+    })
+
+    expect(text).toBe(longTranscript.trim())
+    expect(text).not.toContain('Exclusión por guerra')
+  })
+
+  it('merges policy supplement when document text is short', async () => {
+    const text = await resolveIndexingText({
+      document: { extractedSummary: 'Carátula' },
+      policy: {
+        coverages: 'Muerte accidental',
+        exclusions: 'Guerra y terrorismo',
+      },
+    })
+
+    expect(text).toContain('Carátula')
+    expect(text).toContain('Muerte accidental')
+    expect(text).toContain('Guerra y terrorismo')
   })
 })
 

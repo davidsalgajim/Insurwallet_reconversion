@@ -13,23 +13,24 @@ alwaysApply: false
 
 # Firebase & Backend
 
-## Estado actual (F1)
+## Estado actual (F1–F3)
 
-- **Implementado:** reglas Firestore/Storage + tests con emulador; cliente en `lib/firebase/`; CRUD pólizas + audit logs; session cookie para middleware
-- **Scaffold:** `functions/src/index.ts` (hello HTTP); sin triggers Storage ni scheduled aún
-- **Pendiente F0–F2:** App Check, Secret Manager, `jobs/`, worker Cloud Run, colecciones RAG
+- **Implementado:** reglas Firestore/Storage + tests con emulador; cliente en `lib/firebase/`; CRUD pólizas + audit logs; session cookie para middleware; worker Cloud Run (local FastAPI); job runner; transcript RAG persistido
+- **Scaffold:** `functions/src/index.ts` con triggers Storage y scheduled
+- **Pendiente prod:** App Check Enforce, Secret Manager en todos los entornos, re-index batch pólizas legacy
 
 ## Firestore (equivalente a RLS de Supabase)
 
 - Security Rules: owner-only por `ownerUid`; lectura compartida vía `sharedWith`
 - **Toda regla nueva requiere test** en `firestore.rules.test.ts` (emulador)
 - Schemas Zod en `lib/schemas/` como contrato cliente ↔ Functions ↔ worker
-- Texto extraído >1MB → Cloud Storage; solo resumen en Firestore
-- Chunks RAG: `policies/{id}/documents/{docId}/chunks/{chunkId}` con vector index
+- Texto extraído >10KB → Cloud Storage (`.../docs/{docId}/extracted/document.txt`); resumen ≤10KB en Firestore (`extractedSummary`)
+- Chunks RAG: `policies/{id}/documents/{docId}/chunks/{chunkId}` con vector index; texto fuente = transcript completo vía `resolveDocumentRagText`
 
 ## Storage
 
-- Path: `users/{uid}/policies/{policyId}/docs/{docId}`
+- Path PDF: `users/{uid}/policies/{policyId}/docs/{docId}/{fileName}`
+- Path transcript RAG (opcional): `users/{uid}/policies/{policyId}/docs/{docId}/extracted/document.txt`
 - Validar mimeType y máx 20MB en cliente **y** Function
 - Reglas espejo de Firestore; tests en `storage.rules.test.ts`
 
@@ -42,7 +43,8 @@ alwaysApply: false
 
 ## Worker (Cloud Run — Python)
 
-- Pipeline: OpenDataLoader → quality gate → Surya → MarkItDown → sanitizador → Claude JSON
+- Pipeline: OpenDataLoader → quality gate → visión Claude (PDF escaneado) → **transcribe RAG** → sanitizador → Claude JSON campos
+- API response incluye `document_text` y `rag_word_count` para persistencia en Next.js
 - Endpoint autenticado OIDC service-to-service
 - Archivos <400 líneas; tests pytest junto a `pipeline/`
 - Golden set OCR ≥95% campos críticos como gate CI

@@ -38,13 +38,18 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 
 - `worker/Dockerfile` - Contenedor JDK 11 + Python 3.12 (OpenDataLoader requiere JVM).
 - `worker/main.py` - Endpoint del job de procesamiento.
-- `worker/pipeline/extract.py` - Orquestación ODL → quality gate → visión Claude (PDF escaneado) → validate + merge campos.
+- `worker/pipeline/extract.py` - Orquestación ODL → quality gate → visión Claude (PDF escaneado) → transcribe RAG → validate + merge campos.
+- `worker/pipeline/claude_transcriber.py` - Transcripción visión página a página para MarIAna (`document_text` en API worker).
 - `worker/pipeline/sanitizer.py` - Sanitizador anti prompt-injection + tests.
 - `worker/pipeline/pdf_vision.py` - Render de páginas PDF a PNG para Claude vision.
 - `worker/pipeline/policy_lexicon.py` - Sinónimos de labels ES/EN/PT (LATAM) para prompts y quality gate.
 - `worker/pipeline/claude_extractor.py` - Extracción text/vision con tool-use + heurísticas `hasNoExpiration` + tests.
 - `worker/pipeline/validators.py` - Validadores post-IA portados de los regex Swift + tests.
 - `lib/firebase/parse-document-extraction.ts` - Parseo de `document.extraction` desde Firestore (Timestamp → Date).
+- `lib/server/document-text-storage.ts` - Persistencia transcript RAG (`extractedSummary`, `extractedTextPath` en Storage).
+- `lib/server/document-job-runner.ts` - Orquestación job worker + persistencia extraction + transcript.
+- `lib/server/document-chunks.ts` - Chunking, embeddings, búsqueda híbrida RAG (`resolveIndexingText` carga transcript completo).
+- `scripts/reprocess-document.mjs` - Dev: re-extraer campos + transcript y persistir en Firestore/Storage.
 - `components/policies/policy-pdf-viewer.tsx` - Visor revisión con pdf.js (`public/pdf.worker.mjs`).
 - `worker/tests/golden/` - Golden set de ~20 pólizas reales con JSON esperado.
 - `worker/tests/adversarial/` - Corpus de PDFs maliciosos para suite de inyección.
@@ -115,12 +120,13 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 3.9 Job queue con reintentos (máx 3, backoff), timeout, estados en Firestore y manejo de fallos con mensaje accionable al usuario — **hecho jun 2026:** `invokeWorkerWithRetries` (1s/3s/9s) + estado `failed` con mensaje ES
   - [x] 3.10 Construir golden set: ~20 pólizas reales (incl. Cancer Bancolombia) con JSON esperado; workflow CI con métrica ≥95% en campos críticos como gate — **hecho jun 2026:** `worker/tests/golden/manifest.json` (20 casos + 3 PDF fixtures), `test_golden.py`, `.github/workflows/golden-ocr.yml`; PDFs reales de producción pendientes sustituir fixtures sintéticos
   - [x] 3.11 UI de estados de procesamiento en vivo (listener Firestore): subiendo → extrayendo → analizando → listo, con micro-interacciones emil-design-eng — **hecho jun 2026:** `DocumentProcessingListener` + barra de progreso + transiciones 200ms + `prefers-reduced-motion`
-  - [x] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto — **hecho jun 2026:** split-view + badges + visor pdf.js (`public/pdf.worker.mjs`, sin iframe Storage); parseo extracción `parse-document-extraction.ts`; bboxes ODL cuando existan
+  - [x] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto — **hecho jun 2026:** split-view + badges + visor pdf.js (`public/pdf.worker.mjs`, sin iframe Storage); parseo extracción `parse-document-extraction.ts`; bboxes ODL cuando existan; indexación usa transcript completo (ver 3.15)
+  - [x] 3.15 Transcript RAG robusto: transcripción visión por página (`claude_transcriber.py`), persistencia `document_text` en job runner (`document-text-storage.ts`), indexación desde Storage/`extractedSummary` — **hecho jun 2026:** worker API `document_text` + `rag_word_count`; reprocess script persiste transcript; tests TS + pytest
   - [x] 3.13 Flujo C — documentos adicionales a póliza existente: detección de diffs (ej. endoso con nueva vigencia) + banner "¿actualizar la póliza?" con diff visible — **hecho jun 2026:** panel en detalle (incl. vencida), upload multi-doc, `computePolicyExtractionDiff` + `PolicyUpdatePrompt` en revisión; merge extracciones por confianza (`mergePolicyExtractions`)
   - [ ] 3.14 Revisión con agentes (security-reviewer + python-reviewer + typescript-reviewer + Bugbot) y commit de cierre
 
 - [ ] 4.0 F3 — MarIAna multi-agente y compartir pólizas
-  - [x] 4.1 Implementar chunking + embeddings del texto extraído (chunks ~500 tokens con página/bbox) y vector index de Firestore; indexación automática al confirmar revisión — **hecho jun 2026:** chunking + embeddings Google text-embedding-004 (768-dim) con consentimiento IA; búsqueda híbrida vector+keyword; multi-policy cuando policyHint ambiguo; índice vector en `firestore.indexes.json`; cosine in-memory hasta desplegar findNearest
+  - [x] 4.1 Implementar chunking + embeddings del texto extraído (chunks ~500 tokens con página/bbox) y vector index de Firestore; indexación automática al confirmar revisión — **hecho jun 2026:** chunking + embeddings Google text-embedding-004 (768-dim) con consentimiento IA; búsqueda híbrida vector+keyword; carga **transcript completo** desde Storage/`extractedSummary` (3.15); multi-policy cuando policyHint ambiguo; índice vector en `firestore.indexes.json`; cosine in-memory hasta desplegar findNearest
   - [x] 4.2 Implementar Tier 0 determinístico: intents frecuentes (vencimientos, primas, contactos) resueltos con query Firestore + plantilla localizada <300ms, sin LLM — TDD del matcher de intents
   - [x] 4.3 Implementar router con Haiku: clasificación de intención + extracción de entidades (qué póliza, qué tema) con contexto mínimo (solo metadatos de pólizas)
   - [x] 4.4 Implementar tools read-only con scope server-side por uid (`get_policies_summary`, `search_document_chunks`, `get_coverage_details`, `get_contacts`) — los tools jamás aceptan IDs arbitrarios del cliente; tests de autorización
@@ -224,10 +230,10 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [ ] 8.F.4 Smoke: email share invite + bienvenida en staging
 
   ### G. MarIAna RAG en producción
-  - [x] 8.G.1 Chunking + embeddings Google text-embedding-004 (768-dim); híbrido vector+keyword (`lib/server/embeddings.ts`, `document-chunks.ts`)
+  - [x] 8.G.1 Chunking + embeddings Google text-embedding-004 (768-dim); híbrido vector+keyword (`lib/server/embeddings.ts`, `document-chunks.ts`); fuente de texto = transcript completo persistido (3.15)
   - [x] 8.G.2 Indexación al confirmar revisión vía `POST /api/policies/{id}/index-documents` (requiere consentimiento `cloudAI`)
   - [ ] 8.G.3 `GOOGLE_AI_API_KEY` (o `EMBEDDING_API_KEY`) en Vercel Production + Secret Manager
-  - [ ] 8.G.4 Tras deploy prod: re-indexar pólizas existentes con documentos (consentimiento IA + endpoint index-documents por póliza o script batch)
+  - [ ] 8.G.4 Tras deploy prod: re-indexar pólizas existentes — `node scripts/reprocess-document.mjs <policyId>` (transcript) + `POST .../index-documents` por póliza o script batch
   - [ ] 8.G.5 Smoke MarIAna: pregunta con cita a chunk tras upload+confirmación en staging/prod
   - [ ] 8.G.6 Verificar índice vector Firestore en estado **Enabled** antes de escalar usuarios RAG
 
@@ -275,6 +281,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - [x] **Extracción real:** OpenDataLoader → quality gate → Surya/MarkItDown → Claude tool-use (3.3–3.8) — **jun 2026:** pipeline + Docker ODL + bboxes; Surya prod real pendiente
 - [x] **Visor PDF avanzado:** resaltado de bboxes por campo en revisión (3.12) — pdf.js + worker en `public/`; parseo extracción Firestore; datos bbox dependen de ODL en worker
 - [x] **Paridad campos extracción (jun 2026):** 20 campos extraíbles = wizard manual (`lib/schemas/extraction-field-keys.ts`, `worker/pipeline/extraction_fields.py`); tests de paridad TS + pytest; policyType incluye pet/funeral/dental/business
+- [x] **Transcript RAG (jun 2026):** `claude_transcriber.py` + `document-text-storage.ts` + `document-job-runner` + `resolveIndexingText` en `document-chunks.ts`; reprocess script; MarIAna puede buscar exclusiones/clausulado en PDF escaneado
 - [ ] **FCM end-to-end:** `NEXT_PUBLIC_FIREBASE_VAPID_KEY` + envío en `sendExpiryReminders` y al job `ready` (5.6, 5.8)
 - [ ] **Share completo:** ~~email Resend al destinatario, revocación UI, `view_download` (4.8)~~ hecho jun 2026; E2E share pendiente
 - [ ] **GDPR completo:** signed URLs de documentos en export + audit log delete (5.10)

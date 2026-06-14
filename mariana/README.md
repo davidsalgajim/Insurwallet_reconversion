@@ -32,9 +32,29 @@ Document text is chunked (~500 tokens) into Firestore:
 
 Triggered when the user confirms policy review (`POST /api/policies/{id}/index-documents`).
 
-1. Chunk extracted summary + policy fields
-2. If **cloud AI consent** is accepted and `EMBEDDING_API_KEY` / `GOOGLE_AI_API_KEY` is set → embed with Google **text-embedding-004** (768-dim)
-3. Store `embedding: number[]` on each chunk (optional — keyword search still works without it)
+1. Load **full document transcript** from `extractedTextPath` (Storage) or `extractedSummary` (Firestore, ≤10KB); supplement with confirmed policy fields only when transcript is short
+2. Chunk (~500 tokens) into `policies/{policyId}/documents/{docId}/chunks/{chunkId}`
+3. If **cloud AI consent** is accepted and `EMBEDDING_API_KEY` / `GOOGLE_AI_API_KEY` is set → embed with Google **text-embedding-004** (768-dim)
+4. Store `embedding: number[]` on each chunk (optional — keyword search still works without it)
+
+Transcript source: worker vision transcription (`pipeline/claude_transcriber.py`) on scanned PDFs; otherwise sanitized text extract. Persisted by `document-job-runner` via `lib/server/document-text-storage.ts`.
+
+### Data paths
+
+| Dato               | Ubicación                                                         |
+| ------------------ | ----------------------------------------------------------------- |
+| PDF original       | Storage `users/{uid}/policies/{policyId}/docs/{docId}/{fileName}` |
+| Transcript >10KB   | Storage `.../docs/{docId}/extracted/document.txt`                 |
+| Resumen transcript | Firestore `documents/{docId}.extractedSummary` (≤10KB)            |
+| Chunks indexados   | Firestore `documents/{docId}/chunks/{chunkId}`                    |
+
+### Dev: reprocesar pólizas legacy
+
+```bash
+node scripts/reprocess-document.mjs <policyId> [docId]
+# Luego indexar (logueado, con consentimiento cloudAI):
+# POST /api/policies/<policyId>/index-documents
+```
 
 ### Query-time search
 

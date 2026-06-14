@@ -14,6 +14,7 @@ from pipeline.claude_extractor import (
     extract_policy_fields_from_images,
     serialize_fields_for_api,
 )
+from pipeline.claude_transcriber import transcribe_document_from_images
 from pipeline.insurance_terms import apply_insurance_corrections
 from pipeline.pdf_vision import render_pdf_page_images
 from pipeline.quality_gate import is_low_signal_text, needs_quality_escalation, word_count
@@ -53,8 +54,10 @@ def _merge_extraction_fields(
 @dataclass(frozen=True, slots=True)
 class ExtractResult:
     text: str
+    rag_text: str
     method: PipelineMethod
     word_count: int
+    rag_word_count: int
     sanitized: SanitizeResult
     extraction: dict[str, object]
     confidence: dict[str, str]
@@ -114,6 +117,8 @@ def extract_document(
         is_low_signal_text(sanitized.text) or escalated_from_odl
     )
     pipeline_steps: list[str] = []
+    page_images: list[bytes] | None = None
+    rag_text = sanitized.text
 
     try:
         if use_vision:
@@ -139,6 +144,23 @@ def extract_document(
         logger.exception("Claude extraction failed")
         raise
 
+    if page_images:
+        transcribed = transcribe_document_from_images(
+            page_images,
+            has_suspicious_content=sanitized.has_suspicious_content,
+        )
+        if transcribed:
+            pipeline_steps.append("transcribe")
+            rag_text = transcribed
+        elif not is_low_signal_text(sanitized.text):
+            rag_text = sanitized.text
+    elif is_low_signal_text(sanitized.text):
+        logger.warning(
+            "RAG text remains low-signal after pipeline (words=%s)",
+            word_count(sanitized.text),
+        )
+        rag_text = sanitized.text
+
     claude_fields = _apply_expiration_heuristics(dict(claude_result.fields))
     validation = validate_extraction(claude_fields)
     api_method = _map_method_to_api(backend)
@@ -159,8 +181,10 @@ def extract_document(
 
     return ExtractResult(
         text=sanitized.text,
+        rag_text=rag_text,
         method=backend if backend in ("odl", "surya", "markitdown") else "odl",  # type: ignore[arg-type]
         word_count=word_count(sanitized.text),
+        rag_word_count=word_count(rag_text),
         sanitized=sanitized,
         extraction=extraction_payload,
         confidence=validation.to_confidence_dict(),
