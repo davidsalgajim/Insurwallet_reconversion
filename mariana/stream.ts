@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 
 import type { MarianaPolicyContext } from '@/lib/server/mariana-context'
+import { toErrorMessage } from '@/lib/server/safe-error'
 import { prefetchToolsForAgent } from '@/lib/server/mariana-tools'
 import { embedText, isEmbeddingsConfigured } from '@/lib/server/embeddings'
 import { getAgentSystemPromptWithSpecialist } from '@/mariana/agents'
@@ -12,6 +13,7 @@ import {
 } from '@/mariana/guardrails'
 import { routeMessage } from '@/mariana/router'
 import { formatHistoryForModel, type ChatTurn } from '@/mariana/rolling-summary'
+import { MARIANA_SPECIALIST_MODEL } from '@/mariana/models'
 import { buildTier0Response } from '@/mariana/tier0-respond'
 import type {
   MarianaChatChunk,
@@ -20,8 +22,6 @@ import type {
   RouteDecision,
 } from '@/mariana/types'
 import type { ToolContext } from '@/mariana/tools'
-
-const SPECIALIST_MODEL = 'claude-3-5-sonnet-20241022'
 
 type StreamInput = {
   message: string
@@ -149,6 +149,42 @@ async function resolveRoute(
   return classifyWithHaiku(message, metadata, apiKey)
 }
 
+function marianaApiFailureMessage(
+  error: unknown,
+  locale: 'es' | 'en' | 'pt',
+  hasApiKey: boolean
+): string {
+  const detail = toErrorMessage(error)
+  const lower = detail.toLowerCase()
+
+  if (
+    !hasApiKey ||
+    lower.includes('authentication') ||
+    lower.includes('api key') ||
+    lower.includes('x-api-key')
+  ) {
+    return locale === 'es'
+      ? 'MarIAna no puede conectar con el servicio de IA. Configura ANTHROPIC_API_KEY en el servidor.'
+      : locale === 'pt'
+        ? 'A MarIAna não consegue conectar ao serviço de IA. Configure ANTHROPIC_API_KEY no servidor.'
+        : 'MarIAna cannot reach the AI service. Set ANTHROPIC_API_KEY on the server.'
+  }
+
+  if (lower.includes('not_found') || lower.includes('model')) {
+    return locale === 'es'
+      ? 'El modelo de IA configurado ya no está disponible. Actualiza los IDs de modelo de MarIAna.'
+      : locale === 'pt'
+        ? 'O modelo de IA configurado não está mais disponível. Atualize os IDs de modelo da MarIAna.'
+        : 'The configured AI model is no longer available. Update MarIAna model IDs.'
+  }
+
+  return locale === 'es'
+    ? 'No pude completar la respuesta con IA en este momento. Intenta de nuevo en unos segundos.'
+    : locale === 'pt'
+      ? 'Não consegui concluir a resposta com IA agora. Tente novamente em alguns segundos.'
+      : 'Could not complete the AI response right now. Please try again shortly.'
+}
+
 async function streamSpecialist(
   decision: RouteDecision,
   input: StreamInput
@@ -212,35 +248,50 @@ async function streamSpecialist(
       locale: input.locale,
     })
 
-    const stream = await client.messages.stream({
-      model: SPECIALIST_MODEL,
-      max_tokens: 1_024,
-      temperature: 0.2,
-      system: buildCachedSystemBlocks(systemPrompt, responseSuffix),
-      messages: [
-        ...(historyBlock
-          ? [{ role: 'user' as const, content: historyBlock }]
-          : []),
-        {
-          role: 'user',
-          content: `${buildToolContextBlock(toolResults)}\n\nUser question (${input.locale}):\n${input.message}`,
-        },
-      ],
-    })
-
     let fullText = ''
-    for await (const event of stream) {
-      if (
-        event.type === 'content_block_delta' &&
-        event.delta.type === 'text_delta'
-      ) {
-        fullText += event.delta.text
-        yield {
-          type: 'delta',
-          content: event.delta.text,
-          agent: decision.agent,
+    try {
+      const stream = await client.messages.stream({
+        model: MARIANA_SPECIALIST_MODEL,
+        max_tokens: 1_024,
+        temperature: 0.2,
+        system: buildCachedSystemBlocks(systemPrompt, responseSuffix),
+        messages: [
+          ...(historyBlock
+            ? [{ role: 'user' as const, content: historyBlock }]
+            : []),
+          {
+            role: 'user',
+            content: `${buildToolContextBlock(toolResults)}\n\nUser question (${input.locale}):\n${input.message}`,
+          },
+        ],
+      })
+
+      for await (const event of stream) {
+        if (
+          event.type === 'content_block_delta' &&
+          event.delta.type === 'text_delta'
+        ) {
+          fullText += event.delta.text
+          yield {
+            type: 'delta',
+            content: event.delta.text,
+            agent: decision.agent,
+          }
         }
       }
+    } catch (error) {
+      const fallback = marianaApiFailureMessage(
+        error,
+        input.locale,
+        Boolean(input.apiKey)
+      )
+      yield { type: 'delta', content: fallback, agent: decision.agent }
+      yield {
+        type: 'done',
+        agent: decision.agent,
+        citations,
+      }
+      return
     }
 
     if (!isInsuranceScopedResponse(fullText)) {

@@ -25,6 +25,7 @@ export function MarianaAvatar({
       width={size}
       height={size}
       priority={priority}
+      style={{ width: size, height: size }}
       className={cn('rounded-full object-cover', className)}
     />
   )

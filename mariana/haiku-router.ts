@@ -1,9 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
 
+import { MARIANA_ROUTER_MODEL } from '@/mariana/models'
 import type { PolicyMetadata, RouteDecision } from '@/mariana/types'
 import { routeMessage } from '@/mariana/router'
-
-const ROUTER_MODEL = 'claude-3-5-haiku-20241022'
 
 const ROUTER_SYSTEM = `You classify insurance chat messages for MarIAna.
 Return ONLY valid JSON with this shape:
@@ -34,7 +33,7 @@ export async function classifyWithHaiku(
 
   try {
     const response = await client.messages.create({
-      model: ROUTER_MODEL,
+      model: MARIANA_ROUTER_MODEL,
       max_tokens: 256,
       temperature: 0,
       system: ROUTER_SYSTEM,
