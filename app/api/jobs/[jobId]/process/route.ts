@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
 
 type RouteContext = { params: Promise<{ jobId: string }> }
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const session = await requireSession()
 
   if (!session?.uid) {
