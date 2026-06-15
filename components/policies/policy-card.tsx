@@ -21,7 +21,7 @@ export function PolicyCard({ policy, className }: PolicyCardProps) {
     <Link
       href={`/policies/${policy.id}`}
       className={cn(
-        'glass-panel group flex flex-col gap-4 p-5 transition-transform duration-200 hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between',
+        'elevated-card group flex flex-col gap-4 p-5 transition-transform duration-200 hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between',
         className
       )}
     >

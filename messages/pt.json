@@ -247,6 +247,31 @@
       "owned": "Minhas apólices",
       "sharedWithMe": "Compartilhadas comigo"
     },
+    "list": {
+      "group": {
+        "count": "{count, plural, one {# apólice} other {# apólices}}"
+      },
+      "summary": {
+        "heading": "Resumo por tipo",
+        "aria": "Resumo de apólices por tipo de seguro",
+        "totalLabel": "Total na carteira",
+        "total": "{count, plural, one {# apólice} other {# apólices}}",
+        "filterByType": "Filtrar por {type} ({count})"
+      },
+      "filters": {
+        "typeHeading": "Tipo",
+        "statusHeading": "Status",
+        "typeLabel": "Tipo",
+        "statusLabel": "Status",
+        "ariaType": "Filtrar por tipo de seguro",
+        "ariaStatus": "Filtrar por status da apólice",
+        "allTypes": "Todos",
+        "allStatuses": "Todas",
+        "emptyTitle": "Nenhuma apólice corresponde",
+        "emptyDesc": "Tente outros filtros ou redefina a seleção.",
+        "clear": "Limpar filtros"
+      }
+    },
     "sharedWithMe": {
       "badge": "Compartilhada",
       "sharedAccess": "Acesso somente leitura compartilhado com você",
@@ -303,6 +328,22 @@
       "phonePlaceholder": "+55 11 90000 0000",
       "email": "E-mail",
       "emailPlaceholder": "agente@seguradora.com"
+    },
+    "savedDirectory": {
+      "pickAdvisor": "Escolher dos meus assessores salvos",
+      "pickAdvisorPlaceholder": "Selecione um assessor…",
+      "pickBeneficiaries": "Adicionar dos salvos",
+      "pickBeneficiaryPlaceholder": "Selecione um beneficiário…",
+      "addSelectedBeneficiary": "Adicionar selecionado",
+      "allBeneficiariesAdded": "Todos os beneficiários salvos já foram adicionados",
+      "noSavedAdvisors": "Você ainda não tem assessores salvos.",
+      "noSavedBeneficiaries": "Você ainda não tem beneficiários globais salvos.",
+      "manageAdvisors": "Gerenciar assessores",
+      "manageBeneficiaries": "Gerenciar beneficiários",
+      "saveAdvisor": "Salvar este assessor nos meus contatos",
+      "saveBeneficiary": "Salvar nos meus beneficiários globais",
+      "loading": "Carregando…",
+      "loadError": "Não foi possível carregar seus contatos salvos."
     },
     "detail": {
       "title": "Detalhes da apólice",

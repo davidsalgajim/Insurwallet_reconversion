@@ -39,3 +39,9 @@ export const PAYMENT_FREQUENCY_VALUES = [
   'annual',
   'single',
 ] as const satisfies readonly PaymentFrequency[]
+
+export const POLICY_STATUS_VALUES = [
+  'active',
+  'expiring',
+  'expired',
+] as const satisfies readonly PolicyStatus[]

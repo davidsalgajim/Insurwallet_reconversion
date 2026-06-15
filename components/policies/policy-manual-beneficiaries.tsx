@@ -4,6 +4,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { BeneficiaryPctField } from '@/components/policies/beneficiary-pct-field'
+import { SavedBeneficiaryPicker } from '@/components/policies/saved-beneficiary-picker'
 import { policyFieldClassName } from '@/components/policies/policy-form-styles'
 import type { ManualBeneficiaryRow } from '@/lib/schemas/beneficiary'
 import {
@@ -28,14 +29,21 @@ export function createEmptyManualBeneficiaryRow(): ManualBeneficiaryFormRow {
 type PolicyManualBeneficiariesProps = {
   rows: ManualBeneficiaryFormRow[]
   onChange: (rows: ManualBeneficiaryFormRow[]) => void
+  saveFlags?: Record<string, boolean>
+  onSaveFlagChange?: (key: string, value: boolean) => void
+  disabled?: boolean
 }
 
 export function PolicyManualBeneficiaries({
   rows,
   onChange,
+  saveFlags = {},
+  onSaveFlagChange,
+  disabled = false,
 }: PolicyManualBeneficiariesProps) {
   const t = useTranslations('policies.manual')
   const tb = useTranslations('policies.beneficiaries')
+  const ts = useTranslations('policies.savedDirectory')
   const pctTotal = sumBeneficiaryPct(rows)
   const pctValid = isBeneficiaryPctTotalValid(rows)
 
@@ -58,11 +66,18 @@ export function PolicyManualBeneficiaries({
           type="button"
           className="inline-flex items-center gap-1 text-xs font-semibold text-primary"
           onClick={() => onChange([...rows, createEmptyManualBeneficiaryRow()])}
+          disabled={disabled}
         >
           <Plus className="size-3.5" />
           {t('addBeneficiary')}
         </button>
       </div>
+
+      <SavedBeneficiaryPicker
+        rows={rows}
+        onChange={onChange}
+        disabled={disabled}
+      />
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -92,6 +107,7 @@ export function PolicyManualBeneficiaries({
                     }
                     placeholder={t('beneficiaryNamePlaceholder')}
                     className={policyFieldClassName}
+                    disabled={disabled}
                   />
                 </div>
                 <button
@@ -99,6 +115,7 @@ export function PolicyManualBeneficiaries({
                   className="mt-7 rounded-[var(--radius-inner)] border border-border/60 p-2 text-[var(--primitive-danger)]"
                   onClick={() => removeRow(row.key)}
                   aria-label={tb('delete')}
+                  disabled={disabled}
                 >
                   <Trash2 className="size-4" strokeWidth={1.5} />
                 </button>
@@ -129,9 +146,24 @@ export function PolicyManualBeneficiaries({
                     }
                     placeholder={t('beneficiaryObservationsPlaceholder')}
                     className={policyFieldClassName}
+                    disabled={disabled}
                   />
                 </div>
               </div>
+              {onSaveFlagChange && row.name.trim().length > 0 ? (
+                <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 size-4 rounded border-border"
+                    checked={saveFlags[row.key] ?? false}
+                    onChange={(event) =>
+                      onSaveFlagChange(row.key, event.target.checked)
+                    }
+                    disabled={disabled}
+                  />
+                  <span>{ts('saveBeneficiary')}</span>
+                </label>
+              ) : null}
             </div>
           ))}
         </div>

@@ -219,6 +219,79 @@ describe.runIf(RUN_RULES_TESTS)('firestore.rules', () => {
         })
       )
     })
+
+    it('allows owner CRUD on contacts subcollection', async () => {
+      await seedUser(OWNER_UID)
+      const ownerDb = dbFor(OWNER_UID)
+      const contactRef = doc(ownerDb, 'users', OWNER_UID, 'contacts', 'c-1')
+
+      await assertSucceeds(
+        setDoc(contactRef, {
+          type: 'agent',
+          name: 'Ana Pérez',
+          phone: '+57 300',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+      )
+      await assertSucceeds(getDoc(contactRef))
+      await assertSucceeds(updateDoc(contactRef, { phone: '+57 301' }))
+      await assertSucceeds(deleteDoc(contactRef))
+    })
+
+    it('denies other users from contacts subcollection', async () => {
+      await seedUser(OWNER_UID)
+
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const adminDb = context.firestore()
+        await setDoc(doc(adminDb, 'users', OWNER_UID, 'contacts', 'c-1'), {
+          type: 'agent',
+          name: 'Ana Pérez',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+      })
+
+      const attackerDb = dbFor(ATTACKER_UID)
+      await assertFails(
+        getDoc(doc(attackerDb, 'users', OWNER_UID, 'contacts', 'c-1'))
+      )
+      await assertFails(
+        setDoc(doc(attackerDb, 'users', OWNER_UID, 'contacts', 'c-2'), {
+          type: 'agent',
+          name: 'Hijack',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+      )
+    })
+
+    it('allows owner CRUD on global beneficiaries subcollection', async () => {
+      await seedUser(OWNER_UID)
+      const ownerDb = dbFor(OWNER_UID)
+      const beneficiaryRef = doc(
+        ownerDb,
+        'users',
+        OWNER_UID,
+        'beneficiaries',
+        'b-1'
+      )
+
+      await assertSucceeds(
+        setDoc(beneficiaryRef, {
+          name: 'María García',
+          idType: 'cc',
+          idNumber: '123',
+          relationship: 'Cónyuge',
+          pct: 50,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+      )
+      await assertSucceeds(getDoc(beneficiaryRef))
+      await assertSucceeds(updateDoc(beneficiaryRef, { pct: 60 }))
+      await assertSucceeds(deleteDoc(beneficiaryRef))
+    })
   })
 
   describe('policies/{policyId}', () => {

@@ -22,7 +22,7 @@ export function SharedPolicyCard({ policy, className }: SharedPolicyCardProps) {
     <Link
       href={`/policies/${policy.id}`}
       className={cn(
-        'glass-panel group flex flex-col gap-4 p-5 transition-transform duration-200 hover:-translate-y-0.5',
+        'elevated-card group flex flex-col gap-4 p-5 transition-transform duration-200 hover:-translate-y-0.5',
         className
       )}
     >

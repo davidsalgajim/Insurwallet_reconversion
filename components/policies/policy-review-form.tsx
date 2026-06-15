@@ -84,6 +84,10 @@ export function PolicyReviewForm({
       key: `beneficiary-${index}`,
     }))
   )
+  const [saveAgentToContacts, setSaveAgentToContacts] = useState(false)
+  const [beneficiarySaveFlags, setBeneficiarySaveFlags] = useState<
+    Record<string, boolean>
+  >({})
 
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -147,6 +151,22 @@ export function PolicyReviewForm({
 
       if (input.beneficiaryEntries && input.beneficiaryEntries.length > 0) {
         await syncPolicyBeneficiaries(policy.id, input.beneficiaryEntries)
+      }
+
+      try {
+        const { saveAdvisorToContacts, saveMarkedBeneficiaries } =
+          await import('@/lib/policies/save-to-directory')
+        if (saveAgentToContacts) {
+          await saveAdvisorToContacts(agent)
+        }
+        await saveMarkedBeneficiaries(
+          beneficiaryRows.map((row) => ({
+            row,
+            save: beneficiarySaveFlags[row.key] ?? false,
+          }))
+        )
+      } catch {
+        // Policy saved; directory sync is best-effort.
       }
 
       if (mode === 'confirm') {
@@ -244,6 +264,11 @@ export function PolicyReviewForm({
         <PolicyManualBeneficiaries
           rows={beneficiaryRows}
           onChange={setBeneficiaryRows}
+          saveFlags={beneficiarySaveFlags}
+          onSaveFlagChange={(key, value) =>
+            setBeneficiarySaveFlags((current) => ({ ...current, [key]: value }))
+          }
+          disabled={submitting}
         />
 
         <PolicyStructuredFields
@@ -261,6 +286,9 @@ export function PolicyReviewForm({
           onChange={(field, value) =>
             setAgent((current) => ({ ...current, [field]: value }))
           }
+          saveToContacts={saveAgentToContacts}
+          onSaveToContactsChange={setSaveAgentToContacts}
+          disabled={submitting}
         />
 
         {formError ? (

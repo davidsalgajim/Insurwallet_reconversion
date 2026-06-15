@@ -44,8 +44,14 @@ export function initAppCheck(app: FirebaseApp): AppCheck | null {
   const debugToken = env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN?.trim()
 
   if (process.env.NODE_ENV === 'development' && debugToken) {
-    win.FIREBASE_APPCHECK_DEBUG_TOKEN =
-      debugToken === 'true' ? true : debugToken
+    if (debugToken === 'true') {
+      win.FIREBASE_APPCHECK_DEBUG_TOKEN = true
+      console.info(
+        '[app-check] Debug mode auto-token: copy the UUID from the browser console and register it in Firebase Console → App Check → Manage debug tokens. Prefer NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN=<registered-uuid> instead of "true".'
+      )
+    } else {
+      win.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken
+    }
   }
 
   if (!siteKey) {

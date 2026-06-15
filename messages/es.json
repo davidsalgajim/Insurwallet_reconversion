@@ -247,6 +247,31 @@
       "owned": "Mis pólizas",
       "sharedWithMe": "Compartidas conmigo"
     },
+    "list": {
+      "group": {
+        "count": "{count, plural, one {# póliza} other {# pólizas}}"
+      },
+      "summary": {
+        "heading": "Resumen por tipo",
+        "aria": "Resumen de pólizas por tipo de seguro",
+        "totalLabel": "Total en cartera",
+        "total": "{count, plural, one {# póliza} other {# pólizas}}",
+        "filterByType": "Filtrar por {type} ({count})"
+      },
+      "filters": {
+        "typeHeading": "Tipo",
+        "statusHeading": "Estado",
+        "typeLabel": "Tipo",
+        "statusLabel": "Estado",
+        "ariaType": "Filtrar por tipo de seguro",
+        "ariaStatus": "Filtrar por estado de la póliza",
+        "allTypes": "Todos",
+        "allStatuses": "Todas",
+        "emptyTitle": "Ninguna póliza coincide",
+        "emptyDesc": "Prueba otros filtros o restablece la selección.",
+        "clear": "Limpiar filtros"
+      }
+    },
     "sharedWithMe": {
       "badge": "Compartida",
       "sharedAccess": "Acceso de solo lectura compartido contigo",
@@ -303,6 +328,22 @@
       "phonePlaceholder": "+57 300 000 0000",
       "email": "Correo",
       "emailPlaceholder": "agente@aseguradora.com"
+    },
+    "savedDirectory": {
+      "pickAdvisor": "Elegir de mis asesores guardados",
+      "pickAdvisorPlaceholder": "Selecciona un asesor…",
+      "pickBeneficiaries": "Agregar desde guardados",
+      "pickBeneficiaryPlaceholder": "Selecciona un beneficiario…",
+      "addSelectedBeneficiary": "Agregar seleccionado",
+      "allBeneficiariesAdded": "Ya agregaste todos tus beneficiarios guardados",
+      "noSavedAdvisors": "Aún no tienes asesores guardados.",
+      "noSavedBeneficiaries": "Aún no tienes beneficiarios globales guardados.",
+      "manageAdvisors": "Gestionar asesores",
+      "manageBeneficiaries": "Gestionar beneficiarios",
+      "saveAdvisor": "Guardar este asesor en mis contactos",
+      "saveBeneficiary": "Guardar en mis beneficiarios globales",
+      "loading": "Cargando…",
+      "loadError": "No se pudieron cargar tus contactos guardados."
     },
     "detail": {
       "title": "Detalle de póliza",

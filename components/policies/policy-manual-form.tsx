@@ -80,6 +80,10 @@ export function PolicyManualForm() {
   const [beneficiaryRows, setBeneficiaryRows] = useState<
     ManualBeneficiaryFormRow[]
   >([])
+  const [saveAgentToContacts, setSaveAgentToContacts] = useState(false)
+  const [beneficiarySaveFlags, setBeneficiarySaveFlags] = useState<
+    Record<string, boolean>
+  >({})
   const [supportingFiles, setSupportingFiles] = useState<SelectedUploadFile[]>(
     []
   )
@@ -169,6 +173,22 @@ export function PolicyManualForm() {
         }
       }
 
+      try {
+        const { saveAdvisorToContacts, saveMarkedBeneficiaries } =
+          await import('@/lib/policies/save-to-directory')
+        if (saveAgentToContacts) {
+          await saveAdvisorToContacts(agent)
+        }
+        await saveMarkedBeneficiaries(
+          beneficiaryRows.map((row) => ({
+            row,
+            save: beneficiarySaveFlags[row.key] ?? false,
+          }))
+        )
+      } catch {
+        // Policy saved; directory sync is best-effort.
+      }
+
       router.push('/policies')
     } catch {
       setError(t('errors.saveFailed'))
@@ -190,6 +210,11 @@ export function PolicyManualForm() {
       <PolicyManualBeneficiaries
         rows={beneficiaryRows}
         onChange={setBeneficiaryRows}
+        saveFlags={beneficiarySaveFlags}
+        onSaveFlagChange={(key, value) =>
+          setBeneficiarySaveFlags((current) => ({ ...current, [key]: value }))
+        }
+        disabled={submitting}
       />
 
       <PolicyStructuredFields
@@ -202,7 +227,13 @@ export function PolicyManualForm() {
         onBenefitChange={setBenefitRows}
       />
 
-      <PolicyAgentFields values={agent} onChange={handleAgentChange} />
+      <PolicyAgentFields
+        values={agent}
+        onChange={handleAgentChange}
+        saveToContacts={saveAgentToContacts}
+        onSaveToContactsChange={setSaveAgentToContacts}
+        disabled={submitting}
+      />
 
       <section className="space-y-3 border-t border-border/60 pt-6">
         <div>

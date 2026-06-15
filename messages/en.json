@@ -247,6 +247,31 @@
       "owned": "My policies",
       "sharedWithMe": "Shared with me"
     },
+    "list": {
+      "group": {
+        "count": "{count, plural, one {# policy} other {# policies}}"
+      },
+      "summary": {
+        "heading": "Summary by type",
+        "aria": "Policy count by insurance type",
+        "totalLabel": "Portfolio total",
+        "total": "{count, plural, one {# policy} other {# policies}}",
+        "filterByType": "Filter by {type} ({count})"
+      },
+      "filters": {
+        "typeHeading": "Type",
+        "statusHeading": "Status",
+        "typeLabel": "Type",
+        "statusLabel": "Status",
+        "ariaType": "Filter by insurance type",
+        "ariaStatus": "Filter by policy status",
+        "allTypes": "All",
+        "allStatuses": "All",
+        "emptyTitle": "No policies match",
+        "emptyDesc": "Try different filters or reset your selection.",
+        "clear": "Clear filters"
+      }
+    },
     "sharedWithMe": {
       "badge": "Shared",
       "sharedAccess": "Read-only access shared with you",
@@ -303,6 +328,22 @@
       "phonePlaceholder": "+1 555 000 0000",
       "email": "Email",
       "emailPlaceholder": "agent@insurer.com"
+    },
+    "savedDirectory": {
+      "pickAdvisor": "Choose from saved advisors",
+      "pickAdvisorPlaceholder": "Select an advisor…",
+      "pickBeneficiaries": "Add from saved",
+      "pickBeneficiaryPlaceholder": "Select a beneficiary…",
+      "addSelectedBeneficiary": "Add selected",
+      "allBeneficiariesAdded": "All saved beneficiaries are already on this policy",
+      "noSavedAdvisors": "You have no saved advisors yet.",
+      "noSavedBeneficiaries": "You have no saved global beneficiaries yet.",
+      "manageAdvisors": "Manage advisors",
+      "manageBeneficiaries": "Manage beneficiaries",
+      "saveAdvisor": "Save this advisor to my contacts",
+      "saveBeneficiary": "Save to my global beneficiaries",
+      "loading": "Loading…",
+      "loadError": "Could not load your saved contacts."
     },
     "detail": {
       "title": "Policy details",
