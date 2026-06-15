@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { normalizeExtractedAgentEmail } from '@/lib/policies/agent-placeholders'
+import type { InsurerContactsExtraction } from '@/lib/schemas/extraction'
 import type {
   BenefitEntry,
   BeneficiaryEntry,
@@ -169,13 +170,33 @@ function coverageEntryKey(name: string): string {
   return name.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
 }
 
+type StructuredExtractionArrayFields = {
+  beneficiaryEntries?: BeneficiaryEntry[]
+  coverageEntries?: CoverageEntry[]
+  deductibleEntries?: DeductibleEntry[]
+  benefitEntries?: BenefitEntry[]
+  insurerContacts?: InsurerContactsExtraction
+}
+
+function insurerContactsAsArray(
+  contacts: InsurerContactsExtraction | undefined
+): InsurerContactLine[] | undefined {
+  if (!contacts) {
+    return undefined
+  }
+  return Array.isArray(contacts) ? contacts : [contacts]
+}
+
 /** RESUMEN DE PRESTACIONES / clause rows misrouted to benefitEntries → coverageEntries. */
 export function promoteBenefitRowsToCoverages<
-  T extends {
-    coverageEntries?: CoverageEntry[]
-    benefitEntries?: BenefitEntry[]
-  },
->(fields: T): T {
+  T extends Pick<
+    StructuredExtractionArrayFields,
+    'coverageEntries' | 'benefitEntries'
+  >,
+>(
+  fields: T
+): T &
+  Pick<StructuredExtractionArrayFields, 'coverageEntries' | 'benefitEntries'> {
   const benefits = fields.benefitEntries
   if (!benefits?.length) {
     return fields
@@ -392,15 +413,13 @@ export function sanitizeBenefitEntriesForPersist(
 }
 
 export function sanitizeStructuredExtractionArraysForPersist<
-  T extends {
-    beneficiaryEntries?: BeneficiaryEntry[]
-    coverageEntries?: CoverageEntry[]
-    deductibleEntries?: DeductibleEntry[]
-    benefitEntries?: BenefitEntry[]
-    insurerContacts?: InsurerContactLine[]
-  },
->(fields: T): T {
+  T extends StructuredExtractionArrayFields,
+>(
+  fields: T
+): T &
+  Pick<StructuredExtractionArrayFields, 'coverageEntries' | 'benefitEntries'> {
   const sanitized = { ...fields }
+  const insurerContactLines = insurerContactsAsArray(fields.insurerContacts)
 
   if (fields.beneficiaryEntries !== undefined) {
     sanitized.beneficiaryEntries = sanitizeBeneficiaryEntriesForPersist(
@@ -420,11 +439,14 @@ export function sanitizeStructuredExtractionArraysForPersist<
   if (fields.benefitEntries !== undefined) {
     sanitized.benefitEntries = sanitizeBenefitEntriesForPersist(
       fields.benefitEntries,
-      fields.insurerContacts
+      insurerContactLines
     )
   }
 
   const routed = promoteBenefitRowsToCoverages(sanitized)
+  const routedInsurerContactLines = insurerContactsAsArray(
+    routed.insurerContacts
+  )
 
   if (routed.coverageEntries !== undefined) {
     routed.coverageEntries = sanitizeCoverageEntriesForPersist(
@@ -434,7 +456,7 @@ export function sanitizeStructuredExtractionArraysForPersist<
   if (routed.benefitEntries !== undefined) {
     routed.benefitEntries = sanitizeBenefitEntriesForPersist(
       routed.benefitEntries,
-      routed.insurerContacts
+      routedInsurerContactLines
     )
   }
 

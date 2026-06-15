@@ -280,7 +280,7 @@ Rules:
 11. insurerContacts: phones ONLY — SAC, línea nacional/internacional, regional hotlines, WhatsApp. Each entry: label + phone (no email). SAC email → agent.email. NEVER put policy/certificate/voucher numbers in agent.phone or insurerContacts.phone.
 12. travel / e-voucher / Assist Card: put EACH regional assistance line (América, Europa, Asia, Colombia, WhatsApp, etc.) in insurerContacts[] with label+phone ONLY — do NOT duplicate hotlines in benefitEntries. agent.phone only for named asesor/intermediario.
 13. coverageEntries[] vs benefitEntries[] (CRITICAL):
-   - coverageEntries: monetary coverages / indemnities from RESUMEN DE PRESTACIONES, Cláusulas (C.1, C.2…), Coberturas — each row { name, amount }. Examples: indemnización equipaje, seguro accidentes muerte/invalidez, anticipo fianzas, traslado médico with USD limit.
+   - coverageEntries: monetary coverages / indemnities from RESUMEN DE PRESTACIONES, Cláusulas (C.1, C.2…), Coberturas — each row {{ name, amount }}. Examples: indemnización equipaje, seguro accidentes muerte/invalidez, anticipo fianzas, traslado médico with USD limit.
    - benefitEntries: ONLY asistencias / assistance SERVICES from ASISTENCIAS sections (grúa, plomería, cerrajería, asistencia vial) with optional quantity (events/year) and contactInfo — NOT clause-table rows, NOT monetary indemnity limits, NOT phone hotlines.
 14. travel/e-voucher RESUMEN DE PRESTACIONES: every row with clause + detail + monetary limit → coverageEntries[] only; never benefitEntries[].
 15. When multiple phones exist, agent.phone = named asesor/agente if present; all other lines stay in insurerContacts[].
