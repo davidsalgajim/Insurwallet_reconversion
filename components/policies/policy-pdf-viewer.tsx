@@ -7,6 +7,8 @@ import type { FieldBbox } from '@/lib/schemas/extraction'
 import { cn } from '@/lib/utils/cn'
 
 type PolicyPdfViewerProps = {
+  policyId: string
+  docId: string
   storagePath: string
   fileName: string
   className?: string
@@ -19,10 +21,28 @@ type RenderedPage = {
   pageNumber: number
   width: number
   height: number
-  canvas: HTMLCanvasElement
+  dataUrl: string
 }
 
-async function loadPdfBytes(storagePath: string): Promise<Uint8Array> {
+async function loadPdfBytesFromApi(
+  policyId: string,
+  docId: string
+): Promise<Uint8Array> {
+  const response = await fetch(
+    `/api/policies/${policyId}/documents/${docId}/pdf`,
+    { credentials: 'include' }
+  )
+
+  if (!response.ok) {
+    throw new Error(`pdf_api_${response.status}`)
+  }
+
+  return new Uint8Array(await response.arrayBuffer())
+}
+
+async function loadPdfBytesFromStorage(
+  storagePath: string
+): Promise<Uint8Array> {
   const [{ storage }, { ref, getBytes }] = await Promise.all([
     import('@/lib/firebase/client'),
     import('firebase/storage'),
@@ -32,7 +52,21 @@ async function loadPdfBytes(storagePath: string): Promise<Uint8Array> {
   return new Uint8Array(bytes)
 }
 
+async function loadPdfBytes(
+  policyId: string,
+  docId: string,
+  storagePath: string
+): Promise<Uint8Array> {
+  try {
+    return await loadPdfBytesFromApi(policyId, docId)
+  } catch {
+    return loadPdfBytesFromStorage(storagePath)
+  }
+}
+
 export function PolicyPdfViewer({
+  policyId,
+  docId,
   storagePath,
   fileName,
   className,
@@ -51,7 +85,6 @@ export function PolicyPdfViewer({
 
   useEffect(() => {
     let cancelled = false
-    const renderedCanvases: HTMLCanvasElement[] = []
 
     void (async () => {
       setLoading(true)
@@ -59,7 +92,7 @@ export function PolicyPdfViewer({
       setPages([])
 
       try {
-        const pdfBytes = await loadPdfBytes(storagePath)
+        const pdfBytes = await loadPdfBytes(policyId, docId, storagePath)
         const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs'
 
@@ -81,20 +114,22 @@ export function PolicyPdfViewer({
           await page.render({ canvasContext: context, viewport, canvas })
             .promise
 
-          renderedCanvases.push(canvas)
           nextPages.push({
             pageNumber,
             width: viewport.width,
             height: viewport.height,
-            canvas,
+            dataUrl: canvas.toDataURL('image/png'),
           })
         }
 
         if (!cancelled) {
           setPages(nextPages)
         }
-      } catch {
+      } catch (cause) {
         if (!cancelled) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[PolicyPdfViewer] failed to render PDF', cause)
+          }
           setError(t('pdfLoadError'))
         }
       } finally {
@@ -106,12 +141,8 @@ export function PolicyPdfViewer({
 
     return () => {
       cancelled = true
-      for (const canvas of renderedCanvases) {
-        canvas.width = 0
-        canvas.height = 0
-      }
     }
-  }, [storagePath, t])
+  }, [policyId, docId, storagePath, t])
 
   const visibleHighlightIds = new Set(
     [activeHighlightId, hoveredHighlightId].filter(
@@ -151,13 +182,13 @@ export function PolicyPdfViewer({
             className="relative mx-auto w-fit rounded-[var(--radius-inner)] border border-border/60 bg-white shadow-sm"
             style={{ width: page.width, minHeight: page.height }}
           >
-            <div
-              ref={(node) => {
-                if (node && node.childElementCount === 0) {
-                  node.appendChild(page.canvas)
-                }
-              }}
-              className="block"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={page.dataUrl}
+              alt={`${fileName} — ${t('documentPanel')} ${page.pageNumber}`}
+              width={page.width}
+              height={page.height}
+              className="block h-auto w-full"
             />
             {hasHighlights
               ? Object.entries(highlights ?? {}).map(([fieldId, bbox]) => {

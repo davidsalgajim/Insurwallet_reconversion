@@ -83,9 +83,26 @@ _BENEFIT_ENTRY = {
 _AGENT = {
     "type": "object",
     "properties": {
-        "name": {"type": "string"},
-        "phone": {"type": "string"},
-        "email": {"type": "string"},
+        "name": {
+            "type": "string",
+            "description": (
+                "Full name of the insurance agent, asesor, corredor, "
+                "intermediario, or producer shown on the document"
+            ),
+        },
+        "phone": {
+            "type": "string",
+            "description": (
+                "Agent or customer-service phone. Colombia: +57 and 10 digits "
+                "(e.g. +573001234567). Include country code when visible."
+            ),
+        },
+        "email": {
+            "type": "string",
+            "description": (
+                "Agent, asesor, or línea de atención email if printed on the policy"
+            ),
+        },
     },
     "additionalProperties": False,
 }
@@ -194,7 +211,8 @@ Rules:
 {format_field_label_hints()}
 8. For beneficiaryEntries use full name, benefit percentage (pct), and optional notes (e.g. NIT/CC/CNPJ).
 9. policyType must be one of: {", ".join(_POLICY_TYPE_ENUM)}.
-10. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
+10. agent: look for blocks labeled Asesor, Agente, Intermediario, Corredor, Broker, SAC, línea de atención, or customer service. Extract name, phone, and email only when explicitly printed — never invent placeholders.
+11. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
 
 {format_regional_extraction_rules()}
 
@@ -300,11 +318,39 @@ def _apply_expiration_heuristics(fields: dict[str, object]) -> dict[str, object]
     return fields
 
 
+def _normalize_agent(raw: object) -> dict[str, str] | None:
+    if not isinstance(raw, dict):
+        return None
+
+    from pipeline.validators import normalize_phone
+
+    name = str(raw.get("name", "")).strip()
+    phone = normalize_phone(
+        raw.get("phone") if isinstance(raw.get("phone"), str) else None
+    )
+    email = str(raw.get("email", "")).strip().lower()
+
+    agent: dict[str, str] = {}
+    if name:
+        agent["name"] = name
+    if phone:
+        agent["phone"] = phone
+    if email:
+        agent["email"] = email
+
+    return agent or None
+
+
 def _normalize_fields(raw_input: dict[str, object]) -> dict[str, object]:
     fields: dict[str, object] = {}
     for key_name in _FIELD_KEYS:
         value = raw_input.get(key_name)
         if value is None or value == "" or value == []:
+            continue
+        if key_name == "agent":
+            normalized_agent = _normalize_agent(value)
+            if normalized_agent:
+                fields[key_name] = normalized_agent
             continue
         fields[key_name] = value
     return _apply_expiration_heuristics(fields)

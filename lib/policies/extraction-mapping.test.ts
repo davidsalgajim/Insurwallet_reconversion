@@ -49,6 +49,55 @@ describe('extraction mapping', () => {
     expect(input.premium).toBe(500000)
     expect(input.beneficiaryEntries).toEqual([{ name: 'Carlos', pct: 100 }])
     expect(input.policyType).toBe('health')
+    expect(input.agent).toEqual(basePolicy.agent)
+  })
+
+  it('skips placeholder agent fallback when extraction omits agent', () => {
+    const draftPolicy = {
+      ...basePolicy,
+      agent: {
+        name: 'Por definir',
+        phone: '+570000000000',
+        email: 'pendiente@example.com',
+      },
+    }
+
+    const input = extractionFieldsToCreateInput(
+      { insurerName: 'Sura' },
+      'user-1',
+      draftPolicy
+    )
+
+    expect(input.agent).toBeUndefined()
+  })
+
+  it('maps extracted agent without placeholder fallback', () => {
+    const draftPolicy = {
+      ...basePolicy,
+      agent: {
+        name: 'Por definir',
+        phone: '+570000000000',
+        email: 'pendiente@example.com',
+      },
+    }
+
+    const input = extractionFieldsToCreateInput(
+      {
+        agent: {
+          name: 'Carlos Ruiz',
+          phone: '+573001234567',
+          email: 'carlos@corredor.com',
+        },
+      },
+      'user-1',
+      draftPolicy
+    )
+
+    expect(input.agent).toEqual({
+      name: 'Carlos Ruiz',
+      phone: '+573001234567',
+      email: 'carlos@corredor.com',
+    })
   })
 
   it('merges structured extraction arrays into policy', () => {

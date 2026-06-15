@@ -13,6 +13,7 @@ import {
 import { JOBS_COLLECTION } from '@/lib/firebase/jobs'
 import { parseDocumentExtraction } from '@/lib/firebase/parse-document-extraction'
 import { extractionFieldsToCreateInput } from '@/lib/policies/extraction-mapping'
+import { sanitizeAgentForDisplay } from '@/lib/policies/agent-placeholders'
 import {
   PolicyExtractionSchema,
   type PolicyExtraction,
@@ -33,6 +34,8 @@ function buildFallbackExtraction(
   policy: PolicyDocument,
   method: PolicyExtraction['method']
 ): PolicyExtraction {
+  const agent = sanitizeAgentForDisplay(policy.agent)
+
   return PolicyExtractionSchema.parse({
     fields: {
       insurerName: policy.insurerName,
@@ -42,6 +45,7 @@ function buildFallbackExtraction(
       currency: policy.currency,
       startDate: policy.startDate,
       endDate: policy.endDate,
+      ...(agent ? { agent } : {}),
     },
     confidence: {
       insurerName: 'low',
@@ -184,11 +188,7 @@ export async function processDocumentJob(
           premium: 0,
           currency: 'COP',
           paymentFrequency: 'annual',
-          agent: {
-            name: 'Por definir',
-            phone: '+570000000000',
-            email: 'pendiente@example.com',
-          },
+          agent: { name: '', phone: '', email: '' },
           coverageEntries: [],
           deductibleEntries: [],
           beneficiaryEntries: [],

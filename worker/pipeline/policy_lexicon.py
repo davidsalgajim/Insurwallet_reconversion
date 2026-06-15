@@ -257,9 +257,13 @@ FIELD_LABEL_SYNONYMS: dict[str, tuple[str, ...]] = {
     "agent": (
         # ES
         "asesor",
+        "asesor comercial",
         "agente",
+        "agente de seguros",
         "intermediario",
+        "intermediario de seguros",
         "corredor",
+        "corredor de seguros",
         "servicio al cliente",
         "servicio al cliente",
         "línea de atención",
@@ -399,7 +403,7 @@ def format_regional_extraction_rules() -> str:
 - NEVER copy startDate into endDate. If only one vigencia date appears (common in seguro deudor / vida deudores), use it as startDate only and set hasNoExpiration=true.
 - endDate must be a distinct expiration/renovación date visible on the document — not the same as inicio de vigencia.
 - coverages: summarize main amparos/coberturas/garantias (e.g. Muerte, ITP, incapacidad).
-- agent: extract name, phone and email from Asesor / Agente / Corretor / Customer service blocks.
+- agent: extract name, phone and email from Asesor / Agente / Intermediario / Corredor / Broker / SAC / línea de atención / customer service blocks. Colombia phones: +57 plus 10 digits (mobile 3xx). Normalize phones with country code when visible. Omit agent sub-fields not printed — never use placeholder values.
 - Omit fields not clearly visible; do not invent values."""
 
 

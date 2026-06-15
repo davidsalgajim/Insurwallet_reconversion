@@ -240,10 +240,9 @@ const mergedPolicy = {
   benefitEntries: fields.benefitEntries ?? policy.benefitEntries ?? [],
   agent: fields.agent
     ? {
-        name: fields.agent.name ?? policy.agent?.name ?? 'Por definir',
-        phone: fields.agent.phone ?? policy.agent?.phone ?? '+570000000000',
-        email:
-          fields.agent.email ?? policy.agent?.email ?? 'pendiente@example.com',
+        name: fields.agent.name ?? policy.agent?.name ?? '',
+        phone: fields.agent.phone ?? policy.agent?.phone ?? '',
+        email: fields.agent.email ?? policy.agent?.email ?? '',
       }
     : policy.agent,
 }

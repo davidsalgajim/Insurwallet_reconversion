@@ -117,6 +117,7 @@ export function PolicyReviewView() {
             key={`${policy.id}-${mergedExtraction?.extractedAt?.toString() ?? 'none'}`}
             policy={policy}
             userUid={user.uid}
+            documentId={activeDocument?.id}
             storagePath={activeDocument?.storagePath}
             fileName={activeDocument?.fileName}
             extraction={mergedExtraction ?? activeDocument?.extraction}

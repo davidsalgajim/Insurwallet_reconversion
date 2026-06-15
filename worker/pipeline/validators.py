@@ -23,6 +23,9 @@ PREMIUM_MAX = 500_000_000.0
 CURRENCY_PATTERN = re.compile(r"^[A-Z]{3}$")
 INSURER_MIN_LEN = 2
 HOLDER_MIN_LEN = 2
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", re.IGNORECASE)
+COLOMBIA_PHONE_PATTERN = re.compile(r"^\+?57[0-9]{10}$")
+GENERIC_PHONE_PATTERN = re.compile(r"^\+?[0-9]{8,15}$")
 
 
 @dataclass(frozen=True)
@@ -90,6 +93,60 @@ def validate_holder_name(value: str | None) -> ValidatedField:
     if re.search(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]", cleaned):
         return ValidatedField(cleaned, "high")
     return ValidatedField(cleaned, "medium", ("no_letters",))
+
+
+def normalize_phone(value: str | None) -> str | None:
+    if not value or not isinstance(value, str):
+        return None
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+    digits = re.sub(r"[^\d+]", "", trimmed)
+    if digits.startswith("+"):
+        normalized = "+" + re.sub(r"\D", "", digits[1:])
+    else:
+        normalized = re.sub(r"\D", "", digits)
+        if len(normalized) == 10 and normalized.startswith("3"):
+            normalized = f"+57{normalized}"
+        elif len(normalized) == 12 and normalized.startswith("57"):
+            normalized = f"+{normalized}"
+    return normalized or None
+
+
+def validate_agent_name(value: str | None) -> ValidatedField:
+    if not value or len(value.strip()) < 2:
+        return ValidatedField(None, "low", ("missing_or_short",))
+    cleaned = value.strip()
+    lowered = cleaned.lower()
+    if lowered in {"por definir", "n/a", "na", "pendiente", "tbd"}:
+        return ValidatedField(None, "low", ("placeholder",))
+    if re.search(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]", cleaned):
+        return ValidatedField(cleaned, "high")
+    return ValidatedField(cleaned, "medium", ("no_letters",))
+
+
+def validate_agent_phone(value: str | None) -> ValidatedField:
+    normalized = normalize_phone(value)
+    if not normalized:
+        return ValidatedField(None, "low", ("missing",))
+    if normalized in {"+570000000000", "+57000000000"}:
+        return ValidatedField(None, "low", ("placeholder",))
+    if COLOMBIA_PHONE_PATTERN.match(normalized):
+        return ValidatedField(normalized, "high")
+    if GENERIC_PHONE_PATTERN.match(normalized):
+        return ValidatedField(normalized, "medium", ("format_loose",))
+    return ValidatedField(normalized, "low", ("format_invalid",))
+
+
+def validate_agent_email(value: str | None) -> ValidatedField:
+    if not value or not str(value).strip():
+        return ValidatedField(None, "low", ("missing",))
+    cleaned = value.strip().lower()
+    if cleaned in {"pendiente@example.com", "n/a", "na", "sin correo"}:
+        return ValidatedField(None, "low", ("placeholder",))
+    if EMAIL_PATTERN.match(cleaned):
+        return ValidatedField(cleaned, "high")
+    return ValidatedField(cleaned, "low", ("invalid_email",))
 
 
 def validate_premium(value: float | int | str | None) -> ValidatedField:
@@ -195,6 +252,30 @@ def validate_extraction(raw: dict[str, object]) -> ValidationResult:
         role="end",
     )
 
+    agent_raw = raw.get("agent")
+    agent_fields: dict[str, ValidatedField] = {}
+    agent_confidence: dict[str, ConfidenceLevel] = {}
+    if isinstance(agent_raw, dict):
+        agent_name = validate_agent_name(
+            agent_raw.get("name") if isinstance(agent_raw.get("name"), str) else None
+        )
+        agent_phone = validate_agent_phone(
+            agent_raw.get("phone") if isinstance(agent_raw.get("phone"), str) else None
+        )
+        agent_email = validate_agent_email(
+            agent_raw.get("email") if isinstance(agent_raw.get("email"), str) else None
+        )
+        agent_fields = {
+            "agent.name": agent_name,
+            "agent.phone": agent_phone,
+            "agent.email": agent_email,
+        }
+        agent_confidence = {
+            "agent.name": agent_name.confidence,
+            "agent.phone": agent_phone.confidence,
+            "agent.email": agent_email.confidence,
+        }
+
     fields = {
         "insurerName": insurer,
         "policyNumber": policy_number,
@@ -203,7 +284,9 @@ def validate_extraction(raw: dict[str, object]) -> ValidationResult:
         "currency": currency,
         "startDate": start,
         "endDate": end,
+        **agent_fields,
     }
 
     confidence = {name: field.confidence for name, field in fields.items()}
+    confidence.update(agent_confidence)
     return ValidationResult(fields=fields, confidence=confidence)

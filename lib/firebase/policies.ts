@@ -30,6 +30,7 @@ import {
   type Policy,
   type PolicyAgent,
 } from '@/lib/schemas/policy'
+import { resolveAgentForStorage } from '@/lib/policies/agent-placeholders'
 import { resolveEndDateForStorage } from '@/lib/utils/policy-dates'
 import { computePolicyStatus } from '@/lib/utils/policy-status'
 import { stripUndefined } from '@/lib/utils/strip-undefined'
@@ -67,12 +68,6 @@ export const UpdatePolicyInputSchema = CreatePolicyInputSchema.partial().omit({
 })
 
 export type UpdatePolicyInput = z.infer<typeof UpdatePolicyInputSchema>
-
-const DEFAULT_AGENT = {
-  name: 'Por definir',
-  phone: '+570000000000',
-  email: 'pendiente@example.com',
-} as const
 
 const POLICIES_COLLECTION = 'policies'
 const AUDIT_LOGS_SUBCOLLECTION = 'auditLogs'
@@ -130,11 +125,7 @@ function assertPolicyOwner(policy: Policy, actorUid: string): void {
 }
 
 function resolveAgent(agent?: Partial<PolicyAgent>): PolicyAgent {
-  return PolicyAgentSchema.parse({
-    name: agent?.name?.trim() || DEFAULT_AGENT.name,
-    phone: agent?.phone?.trim() || DEFAULT_AGENT.phone,
-    email: agent?.email?.trim() || DEFAULT_AGENT.email,
-  })
+  return PolicyAgentSchema.parse(resolveAgentForStorage(agent))
 }
 
 export function buildPolicyFromInput(

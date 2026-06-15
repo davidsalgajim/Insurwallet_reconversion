@@ -72,9 +72,9 @@ export const BenefitEntrySchema = z.object({
 export type BenefitEntry = z.infer<typeof BenefitEntrySchema>
 
 export const PolicyAgentSchema = z.object({
-  name: z.string().min(1),
-  phone: z.string().min(1),
-  email: z.string().email(),
+  name: z.string(),
+  phone: z.string(),
+  email: z.union([z.literal(''), z.string().email()]),
 })
 export type PolicyAgent = z.infer<typeof PolicyAgentSchema>
 

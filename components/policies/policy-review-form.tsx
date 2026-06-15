@@ -42,6 +42,7 @@ import { PolicyUpdatePrompt } from '@/components/policies/policy-update-prompt'
 type PolicyReviewFormProps = {
   policy: PolicyDocument
   userUid: string
+  documentId?: string
   storagePath?: string
   fileName?: string
   extraction?: PolicyExtraction
@@ -50,6 +51,7 @@ type PolicyReviewFormProps = {
 export function PolicyReviewForm({
   policy,
   userUid,
+  documentId,
   storagePath,
   fileName,
   extraction,
@@ -188,8 +190,10 @@ export function PolicyReviewForm({
           </div>
         </div>
 
-        {storagePath && fileName ? (
+        {storagePath && fileName && documentId ? (
           <PolicyPdfViewer
+            policyId={policy.id}
+            docId={documentId}
             storagePath={storagePath}
             fileName={fileName}
             className="mt-6 flex-1"

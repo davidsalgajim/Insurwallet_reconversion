@@ -1,6 +1,28 @@
 import type { CreatePolicyInput } from '@/lib/firebase/policies'
+import {
+  isPlaceholderAgent,
+  resolveAgentForStorage,
+  sanitizeAgentForDisplay,
+} from '@/lib/policies/agent-placeholders'
 import type { PolicyExtractionFields } from '@/lib/schemas/extraction'
-import type { Policy } from '@/lib/schemas/policy'
+import type { Policy, PolicyAgent } from '@/lib/schemas/policy'
+
+function resolveAgentFromExtraction(
+  fields: PolicyExtractionFields,
+  fallback?: Partial<Policy>
+): PolicyAgent | undefined {
+  const extracted = sanitizeAgentForDisplay(fields.agent)
+  if (extracted) {
+    return extracted as PolicyAgent
+  }
+
+  const base = sanitizeAgentForDisplay(fallback?.agent)
+  if (base && !isPlaceholderAgent(fallback?.agent)) {
+    return base as PolicyAgent
+  }
+
+  return undefined
+}
 
 /** Maps extracted fields onto CreatePolicyInput, falling back to existing policy values. */
 export function extractionFieldsToCreateInput(
@@ -12,6 +34,7 @@ export function extractionFieldsToCreateInput(
   const startDate = fields.startDate ?? base.startDate ?? new Date()
   const hasNoExpiration =
     fields.hasNoExpiration ?? base.hasNoExpiration ?? false
+  const agent = resolveAgentFromExtraction(fields, base)
 
   return {
     ownerUid,
@@ -31,7 +54,7 @@ export function extractionFieldsToCreateInput(
     exclusions: fields.exclusions ?? base.exclusions,
     waitingPeriods: fields.waitingPeriods ?? base.waitingPeriods,
     notes: fields.notes ?? base.notes,
-    agent: fields.agent ?? base.agent,
+    ...(agent ? { agent } : {}),
     coverageEntries: fields.coverageEntries ?? base.coverageEntries ?? [],
     deductibleEntries: fields.deductibleEntries ?? base.deductibleEntries ?? [],
     beneficiaryEntries:
@@ -64,12 +87,10 @@ export function mergeExtractionFieldsIntoPolicy(
     waitingPeriods: input.waitingPeriods,
     notes: input.notes,
     agent: input.agent
-      ? {
-          name: input.agent.name ?? policy.agent.name,
-          phone: input.agent.phone ?? policy.agent.phone,
-          email: input.agent.email ?? policy.agent.email,
-        }
-      : policy.agent,
+      ? resolveAgentForStorage({ ...policy.agent, ...input.agent })
+      : isPlaceholderAgent(policy.agent)
+        ? resolveAgentForStorage()
+        : policy.agent,
     coverageEntries: input.coverageEntries ?? policy.coverageEntries,
     deductibleEntries: input.deductibleEntries ?? policy.deductibleEntries,
     beneficiaryEntries: input.beneficiaryEntries ?? policy.beneficiaryEntries,

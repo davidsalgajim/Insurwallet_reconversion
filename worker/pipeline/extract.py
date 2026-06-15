@@ -46,8 +46,22 @@ def _merge_extraction_fields(
         if value is not None and value != "" and value != []
     }
     for key, field in validation.fields.items():
-        if field.value is not None:
-            merged[key] = field.value
+        if field.value is None:
+            continue
+        if key.startswith("agent."):
+            continue
+        merged[key] = field.value
+
+    agent: dict[str, object] = {}
+    if isinstance(merged.get("agent"), dict):
+        agent = dict(merged["agent"])  # type: ignore[arg-type]
+    for subkey in ("name", "phone", "email"):
+        validated = validation.fields.get(f"agent.{subkey}")
+        if validated and validated.value is not None:
+            agent[subkey] = validated.value
+    if agent:
+        merged["agent"] = agent
+
     return merged
 
 
