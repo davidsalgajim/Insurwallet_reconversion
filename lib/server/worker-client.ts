@@ -9,7 +9,7 @@ import {
 export type WorkerExtractionPayload = {
   fields: Record<string, unknown>
   confidence: Record<string, string>
-  bboxes?: Record<string, FieldBboxPayload>
+  bboxes?: Record<string, FieldBboxPayload> | null
   method: string
   extractedAt: string
 }
