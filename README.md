@@ -2,7 +2,7 @@
 
 Migración de InsurWallet (iOS nativa) a una web app moderna para LATAM.
 
-**Estado actual (jun 2026):** F0 ~90% · F1 ~92% · F2 ~92% (worker + revisión IA + transcript RAG) · F3 ~92% (MarIAna situacional + RAG transcript + share) · F4 ~85% (legal, Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Schema Zod unificado (manual, extracción Claude, tools MarIAna), compresión cliente a 2 MB, beneficiarios con % en wizard/edición, agregador **Beneficios y asistencias**, upload→worker, settings hub, páginas legales + consentimiento, reglas en CI. Pendiente: deploy staging, App Check Enforce, re-index pólizas legacy, backups/iOS import, revisión abogado/NIT.
+**Estado actual (jun 2026):** F0 ~90% · F1 ~94% · F2 ~94% (multi-PDF, `dev:worker`, timeouts job) · F3 ~94% (MarIAna modelos actuales, env aislado de Resend, RAG + share) · F4 ~85% (legal, Mercado Pago, notificaciones, GDPR) · F5 parcial (E2E, PWA, checklists). Schema Zod unificado, compresión cliente 2 MB, lista pólizas con **filtros + gráfico por tipo**, directorio guardado de asesores/beneficiarios, extracción de agente en revisión, upload→worker con fail-fast, settings hub, legal + consentimiento, reglas en CI. Pendiente: deploy staging, App Check Enforce, re-index pólizas legacy, backups/iOS import, revisión abogado/NIT.
 
 Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md). Plan de tareas: [`tasks/tasks-plan-reconversion-insurwallet.md`](tasks/tasks-plan-reconversion-insurwallet.md).
 
@@ -37,7 +37,7 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **Auth:** login, registro, forgot-password, verify-email — email/password + Google; session cookie + middleware; UI navy + glass card; bloqueo staging vía `NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION`; consentimiento legal en registro (checkbox) y aviso en login; re-aceptación silenciosa si cambian versiones
 - **Env cliente:** `lib/env.ts` lee `NEXT_PUBLIC_*` con acceso estático (Next.js inline en bundle); evita fallbacks demo en staging
 - **App Check:** reCAPTCHA v3 en cliente (`lib/firebase/app-check.ts`); omitido con emuladores; modo Monitor en Firestore/Storage
-- **App:** dashboard (KPIs y vencimientos desde Firestore), lista/detalle/edición/borrado de pólizas, tabs **Mis pólizas / Compartidas conmigo**, agregador **Beneficios y asistencias** (`/policies/benefits`), wizard manual estructurado (coberturas, deducibles, beneficios, beneficiarios con %, agente) + upload PDF con compresión cliente a **2 MB** (`/policies/new/upload` → Storage + documento en Firestore)
+- **App:** dashboard (KPIs y vencimientos desde Firestore), lista/detalle/edición/borrado de pólizas con **filtros por tipo/estado** y **gráfico resumen** del portafolio, tabs **Mis pólizas / Compartidas conmigo**, agregador **Beneficios y asistencias** (`/policies/benefits`), wizard manual estructurado (coberturas, deducibles, beneficios, beneficiarios con %, agente) + **directorio guardado** (reutilizar asesores/beneficiarios en wizard y revisión) + upload **multi-PDF** (hasta 10 archivos, compresión ≤2 MB c/u, `documentRole` opcional) (`/policies/new/upload` → Storage + documento en Firestore)
 - **Modelo de póliza unificado:** un schema Zod (`lib/schemas/policy.ts`, `beneficiary.ts`, `extraction.ts`) alimenta wizard manual, revisión post-Claude y tools read-only de MarIAna — paridad iOS en tipos, beneficiarios y campos estructurados
 - **Estados de póliza:** `computePolicyStatus` (active/expiring/expired) + scheduled Function diaria `refreshPolicyStatuses`
 - **Shell:** icon rail desktop + nav inferior móvil, topbar, dot-grid background
@@ -48,8 +48,8 @@ Documentación de producto y diseño: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](
 - **Observability:** Sentry stub (no-op sin DSN)
 - **Configuración (settings):** `/settings` — perfil, moneda/preferencias, privacidad (export/delete cuenta), notificaciones; `/settings/contacts` — contactos de emergencia; `/settings/subscription` — plan y checkout **Mercado Pago**; `/settings/help` — ayuda
 - **Legal (F4):** páginas `/legal/terms`, `/legal/privacy`, `/legal/cookies`, `/legal/notice` (ES/EN/PT); datos centralizados en `lib/legal/company.ts`; versiones en `lib/legal/versions.ts`; API `/api/consents`; checklist pre go-live en [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md)
-- **Documentos (F2):** upload → job worker (`WORKER_URL`) → pipeline texto o **visión Claude** (PDF escaneado) → extracción estructurada ES/EN/PT → **transcript completo** (`document_text`) persistido en `extractedSummary` / Storage (`extracted/document.txt`) → pantalla de revisión split-view (pdf.js + confianza/bboxes); PDF original en Storage por usuario; extracción en `policies/{id}/documents/{docId}`
-- **MarIAna (F3):** chat streaming SSE con avatar de marca, subtítulo **Asistente IA** (ES/EN/PT); Tier 0 determinístico; router situacional (`mariana/situational.ts`) + 5 agentes core + **10 especialistas por tipo de póliza**; tools read-only con prefetch de asistencias/beneficios; RAG híbrido keyword+embedding sobre **transcript indexado** (`lib/server/document-chunks.ts`); indexación al confirmar revisión (`POST /api/policies/{id}/index-documents`); **120 evals estructurales** — ver [`mariana/evals/README.md`](mariana/evals/README.md); pendiente cost tracking (4.10) y re-index batch pólizas legacy
+- **Documentos (F2):** upload → job worker (`WORKER_URL`) → pipeline texto o **visión Claude** (PDF escaneado) → extracción estructurada ES/EN/PT (incl. **agente** con heurística asesor/SAC/firma) → **transcript completo** (`document_text`) persistido en `extractedSummary` / Storage (`extracted/document.txt`) → pantalla de revisión split-view (pdf.js + confianza/bboxes + merge agente); **timeouts** de job (10 min wall-clock, aviso UI a 3 min, reintento forzado si worker caído); PDF original en Storage por usuario; extracción en `policies/{id}/documents/{docId}`
+- **MarIAna (F3):** chat streaming SSE con avatar de marca, subtítulo **Asistente IA** (ES/EN/PT); modelos centralizados en `mariana/models.ts` (Haiku router + Sonnet especialista); **env Resend aislado** — `RESEND_FROM_EMAIL` inválido no bloquea el chat; Tier 0 determinístico (incl. consultas de pólizas vencidas); router situacional + 5 agentes core + **10 especialistas por tipo**; tools read-only; RAG híbrido sobre **transcript indexado**; indexación al confirmar revisión; **120 evals estructurales** — ver [`mariana/evals/README.md`](mariana/evals/README.md); pendiente cost tracking (4.10) y re-index batch pólizas legacy
 - **Layout raíz:** `<html>`/`<body>` únicos en `app/layout.tsx` (locale + fuentes); `[locale]/layout.tsx` solo proveedores — evita anidación inválida en App Router
 - **Notificaciones (prefs):** canal email/push/ambos + tipos de aviso en Configuración; API `GET/PUT /api/notifications/prefs`; registro FCM si push activo — envío real email/push en F4 (ver [`docs/notifications.md`](docs/notifications.md))
 
@@ -153,23 +153,33 @@ App en `http://localhost:3000` — rutas con prefijo de locale, p. ej. `/es`, `/
 
 ### Worker (documentos — Python 3.12)
 
-Requisitos: **Python 3.12+**, JDK 11 para OpenDataLoader en Docker/prod (local puede usar fallback pymupdf).
+Requisitos: **Python 3.12+**, venv en `worker/.venv` (`pip install -e ".[dev]"`), JDK 11 para OpenDataLoader en Docker/prod (local puede usar fallback pymupdf).
+
+**Arranque recomendado** (carga `.env.local` de la raíz, resuelve credenciales y bucket):
+
+```bash
+npm run dev:worker
+```
+
+Equivalente manual:
 
 ```powershell
 cd worker
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-# Cargar desde .env.local de la raíz (mínimo):
-#   ANTHROPIC_API_KEY, FIREBASE_STORAGE_BUCKET, GOOGLE_APPLICATION_CREDENTIALS, INTERNAL_API_SECRET
-$env:ANTHROPIC_API_KEY="sk-ant-..."
-$env:FIREBASE_STORAGE_BUCKET="your-project.firebasestorage.app"
-$env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\service-account.json"
-$env:INTERNAL_API_SECRET="local-dev-worker-secret-min-16"
-uvicorn main:app --reload --port 8080
+uvicorn main:app --reload --port 8080 --host 127.0.0.1
 ```
 
-En la raíz del repo (Next.js, server-only): en `.env.local` define `WORKER_URL=http://localhost:8080` y el **mismo** `INTERNAL_API_SECRET` (mín. 16 caracteres). Sin secret compartido, el dispatch local del job puede fallar con 401/503. Detalle del pipeline: [`worker/README.md`](worker/README.md).
+En `.env.local` (raíz), mínimo para jobs locales:
+
+- `WORKER_URL=http://localhost:8080`
+- `INTERNAL_API_SECRET` (mín. 16 caracteres) — **el mismo valor** en Next.js y worker
+- `ANTHROPIC_API_KEY` — obligatorio para PDFs escaneados / visión
+- `FIREBASE_STORAGE_BUCKET` o `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `GOOGLE_APPLICATION_CREDENTIALS` o `FIREBASE_SERVICE_ACCOUNT` (descarga PDF desde Storage)
+
+Sin worker activo o con secret distinto, el dispatch local falla con 401/503 y la UI muestra mensaje accionable (`npm run dev:worker`). Detalle del pipeline: [`worker/README.md`](worker/README.md).
 
 **Reprocesar extracción + transcript RAG (dev):** `node scripts/reprocess-document.mjs <policyId> [docId]` — luego `POST /api/policies/{id}/index-documents` para reconstruir chunks MarIAna.
 
@@ -184,8 +194,9 @@ Plantilla completa: [`.env.example`](.env.example) (copiar a `.env.local`). Vali
 | Firebase cliente | `NEXT_PUBLIC_FIREBASE_*`, emuladores, verify-email, App Check site key                                                                                                                                                |
 | Dev / App Check  | `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` o `FIREBASE_APPCHECK_DEBUG_TOKEN` registrado en consola                                                                                                                   |
 | Auth servidor    | `FIREBASE_SERVICE_ACCOUNT` o `GOOGLE_APPLICATION_CREDENTIALS` — sin ellas, **dev** guarda ID token verificado como cookie (ver tests `session-server`)                                                                |
-| Worker           | `WORKER_URL`, `INTERNAL_API_SECRET` (**requerido en local**), `GOOGLE_APPLICATION_CREDENTIALS` o `FIREBASE_SERVICE_ACCOUNT`, `WORKER_OIDC_AUDIENCE` (prod)                                                            |
-| Claude           | `ANTHROPIC_API_KEY` en proceso worker y/o servidor MarIAna — Secret Manager en prod                                                                                                                                   |
+| Worker           | `WORKER_URL`, `INTERNAL_API_SECRET` (**requerido en local**), `WORKER_REQUEST_TIMEOUT_MS` (default 90s), `GOOGLE_APPLICATION_CREDENTIALS` o `FIREBASE_SERVICE_ACCOUNT`, `WORKER_OIDC_AUDIENCE` (prod)                 |
+| Claude           | `ANTHROPIC_API_KEY` en worker + MarIAna (`mariana/models.ts`) — Secret Manager en prod                                                                                                                                |
+| Email (Resend)   | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (opcional; inválido → rutas email omiten envío, **no** bloquea MarIAna)                                                                                                         |
 | Pagos            | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`                                                                                                                        |
 | Deploy           | [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · legal: [`docs/PRODUCTION-LEGAL-CHECKLIST.md`](docs/PRODUCTION-LEGAL-CHECKLIST.md) · notificaciones: [`docs/notifications.md`](docs/notifications.md) |
 
@@ -257,7 +268,8 @@ Flujos en `e2e/`: `auth-policy.spec.ts`, `policy-flows.spec.ts`, `settings-maria
 
 | Script                                           | Descripción                                                  |
 | ------------------------------------------------ | ------------------------------------------------------------ |
-| `npm run dev`                                    | Servidor de desarrollo                                       |
+| `npm run dev`                                    | Servidor de desarrollo Next.js                               |
+| `npm run dev:worker`                             | Worker Python local (:8080) — lee `.env.local` de la raíz    |
 | `npm run build`                                  | Build de producción                                          |
 | `npm run lint`                                   | ESLint                                                       |
 | `npm run typecheck`                              | TypeScript                                                   |

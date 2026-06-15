@@ -101,7 +101,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 2.4 `storage.rules` (mime PDF/imágenes, máx 20MB, owner) + 6 tests emulator-ready
   - [x] 2.5 `firestore.indexes.json` (ownerUid+status, ownerUid+endDate, sharedWith+endDate)
   - [x] 2.6 Wizard paso 1 + paso 2 manual ampliado (tipo, vigencias, prima, agente, coberturas/deducibles/beneficios estructurados, beneficiarios manuales con % acumulado) + upload PDF con compresión cliente 2 MB — revisión IA (pasos 3-4) en F2; catálogo beneficios sugeridos en edición
-  - [x] 2.7 Lista de pólizas con tabs Mis pólizas / Compartidas conmigo (`listSharedPoliciesForUser`, `usePolicies`) + pantalla `/policies/benefits` + detalle `/policies/[id]` con lectura compartida
+  - [x] 2.7 Lista de pólizas con tabs Mis pólizas / Compartidas conmigo (`listSharedPoliciesForUser`, `usePolicies`) + **filtros por tipo/estado** + **gráfico resumen** (`policies-list-filters-bar`, `policies-summary-chart`) + pantalla `/policies/benefits` + detalle `/policies/[id]` con lectura compartida
   - [x] 2.8 Dashboard con KPIs y vencimientos reales desde Firestore (`dashboard-summary.tsx`)
   - [x] 2.9 Edición y borrado de pólizas con confirmación + `auditLogs` — detalle `/policies/[id]`, edit `/policies/[id]/edit`
   - [x] 2.10 Estados computed de póliza (active/expiring/expired) como helper puro con tests + Scheduled Function diaria que actualiza `status`
@@ -117,7 +117,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 3.6 Implementar sanitizador anti prompt-injection (zero-width chars, normalización Unicode, detección de patrones imperativos) — TDD con corpus de strings maliciosos; integrado en pipeline antes de Claude
   - [x] 3.7 Implementar extracción Claude con tool-use/JSON schema obligatorio, portando los prompts de `ClaudeDocumentService.swift` y el diccionario `insuranceCustomWords` (~200 términos) para post-corrección — **jun 2026:** `policy_lexicon.py` (ES/EN/PT LATAM); ruta **vision** para PDF escaneado; heurística `hasNoExpiration`; merge completo de campos en `extract.py`
   - [x] 3.8 Portar los regex de `DocumentProcessingService+Extraction.swift` como validadores post-IA (números de póliza plausibles, fechas coherentes, montos en rango) con score de confianza por campo — TDD
-  - [x] 3.9 Job queue con reintentos (máx 3, backoff), timeout, estados en Firestore y manejo de fallos con mensaje accionable al usuario — **hecho jun 2026:** `invokeWorkerWithRetries` (1s/3s/9s) + estado `failed` con mensaje ES
+  - [x] 3.9 Job queue con reintentos (máx 3, backoff), timeout, estados en Firestore y manejo de fallos con mensaje accionable al usuario — **hecho jun 2026:** `invokeWorkerWithRetries` (1s/3s/9s) + estado `failed` con mensaje ES; **jun 2026:** `withJobProcessingTimeout` (10 min), aviso UI lento (3 min), `WORKER_REQUEST_TIMEOUT_MS` (90s), reintento forzado tras fallo worker
   - [x] 3.10 Construir golden set: ~20 pólizas reales (incl. Cancer Bancolombia) con JSON esperado; workflow CI con métrica ≥95% en campos críticos como gate — **hecho jun 2026:** `worker/tests/golden/manifest.json` (20 casos + 3 PDF fixtures), `test_golden.py`, `.github/workflows/golden-ocr.yml`; PDFs reales de producción pendientes sustituir fixtures sintéticos
   - [x] 3.11 UI de estados de procesamiento en vivo (listener Firestore): subiendo → extrayendo → analizando → listo, con micro-interacciones emil-design-eng — **hecho jun 2026:** `DocumentProcessingListener` + barra de progreso + transiciones 200ms + `prefers-reduced-motion`
   - [x] 3.12 Pantalla de revisión obligatoria: split-view documento/campos editables, indicador de confianza por campo (alta/media/baja), bboxes resaltando origen del dato, confirmación crea póliza + indexa texto — **hecho jun 2026:** split-view + badges + visor pdf.js (`public/pdf.worker.mjs`, sin iframe Storage); parseo extracción `parse-document-extraction.ts`; bboxes ODL cuando existan; indexación usa transcript completo (ver 3.15)
@@ -132,7 +132,7 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
   - [x] 4.4 Implementar tools read-only con scope server-side por uid (`get_policies_summary`, `search_document_chunks`, `get_coverage_details`, `get_contacts`) — los tools jamás aceptan IDs arbitrarios del cliente; tests de autorización
   - [x] 4.5 Implementar agentes especialistas como system prompts + prompt caching — **hecho jun 2026:** 5 agentes core (Documental, Coberturas, Vencimientos, Aseguradoras, Emergencias) + **10 especialistas situacionales por `PolicyType`** en `mariana/agents/specialists/`; routing situacional en `mariana/situational.ts`; `cache_control: ephemeral` en system blocks estáticos
   - [x] 4.6 Guardrails: scope-check de respuesta (solo seguros), rate limiting por uid, límite de tokens por sesión, texto de documentos siempre en `<document_data>` — tests adversariales básicos
-  - [x] 4.7 UI de chat: streaming, historial con rolling summary, citas clicables que abren el documento en la página fuente, sugerencias de preguntas iniciales — **hecho jun 2026:** streaming SSE + citas + rolling summary + avatar de marca + copy subtítulo «Asistente IA» (ES/EN/PT)
+  - [x] 4.7 UI de chat: streaming, historial con rolling summary, citas clicables que abren el documento en la página fuente, sugerencias de preguntas iniciales — **hecho jun 2026:** streaming SSE + citas + rolling summary + avatar de marca + copy subtítulo «Asistente IA» (ES/EN/PT); **jun 2026:** modelos en `mariana/models.ts` (Haiku 4.5 + Sonnet 4.5), errores de modelo/stream con mensaje localizado, env Resend desacoplado (`lib/server/env-server.ts`)
   - [x] 4.8 Compartir pólizas: generación de token (hash en Firestore, expiración), email al destinatario, página `share/[token]` con aceptación, permisos view/view_download, revocación — tests de reglas para acceso compartido — **hecho jun 2026:** API shares + Resend email + revocación UI + permisos; tests unitarios email/share
   - [x] 4.9 Gestión de beneficiarios y beneficios (CRUD en detalle de póliza) con catálogo de beneficios comunes por tipo de seguro — **hecho jun 2026:** CRUD beneficiaries + campo % acumulado (`beneficiary-pct-field`) en wizard/edición + catálogo sugerido en edición
   - [ ] 4.10 Tracking de costos LLM por usuario/sesión (tokens in/out por modelo) hacia analytics — base para decisiones de pricing
@@ -274,6 +274,16 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 
 - [x] **Settings hub (jun 2026):** `/settings` (perfil, moneda, privacidad/GDPR, notificaciones), `/settings/contacts`, `/settings/subscription` (Mercado Pago), `/settings/help`
 
+- [x] **Lista pólizas — filtros y gráfico (jun 2026):** barra de filtros tipo/estado, gráfico donut por tipo de póliza, agrupación en lista (`lib/policies/list-filters.ts`)
+
+- [x] **Directorio guardado asesores/beneficiarios (jun 2026):** `users/{uid}/contacts` + `beneficiaries`, pickers en wizard manual y revisión, sync al guardar póliza (`save-to-directory.ts`), rules testeadas
+
+- [x] **Dev worker unificado (jun 2026):** `npm run dev:worker` (`scripts/dev-worker.mjs`) carga `.env.local`, valida secretos y arranca uvicorn en :8080
+
+- [x] **Timeouts y fail-fast jobs (jun 2026):** `JOB_PROCESSING_TIMEOUT_MS` (10 min), `JOB_SLOW_UI_MS` (3 min), `WORKER_REQUEST_TIMEOUT_MS` (90s), hints UI + reintento forzado
+
+- [x] **Extracción agente en revisión (jun 2026):** heurística worker (`policy_lexicon.py`, `boost_agent_from_text`) + merge en `policy-review-form` (`mergeAgentFromExtraction`)
+
 - [x] **Modelo unificado de póliza (jun 2026):** schema Zod único manual/extracción/MarIAna (`lib/schemas/policy.ts`, `beneficiary.ts`, `extraction.ts`); compresión cliente PDF/imagen a 2 MB (`lib/utils/document-compression.ts`); storage.rules alineado
 - [x] **MarIAna situacional + evals (jun 2026):** `mariana/situational.ts`, 10 especialistas por tipo, prefetch asistencias/beneficios, 120 evals estructurales en `mariana/evals/` (Vitest, sin LLM)
 - [x] **Root layout App Router (jun 2026):** `<html>`/`<body>` únicos en `app/layout.tsx`; `[locale]/layout.tsx` solo proveedores i18n/auth
@@ -282,8 +292,8 @@ Basado en el plan de migración (`docs/plan-reconversion.md`). Objetivo: web app
 - [x] **Visor PDF avanzado:** resaltado de bboxes por campo en revisión (3.12) — pdf.js + worker en `public/`; parseo extracción Firestore; datos bbox dependen de ODL en worker
 - [x] **Paridad campos extracción (jun 2026):** 20 campos extraíbles = wizard manual (`lib/schemas/extraction-field-keys.ts`, `worker/pipeline/extraction_fields.py`); tests de paridad TS + pytest; policyType incluye pet/funeral/dental/business
 - [x] **Transcript RAG (jun 2026):** `claude_transcriber.py` + `document-text-storage.ts` + `document-job-runner` + `resolveIndexingText` en `document-chunks.ts`; reprocess script; MarIAna puede buscar exclusiones/clausulado en PDF escaneado
-- [ ] **FCM end-to-end:** `NEXT_PUBLIC_FIREBASE_VAPID_KEY` + envío en `sendExpiryReminders` y al job `ready` (5.6, 5.8)
+- [ ] **FCM end-to-end:** `NEXT_PUBLIC_FIREBASE_VAPID_KEY` + envío en `sendExpiryReminders` y al job `ready` — **parcial jun 2026:** código FCM en Functions; falta QA manual push web
 - [ ] **Share completo:** ~~email Resend al destinatario, revocación UI, `view_download` (4.8)~~ hecho jun 2026; E2E share pendiente
-- [ ] **GDPR completo:** signed URLs de documentos en export + audit log delete (5.10)
+- [ ] **GDPR completo:** signed URLs de documentos en export + audit log delete (5.10) — **parcial jun 2026:** export/delete implementados; revisar cobertura E2E
 - [ ] **Calendario topbar:** permanece `comingSoon` — implementar solo si producto lo prioriza
 - [ ] **Env producción:** `APP_URL`, `INTERNAL_API_SECRET`, `WORKER_URL`, `GOOGLE_AI_API_KEY` — ver **F6 §A** y [`docs/PRODUCTION-CHECKLIST.md`](../docs/PRODUCTION-CHECKLIST.md)

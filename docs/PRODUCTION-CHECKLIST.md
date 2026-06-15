@@ -254,6 +254,18 @@ Imagen: `worker/Dockerfile` (JDK 11 + Python 3.12). Smoke: `worker/scripts/docke
 
 Pipeline prod: ODL → quality gate → **Claude vision** si PDF escaneado (`pipeline: vision, claude`) → extracción guardada en `documents/{docId}.extraction`. Local: `INTERNAL_API_SECRET` compartido Next.js + worker.
 
+**Desarrollo local (worker + MarIAna):**
+
+```bash
+# Terminal 1 — Next.js
+npm run dev
+
+# Terminal 2 — worker Python (:8080, lee .env.local de la raíz)
+npm run dev:worker
+```
+
+Mínimo en `.env.local`: `WORKER_URL=http://localhost:8080`, `INTERNAL_API_SECRET` (≥16 chars, mismo en ambos procesos), `ANTHROPIC_API_KEY`, bucket Storage y credenciales Admin/GCS. PDF escaneado requiere worker + `ANTHROPIC_API_KEY`. MarIAna usa `ANTHROPIC_API_KEY` y opcionalmente `GOOGLE_AI_API_KEY` para RAG — **no** depende de `RESEND_*`. Modelos: `mariana/models.ts` (Haiku router, Sonnet especialista).
+
 Frontend revisión: pdf.js con `public/pdf.worker.mjs` — ejecutar `npm run sync-pdf-worker` tras actualizar `pdfjs-dist`.
 
 ### 1.5 Settings & subscription
