@@ -35,9 +35,6 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from '@/i18n/navigation'
 import { buildCreateInputFromForm } from '@/lib/policies/form-input'
 import { uploadDocumentsToPolicy } from '@/lib/policies/document-upload'
-import { cn } from '@/lib/utils/cn'
-
-import { policyFieldClassName } from './policy-form-styles'
 
 function defaultBasicValues(currency: string): PolicyBasicFieldsValues {
   return {

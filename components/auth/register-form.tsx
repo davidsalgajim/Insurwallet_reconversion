@@ -13,7 +13,6 @@ import {
 } from '@/components/auth/auth-shell'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import {
-  ensureLegalConsentAfterLogin,
   persistOnboardingLegalConsent,
   RegisterLegalConsent,
 } from '@/components/legal/auth-legal-consent'

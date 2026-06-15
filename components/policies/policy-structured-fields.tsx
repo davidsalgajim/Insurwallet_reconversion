@@ -337,7 +337,12 @@ export function PolicyStructuredFields({
 export function stripStructuredRows<T extends { key: string }>(
   rows: T[]
 ): Array<Omit<T, 'key'>> {
-  return rows.map(({ key: _key, ...rest }) => rest)
+  return rows.map(
+    (row) =>
+      Object.fromEntries(
+        Object.entries(row).filter(([entryKey]) => entryKey !== 'key')
+      ) as Omit<T, 'key'>
+  )
 }
 
 export function sanitizeCoverageRows(rows: CoverageRow[]): CoverageEntry[] {

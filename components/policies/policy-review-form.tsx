@@ -25,7 +25,7 @@ import {
 } from '@/components/policies/policy-structured-fields'
 import { Button } from '@/components/ui/button'
 import { useRouter } from '@/i18n/navigation'
-import type { PolicyDocument } from '@/lib/firebase/policies'
+import type { PolicyDocument, UpdatePolicyInput } from '@/lib/firebase/policies'
 import {
   buildCreateInputFromForm,
   syncPolicyBeneficiaries,
@@ -114,7 +114,7 @@ export function PolicyReviewForm({
         coverageRows,
         deductibleRows,
         benefitRows,
-        beneficiaryRows.map(({ key: _key, ...row }) => row),
+        beneficiaryRows,
         userUid
       )
 
@@ -123,7 +123,9 @@ export function PolicyReviewForm({
         import('@/lib/firebase/policies'),
       ])
 
-      const { ownerUid: _ownerUid, ...update } = input
+      const update = Object.fromEntries(
+        Object.entries(input).filter(([field]) => field !== 'ownerUid')
+      ) as UpdatePolicyInput
 
       await updatePolicy(
         db,
