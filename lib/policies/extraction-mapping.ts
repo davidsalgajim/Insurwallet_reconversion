@@ -4,14 +4,71 @@ import {
   resolveAgentForStorage,
   sanitizeAgentForDisplay,
 } from '@/lib/policies/agent-placeholders'
-import type { PolicyExtractionFields } from '@/lib/schemas/extraction'
+import type {
+  InsurerContactsExtraction,
+  PolicyExtractionFields,
+} from '@/lib/schemas/extraction'
 import type { Policy, PolicyAgent } from '@/lib/schemas/policy'
 
-function resolveAgentFromExtraction(
-  fields: PolicyExtractionFields,
+function shortInsurerLabel(insurerName?: string): string | undefined {
+  const trimmed = insurerName?.trim()
+  if (!trimmed) {
+    return undefined
+  }
+  const firstWord = trimmed.split(/\s+/)[0]
+  return firstWord.length >= 2 ? firstWord : trimmed
+}
+
+function mergeInsurerContactsIntoAgent(
+  agent: Partial<PolicyAgent> | undefined,
+  contacts: InsurerContactsExtraction | undefined,
+  insurerName?: string
+): Partial<PolicyAgent> | undefined {
+  if (!contacts) {
+    return agent
+  }
+
+  const merged: Partial<PolicyAgent> = { ...(agent ?? {}) }
+
+  if (!merged.phone?.trim() && contacts.phone?.trim()) {
+    merged.phone = contacts.phone.trim()
+  }
+  if (!merged.email?.trim() && contacts.email?.trim()) {
+    merged.email = contacts.email.trim().toLowerCase()
+  }
+  if (!merged.name?.trim()) {
+    const label = contacts.label?.trim()
+    if (label && !label.includes('@')) {
+      merged.name = label
+    } else {
+      const short = shortInsurerLabel(insurerName)
+      if (short && (merged.phone || merged.email)) {
+        merged.name = `Servicio al cliente - ${short}`
+      }
+    }
+  }
+
+  return sanitizeAgentForDisplay(merged)
+}
+
+/** Resolves agent for review/create, merging insurer SAC contacts when agent is sparse. */
+export function resolveAgentForReview(
+  fields: PolicyExtractionFields | undefined,
   fallback?: Partial<Policy>
 ): PolicyAgent | undefined {
-  const extracted = sanitizeAgentForDisplay(fields.agent)
+  if (!fields) {
+    const base = sanitizeAgentForDisplay(fallback?.agent)
+    if (base && !isPlaceholderAgent(fallback?.agent)) {
+      return base as PolicyAgent
+    }
+    return undefined
+  }
+
+  const extracted = mergeInsurerContactsIntoAgent(
+    sanitizeAgentForDisplay(fields.agent),
+    fields.insurerContacts,
+    fields.insurerName ?? fallback?.insurerName
+  )
   if (extracted) {
     return extracted as PolicyAgent
   }
@@ -22,6 +79,13 @@ function resolveAgentFromExtraction(
   }
 
   return undefined
+}
+
+function resolveAgentFromExtraction(
+  fields: PolicyExtractionFields,
+  fallback?: Partial<Policy>
+): PolicyAgent | undefined {
+  return resolveAgentForReview(fields, fallback)
 }
 
 /** Maps extracted fields onto CreatePolicyInput, falling back to existing policy values. */

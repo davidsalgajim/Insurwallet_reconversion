@@ -403,7 +403,8 @@ def format_regional_extraction_rules() -> str:
 - NEVER copy startDate into endDate. If only one vigencia date appears (common in seguro deudor / vida deudores), use it as startDate only and set hasNoExpiration=true.
 - endDate must be a distinct expiration/renovación date visible on the document — not the same as inicio de vigencia.
 - coverages: summarize main amparos/coberturas/garantias (e.g. Muerte, ITP, incapacidad).
-- agent: extract name, phone and email from Asesor / Agente / Intermediario / Corredor / Broker / SAC / línea de atención / customer service blocks. Colombia phones: +57 plus 10 digits (mobile 3xx). Normalize phones with country code when visible. Omit agent sub-fields not printed — never use placeholder values.
+- agent: tiered extraction — (1) named asesor/agente/corredor with phone/email; (2) if none, SAC/servicio al cliente phone+email in insurerContacts with a short label (not email as name); (3) firma autorizada person name in agent.name only when clearly a natural person. Colombia phones: +57 mobile 3xx or Bogotá (601)/(60-1) landline with ext when shown.
+- insurerContacts: SAC / línea de atención when no commercial agent block exists.
 - Omit fields not clearly visible; do not invent values."""
 
 

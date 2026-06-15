@@ -28,7 +28,7 @@ from pipeline.text_extractors import (
     extract_pdf_full,
     run_surya_ocr,
 )
-from pipeline.validators import ValidationResult, validate_extraction
+from pipeline.validators import ValidationResult, boost_agent_from_text, validate_extraction
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +55,27 @@ def _merge_extraction_fields(
     agent: dict[str, object] = {}
     if isinstance(merged.get("agent"), dict):
         agent = dict(merged["agent"])  # type: ignore[arg-type]
+
+    insurer_contacts = merged.get("insurerContacts")
+    if isinstance(insurer_contacts, dict):
+        for subkey in ("phone", "email"):
+            if not agent.get(subkey):
+                value = insurer_contacts.get(subkey)
+                if isinstance(value, str) and value.strip():
+                    agent[subkey] = value.strip()
+        if not agent.get("name"):
+            label = insurer_contacts.get("label")
+            if isinstance(label, str) and label.strip():
+                agent["name"] = label.strip()
+
     for subkey in ("name", "phone", "email"):
         validated = validation.fields.get(f"agent.{subkey}")
         if validated and validated.value is not None:
             agent[subkey] = validated.value
     if agent:
         merged["agent"] = agent
+
+    merged.pop("insurerContacts", None)
 
     return merged
 
@@ -176,11 +191,12 @@ def extract_document(
         rag_text = sanitized.text
 
     claude_fields = _apply_expiration_heuristics(dict(claude_result.fields))
-    validation = validate_extraction(claude_fields)
+    boosted_fields = boost_agent_from_text(claude_fields, sanitized.text)
+    validation = validate_extraction(boosted_fields)
     api_method = _map_method_to_api(backend)
 
     serialized_fields = serialize_fields_for_api(
-        _merge_extraction_fields(claude_fields, validation)
+        _merge_extraction_fields(boosted_fields, validation)
     )
     field_bboxes = match_field_bboxes(serialized_fields, pdf_result.elements)
 

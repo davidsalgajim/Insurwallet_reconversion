@@ -43,6 +43,7 @@ POLICY_EXTRACTION_FIELD_KEYS: tuple[str, ...] = (
     "waitingPeriods",
     "notes",
     "agent",
+    "insurerContacts",
     "coverageEntries",
     "deductibleEntries",
     "beneficiaryEntries",

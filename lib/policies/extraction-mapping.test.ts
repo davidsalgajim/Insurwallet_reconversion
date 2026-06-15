@@ -111,4 +111,64 @@ describe('extraction mapping', () => {
     expect(merged.coverageEntries).toHaveLength(1)
     expect(merged.deductibleEntries).toHaveLength(1)
   })
+
+  it('maps insurer SAC contacts into agent when agent is empty (Alfa-like)', () => {
+    const alfaSnippet = `
+      Seguros de Vida Alfa S.A.
+      Servicio al cliente
+      servicioalcliente@segurosalfa.com.co
+      (60-1) 7 43 53 33 Ext 14451
+      Andrés Fernando Barón Tautiva
+      Firma Autorizada
+    `
+
+    const input = extractionFieldsToCreateInput(
+      {
+        insurerName: 'Seguros de Vida Alfa S.A.',
+        insurerContacts: {
+          phone: '+5717435333',
+          email: 'servicioalcliente@segurosalfa.com.co',
+          label: 'Servicio al cliente - Alfa',
+        },
+        agent: {
+          name: 'Andrés Fernando Barón Tautiva',
+        },
+      },
+      'user-1',
+      {
+        ...basePolicy,
+        agent: {
+          name: 'Por definir',
+          phone: '+570000000000',
+          email: 'pendiente@example.com',
+        },
+      }
+    )
+
+    expect(input.agent).toEqual({
+      name: 'Andrés Fernando Barón Tautiva',
+      phone: '+5717435333',
+      email: 'servicioalcliente@segurosalfa.com.co',
+    })
+    expect(alfaSnippet).toContain('Seguros de Vida Alfa')
+  })
+
+  it('fills agent phone/email from insurerContacts without SAC email as name', () => {
+    const input = extractionFieldsToCreateInput(
+      {
+        insurerName: 'Seguros de Vida Alfa S.A.',
+        insurerContacts: {
+          phone: '+5717435333',
+          email: 'servicioalcliente@segurosalfa.com.co',
+        },
+      },
+      'user-1'
+    )
+
+    expect(input.agent).toEqual({
+      name: 'Servicio al cliente - Seguros',
+      phone: '+5717435333',
+      email: 'servicioalcliente@segurosalfa.com.co',
+    })
+  })
 })

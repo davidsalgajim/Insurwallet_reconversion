@@ -24,8 +24,45 @@ CURRENCY_PATTERN = re.compile(r"^[A-Z]{3}$")
 INSURER_MIN_LEN = 2
 HOLDER_MIN_LEN = 2
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", re.IGNORECASE)
-COLOMBIA_PHONE_PATTERN = re.compile(r"^\+?57[0-9]{10}$")
+RAW_EMAIL_SCAN = re.compile(
+    r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}",
+    re.IGNORECASE,
+)
+COLOMBIA_PHONE_PATTERN = re.compile(r"^\+?57[0-9]{8,10}$")
+COLOMBIA_MOBILE_PATTERN = re.compile(r"^\+57[0-9]{10}$")
 GENERIC_PHONE_PATTERN = re.compile(r"^\+?[0-9]{8,15}$")
+CO_BOGOTA_PHONE_SCAN = re.compile(
+    r"\(60[-\s]?1\)\s*([\d\s.\-]+)(?:\s*[Ee]xt\.?\s*(\d+))?",
+    re.IGNORECASE,
+)
+CO_LANDLINE_SCAN = re.compile(
+    r"(?:\+?57\s*)?1[\s.\-]?(\d{3}[\s.\-]?\d{2}[\s.\-]?\d{2})"
+    r"(?:\s*[Ee]xt\.?\s*(\d+))?",
+)
+CO_MOBILE_SCAN = re.compile(
+    r"(?:\+?57\s*)?(3\d{2})[\s.\-]?(\d{3})[\s.\-]?(\d{4})",
+)
+SAC_CONTEXT_PATTERN = re.compile(
+    r"(?:servicio\s+al\s+cliente|sac|l[ií]nea\s+de\s+atenci[oó]n|"
+    r"atenci[oó]n\s+al\s+cliente|customer\s+service)",
+    re.IGNORECASE,
+)
+FIRMA_AUTORIZADA_PATTERN = re.compile(
+    r"(?:firma\s+autorizada|authorized\s+signature)"
+    r"\s*[:\-]?\s*"
+    r"([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})",
+    re.IGNORECASE,
+)
+FIRMA_NAME_ABOVE_PATTERN = re.compile(
+    r"([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})\s*"
+    r"(?:\n|\r\n?)\s*"
+    r"(?:firma\s+autorizada|authorized\s+signature)\b",
+    re.IGNORECASE,
+)
+COMPANY_NAME_MARKERS = re.compile(
+    r"\b(s\.?a\.?|s\.?a\.?s\.?|ltda|inc|corp|seguros|insurance|compa[nñ][ií]a)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -101,16 +138,208 @@ def normalize_phone(value: str | None) -> str | None:
     trimmed = value.strip()
     if not trimmed:
         return None
+    ext_suffix: str | None = None
+    ext_match = re.search(r"\s+[Ee]xt\.?\s*(\d+)\s*$", trimmed)
+    if ext_match:
+        ext_suffix = ext_match.group(1)
+        trimmed = trimmed[: ext_match.start()].strip()
     digits = re.sub(r"[^\d+]", "", trimmed)
     if digits.startswith("+"):
         normalized = "+" + re.sub(r"\D", "", digits[1:])
     else:
         normalized = re.sub(r"\D", "", digits)
-        if len(normalized) == 10 and normalized.startswith("3"):
-            normalized = f"+57{normalized}"
+        if normalized.startswith("601") and len(normalized) >= 10:
+            normalized = f"57{normalized[2:10]}"
+        elif len(normalized) == 10 and normalized.startswith("3"):
+            normalized = f"57{normalized}"
         elif len(normalized) == 12 and normalized.startswith("57"):
             normalized = f"+{normalized}"
+        elif len(normalized) == 11 and normalized.startswith("57"):
+            normalized = f"+{normalized}"
+        elif len(normalized) == 8 and normalized.startswith("1"):
+            normalized = f"57{normalized}"
+    if normalized and not normalized.startswith("+"):
+        normalized = f"+{normalized}"
+    if ext_suffix and normalized:
+        return f"{normalized} ext {ext_suffix}"
     return normalized or None
+
+
+def _is_sac_email(email: str) -> bool:
+    lowered = email.lower()
+    return any(
+        token in lowered
+        for token in (
+            "servicio",
+            "sac",
+            "atencion",
+            "atención",
+            "cliente",
+            "contacto",
+            "info",
+        )
+    )
+
+
+def extract_emails_from_text(text: str) -> list[str]:
+    seen: set[str] = set()
+    emails: list[str] = []
+    for match in RAW_EMAIL_SCAN.finditer(text):
+        email = match.group(0).strip().lower()
+        if email in seen:
+            continue
+        seen.add(email)
+        emails.append(email)
+    sac = [e for e in emails if _is_sac_email(e)]
+    return sac or emails
+
+
+def _normalize_scanned_phone(raw: str, ext: str | None = None) -> str | None:
+    normalized = normalize_phone(raw)
+    if not normalized:
+        return None
+    if ext and ext.strip():
+        return f"{normalized} ext {ext.strip()}"
+    return normalized
+
+
+def extract_phones_from_text(text: str) -> list[str]:
+    seen: set[str] = set()
+    phones: list[str] = []
+
+    def add_phone(candidate: str | None) -> None:
+        if not candidate or candidate in seen:
+            return
+        seen.add(candidate)
+        phones.append(candidate)
+
+    for match in CO_BOGOTA_PHONE_SCAN.finditer(text):
+        local_digits = re.sub(r"\D", "", match.group(1))[:7]
+        ext = match.group(2)
+        if len(local_digits) == 7:
+            add_phone(_normalize_scanned_phone(f"601{local_digits}", ext))
+
+    for match in CO_LANDLINE_SCAN.finditer(text):
+        local = re.sub(r"\D", "", match.group(1))
+        ext = match.group(2)
+        add_phone(_normalize_scanned_phone(f"1{local}", ext))
+
+    for match in CO_MOBILE_SCAN.finditer(text):
+        raw = f"{match.group(1)}{match.group(2)}{match.group(3)}"
+        add_phone(normalize_phone(raw))
+
+    return phones
+
+
+def extract_firma_autorizada_name(text: str) -> str | None:
+    above = FIRMA_NAME_ABOVE_PATTERN.search(text)
+    if above:
+        name = above.group(1).strip()
+        if len(name) >= 4 and not COMPANY_NAME_MARKERS.search(name):
+            return name
+
+    match = FIRMA_AUTORIZADA_PATTERN.search(text)
+    if not match:
+        return None
+    name = match.group(1).strip()
+    if len(name) < 4 or COMPANY_NAME_MARKERS.search(name):
+        return None
+    if not re.search(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]", name):
+        return None
+    return name
+
+
+def _pick_sac_email(text: str, emails: list[str]) -> str | None:
+    for email in emails:
+        if not _is_sac_email(email):
+            continue
+        idx = text.lower().find(email)
+        if idx >= 0:
+            window = text[max(0, idx - 120) : idx + len(email) + 40]
+            if SAC_CONTEXT_PATTERN.search(window) or _is_sac_email(email):
+                return email
+    return next((e for e in emails if _is_sac_email(e)), None)
+
+
+def _pick_sac_phone(text: str, phones: list[str]) -> str | None:
+    for phone in phones:
+        bare = phone.split(" ext ")[0]
+        idx = text.find(bare.replace("+57", ""))
+        if idx < 0:
+            idx = text.find(bare)
+        if idx >= 0:
+            window = text[max(0, idx - 120) : idx + 80]
+            if SAC_CONTEXT_PATTERN.search(window):
+                return phone
+    return phones[0] if phones else None
+
+
+def extract_insurer_contacts_from_text(text: str) -> dict[str, str]:
+    emails = extract_emails_from_text(text)
+    phones = extract_phones_from_text(text)
+    contacts: dict[str, str] = {}
+
+    sac_email = _pick_sac_email(text, emails)
+    if sac_email:
+        contacts["email"] = sac_email
+
+    sac_phone = _pick_sac_phone(text, phones)
+    if sac_phone:
+        contacts["phone"] = sac_phone
+
+    if contacts and SAC_CONTEXT_PATTERN.search(text):
+        contacts["label"] = "Servicio al cliente"
+
+    return contacts
+
+
+def boost_agent_from_text(
+    fields: dict[str, object],
+    raw_text: str,
+) -> dict[str, object]:
+    """Regex boost for agent / insurerContacts when Claude omits SAC lines."""
+    if not raw_text.strip():
+        return fields
+
+    boosted = dict(fields)
+    agent: dict[str, str] = {}
+    if isinstance(boosted.get("agent"), dict):
+        agent = dict(boosted["agent"])  # type: ignore[arg-type]
+
+    insurer_contacts: dict[str, str] = {}
+    if isinstance(boosted.get("insurerContacts"), dict):
+        insurer_contacts = dict(boosted["insurerContacts"])  # type: ignore[arg-type]
+
+    scanned_contacts = extract_insurer_contacts_from_text(raw_text)
+    for key, value in scanned_contacts.items():
+        insurer_contacts.setdefault(key, value)
+
+    for key in ("phone", "email", "label"):
+        raw_val = insurer_contacts.get(key)
+        if isinstance(raw_val, str) and raw_val.strip():
+            if key == "phone":
+                insurer_contacts[key] = normalize_phone(raw_val) or raw_val.strip()
+            else:
+                insurer_contacts[key] = raw_val.strip()
+
+    if insurer_contacts:
+        boosted["insurerContacts"] = insurer_contacts
+
+    for key in ("phone", "email"):
+        if not agent.get(key):
+            fallback = insurer_contacts.get(key)
+            if fallback:
+                agent[key] = fallback
+
+    if not agent.get("name"):
+        firma = extract_firma_autorizada_name(raw_text)
+        if firma:
+            agent["name"] = firma
+
+    if agent:
+        boosted["agent"] = agent
+
+    return boosted
 
 
 def validate_agent_name(value: str | None) -> ValidatedField:
@@ -129,11 +358,14 @@ def validate_agent_phone(value: str | None) -> ValidatedField:
     normalized = normalize_phone(value)
     if not normalized:
         return ValidatedField(None, "low", ("missing",))
-    if normalized in {"+570000000000", "+57000000000"}:
+    bare = normalized.split(" ext ")[0]
+    if bare in {"+570000000000", "+57000000000"}:
         return ValidatedField(None, "low", ("placeholder",))
-    if COLOMBIA_PHONE_PATTERN.match(normalized):
+    if COLOMBIA_MOBILE_PATTERN.match(bare):
         return ValidatedField(normalized, "high")
-    if GENERIC_PHONE_PATTERN.match(normalized):
+    if COLOMBIA_PHONE_PATTERN.match(bare):
+        return ValidatedField(normalized, "medium", ("landline_or_loose",))
+    if GENERIC_PHONE_PATTERN.match(bare):
         return ValidatedField(normalized, "medium", ("format_loose",))
     return ValidatedField(normalized, "low", ("format_invalid",))
 

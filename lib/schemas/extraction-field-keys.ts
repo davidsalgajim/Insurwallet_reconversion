@@ -34,6 +34,7 @@ export const POLICY_EXTRACTION_FIELD_KEYS = [
   'waitingPeriods',
   'notes',
   'agent',
+  'insurerContacts',
   'coverageEntries',
   'deductibleEntries',
   'beneficiaryEntries',

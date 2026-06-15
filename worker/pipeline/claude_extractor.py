@@ -86,21 +86,51 @@ _AGENT = {
         "name": {
             "type": "string",
             "description": (
-                "Full name of the insurance agent, asesor, corredor, "
-                "intermediario, or producer shown on the document"
+                "Person name only: insurance agent, asesor, corredor, "
+                "intermediario, or authorized signatory (firma autorizada). "
+                "Do NOT use company names or raw SAC email addresses as name."
             ),
         },
         "phone": {
             "type": "string",
             "description": (
-                "Agent or customer-service phone. Colombia: +57 and 10 digits "
-                "(e.g. +573001234567). Include country code when visible."
+                "Agent phone. Colombia: +57 mobile (3xx) or Bogotá landline "
+                "(601 / (60-1)). Include extension when visible."
             ),
         },
         "email": {
             "type": "string",
             "description": (
-                "Agent, asesor, or línea de atención email if printed on the policy"
+                "Agent or asesor email — not insurer generic SAC unless no "
+                "dedicated agent is shown."
+            ),
+        },
+    },
+    "additionalProperties": False,
+}
+
+_INSURER_CONTACTS = {
+    "type": "object",
+    "properties": {
+        "phone": {
+            "type": "string",
+            "description": (
+                "Insurer customer-service / SAC / línea de atención phone "
+                "(e.g. (60-1) 743 53 33 Ext 14451)."
+            ),
+        },
+        "email": {
+            "type": "string",
+            "description": (
+                "Insurer SAC or servicio al cliente email "
+                "(e.g. servicioalcliente@aseguradora.com.co)."
+            ),
+        },
+        "label": {
+            "type": "string",
+            "description": (
+                "Short label for the contact line, e.g. "
+                "'Servicio al cliente - Alfa' — never an email address."
             ),
         },
     },
@@ -175,6 +205,7 @@ EXTRACTION_TOOL: dict[str, Any] = {
             "waitingPeriods": {"type": "string"},
             "notes": {"type": "string"},
             "agent": _AGENT,
+            "insurerContacts": _INSURER_CONTACTS,
             "coverageEntries": {
                 "type": "array",
                 "items": _COVERAGE_ENTRY,
@@ -211,8 +242,12 @@ Rules:
 {format_field_label_hints()}
 8. For beneficiaryEntries use full name, benefit percentage (pct), and optional notes (e.g. NIT/CC/CNPJ).
 9. policyType must be one of: {", ".join(_POLICY_TYPE_ENUM)}.
-10. agent: look for blocks labeled Asesor, Agente, Intermediario, Corredor, Broker, SAC, línea de atención, or customer service. Extract name, phone, and email only when explicitly printed — never invent placeholders.
-11. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
+10. agent (tiered):
+   a) Primary — named agent/asesor/corredor/intermediario with phone/email.
+   b) Secondary — if no dedicated agent, put SAC / servicio al cliente / línea de atención phone and email in insurerContacts (label e.g. "Servicio al cliente - {insurer short name}"). Do NOT put SAC email in agent.name.
+   c) Tertiary — firma autorizada person name in agent.name only when clearly a natural person near a signature block; never a company name.
+11. insurerContacts: SAC / customer-service lines when no commercial agent is listed. Phone/email only; label is a short human label, not an email.
+12. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
 
 {format_regional_extraction_rules()}
 
@@ -318,6 +353,29 @@ def _apply_expiration_heuristics(fields: dict[str, object]) -> dict[str, object]
     return fields
 
 
+def _normalize_insurer_contacts(raw: object) -> dict[str, str] | None:
+    if not isinstance(raw, dict):
+        return None
+
+    from pipeline.validators import normalize_phone
+
+    contacts: dict[str, str] = {}
+    phone = normalize_phone(
+        raw.get("phone") if isinstance(raw.get("phone"), str) else None
+    )
+    email = str(raw.get("email", "")).strip().lower()
+    label = str(raw.get("label", "")).strip()
+
+    if phone:
+        contacts["phone"] = phone
+    if email and "@" in email:
+        contacts["email"] = email
+    if label and "@" not in label:
+        contacts["label"] = label
+
+    return contacts or None
+
+
 def _normalize_agent(raw: object) -> dict[str, str] | None:
     if not isinstance(raw, dict):
         return None
@@ -351,6 +409,11 @@ def _normalize_fields(raw_input: dict[str, object]) -> dict[str, object]:
             normalized_agent = _normalize_agent(value)
             if normalized_agent:
                 fields[key_name] = normalized_agent
+            continue
+        if key_name == "insurerContacts":
+            normalized_contacts = _normalize_insurer_contacts(value)
+            if normalized_contacts:
+                fields[key_name] = normalized_contacts
             continue
         fields[key_name] = value
     return _apply_expiration_heuristics(fields)

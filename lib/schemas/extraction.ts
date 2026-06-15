@@ -2,7 +2,7 @@
  * Claude / worker extraction output — fields map 1:1 to CreatePolicyInput (lib/firebase/policies.ts).
  * manual wizard ≡ extraction ≡ MarIAna readable fields (lib/schemas/policy.ts).
  *
- * Field parity: see `lib/schemas/extraction-field-keys.ts` (20 extractable fields).
+ * Field parity: see `lib/schemas/extraction-field-keys.ts` (21 extractable fields).
  * Never extracted from documents: ownerUid, sharedWith, status, createdAt, updatedAt.
  */
 import { z } from 'zod'
@@ -29,6 +29,16 @@ export const FieldBboxSchema = z.object({
 })
 export type FieldBbox = z.infer<typeof FieldBboxSchema>
 
+/** Insurer SAC / customer-service lines — merged into agent on review when agent is empty. */
+export const InsurerContactsExtractionSchema = z.object({
+  phone: z.string().min(1).optional(),
+  email: z.string().min(1).optional(),
+  label: z.string().min(1).optional(),
+})
+export type InsurerContactsExtraction = z.infer<
+  typeof InsurerContactsExtractionSchema
+>
+
 export const PolicyExtractionFieldsSchema = z.object({
   insurerName: z.string().min(1).optional(),
   policyNumber: z.string().min(1).optional(),
@@ -46,6 +56,7 @@ export const PolicyExtractionFieldsSchema = z.object({
   waitingPeriods: z.string().optional(),
   notes: z.string().optional(),
   agent: PolicyAgentExtractionSchema.optional(),
+  insurerContacts: InsurerContactsExtractionSchema.optional(),
   coverageEntries: z.array(CoverageEntrySchema).optional(),
   deductibleEntries: z.array(DeductibleEntrySchema).optional(),
   beneficiaryEntries: z.array(BeneficiaryEntrySchema).optional(),

@@ -13,7 +13,7 @@ import {
 } from '@/components/policies/policy-structured-fields'
 import { toDateInputValue } from '@/components/policies/policy-form-styles'
 import type { PolicyDocument } from '@/lib/firebase/policies'
-import { sanitizeAgentForDisplay } from '@/lib/policies/agent-placeholders'
+import { resolveAgentForReview } from '@/lib/policies/extraction-mapping'
 import type { PolicyExtraction } from '@/lib/schemas/extraction'
 import {
   beneficiaryEntryToManualRow,
@@ -107,9 +107,7 @@ export function mergeAgentFromExtraction(
   policy: PolicyDocument,
   extraction?: PolicyExtraction
 ): PolicyAgentFieldsValues {
-  const extracted = sanitizeAgentForDisplay(extraction?.fields.agent)
-  const fromPolicy = sanitizeAgentForDisplay(policy.agent)
-  const agent = extracted ?? fromPolicy
+  const agent = resolveAgentForReview(extraction?.fields, policy)
 
   return {
     agentName: agent?.name ?? '',
