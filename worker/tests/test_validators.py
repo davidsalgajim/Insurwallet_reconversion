@@ -4,6 +4,7 @@ from pipeline.validators import (
     boost_agent_from_text,
     extract_emails_from_text,
     extract_firma_autorizada_name,
+    extract_insurer_contacts_from_text,
     extract_phones_from_text,
     extract_regional_assistance_contacts,
     phone_collides_with_policy_number,
@@ -36,6 +37,15 @@ Asia
 +82 (2) 2023-5858
 Europa
 +34 (91) 788-3333
+"""
+
+AUTO_TWO_PHONES_SAMPLE = """
+Seguros del Estado
+Póliza No. AUTO-2024-55667788
+Asesor comercial: Laura Gómez
+Celular: 300 555 1234
+Servicio al cliente
+Línea nacional: 01 8000 123 456
 """
 
 
@@ -232,3 +242,23 @@ def test_validate_extraction_clears_agent_phone_matching_policy_number():
 
     assert result.fields["agent.phone"].value is None
     assert result.confidence["agent.phone"] == "low"
+
+
+def test_extract_multiple_phones_auto_policy():
+    contacts = extract_insurer_contacts_from_text(AUTO_TWO_PHONES_SAMPLE)
+    phones = [row.get("phone") for row in contacts if row.get("phone")]
+
+    assert len(phones) >= 2
+
+    boosted = boost_agent_from_text(
+        {"policyNumber": "AUTO-2024-55667788"},
+        AUTO_TWO_PHONES_SAMPLE,
+    )
+    agent = boosted.get("agent", {})
+    assert not phone_collides_with_policy_number(
+        agent.get("phone"),
+        "AUTO-2024-55667788",
+    )
+    insurer_contacts = boosted.get("insurerContacts")
+    assert isinstance(insurer_contacts, list)
+    assert len(insurer_contacts) >= 2

@@ -80,6 +80,10 @@ function normalizeInsurerContactLine(
       ? phone
       : undefined
 
+  if (!safePhone && !email) {
+    return undefined
+  }
+
   if (!safePhone && !email && !label) {
     return undefined
   }

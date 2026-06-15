@@ -34,6 +34,7 @@ describe('saved-directory helpers', () => {
       agentName: 'Ana Pérez',
       agentPhone: '+57 300',
       agentEmail: 'ana@demo.com',
+      insurerContactRows: [],
     })
   })
 

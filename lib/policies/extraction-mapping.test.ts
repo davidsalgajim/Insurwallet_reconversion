@@ -176,6 +176,39 @@ describe('extraction mapping', () => {
       email: 'servicioalcliente@segurosalfa.com.co',
     })
   })
+  it('persists insurerContacts array on create input', () => {
+    const input = extractionFieldsToCreateInput(
+      {
+        insurerContacts: [
+          { label: 'SAC', phone: '+5718000123' },
+          { label: 'Europa', phone: '+34917883333' },
+        ],
+      },
+      'user-1'
+    )
+
+    expect(input.insurerContacts).toEqual([
+      { label: 'SAC', phone: '+5718000123' },
+      { label: 'Europa', phone: '+34917883333' },
+    ])
+  })
+
+  it('rejects policy number masquerading as phone in insurerContacts', () => {
+    const input = extractionFieldsToCreateInput(
+      {
+        policyNumber: '9876543210987',
+        insurerContacts: [
+          { label: 'Falso', phone: '9876543210987' },
+          { label: 'SAC', phone: '+5715937233' },
+        ],
+      },
+      'user-1'
+    )
+
+    expect(input.insurerContacts).toEqual([
+      { label: 'SAC', phone: '+5715937233' },
+    ])
+  })
 
   it('drops sentinel agent email and insurerContacts before persist', () => {
     const sanitized = sanitizeExtractionFieldsForPersist({

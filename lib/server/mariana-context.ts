@@ -8,6 +8,7 @@ export type MarianaPolicyContext = PolicyMetadata & {
   coverages?: string
   exclusions?: string
   agent: Policy['agent']
+  insurerContacts: Policy['insurerContacts']
   coverageEntries: Policy['coverageEntries']
   deductibleEntries: Policy['deductibleEntries']
   beneficiaryEntries: Policy['beneficiaryEntries']
@@ -74,6 +75,7 @@ export async function loadMarianaPolicyContext(uid: string): Promise<{
       coverages: parsed.coverages,
       exclusions: parsed.exclusions,
       agent: parsed.agent,
+      insurerContacts: parsed.insurerContacts,
       coverageEntries: parsed.coverageEntries,
       deductibleEntries: parsed.deductibleEntries,
       beneficiaryEntries: parsed.beneficiaryEntries,
@@ -109,6 +111,7 @@ export async function loadMarianaPolicyContext(uid: string): Promise<{
       coverages: parsed.coverages,
       exclusions: parsed.exclusions,
       agent: parsed.agent,
+      insurerContacts: parsed.insurerContacts,
       coverageEntries: parsed.coverageEntries,
       deductibleEntries: parsed.deductibleEntries,
       beneficiaryEntries: parsed.beneficiaryEntries,

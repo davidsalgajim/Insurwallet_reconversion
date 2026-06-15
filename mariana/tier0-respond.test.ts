@@ -24,6 +24,7 @@ const samplePolicies: MarianaPolicyContext[] = [
     deductibleEntries: [],
     beneficiaryEntries: [{ name: 'John', pct: 100 }],
     benefitEntries: [],
+    insurerContacts: [],
     coverageCount: 0,
     deductibleCount: 0,
     beneficiaryCount: 1,

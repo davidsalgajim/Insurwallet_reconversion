@@ -61,6 +61,7 @@ function defaultAgentValues(): PolicyAgentFieldsValues {
     agentName: '',
     agentPhone: '',
     agentEmail: '',
+    insurerContactRows: [],
   }
 }
 

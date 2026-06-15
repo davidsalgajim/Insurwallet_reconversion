@@ -329,8 +329,13 @@
       "email": "Email",
       "emailPlaceholder": "agent@insurer.com",
       "assistanceLinesTitle": "Detected assistance lines",
-      "assistanceLinesHint": "Click a number to use it as the primary agent phone.",
-      "assistanceLineFallback": "Line {index}"
+      "assistanceLinesHint": "SAC, regional hotlines, and other assistance numbers from the document. Pick one as the primary contact.",
+      "assistanceLineFallback": "Line {index}",
+      "assistanceLineDefaultLabel": "Assistance line",
+      "assistanceLabelPlaceholder": "Label (SAC, Europe…)",
+      "useAsPrimary": "Use as primary",
+      "addAssistanceLine": "Add assistance line",
+      "removeAssistanceLine": "Remove line"
     },
     "savedDirectory": {
       "pickAdvisor": "Choose from saved advisors",

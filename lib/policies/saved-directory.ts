@@ -32,6 +32,7 @@ export function contactToAgentFields(
     agentName: contact.name,
     agentPhone: contact.phone ?? '',
     agentEmail: contact.email ?? '',
+    insurerContactRows: [],
   }
 }
 

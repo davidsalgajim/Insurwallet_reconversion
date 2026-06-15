@@ -74,9 +74,18 @@ export function buildTier0Response(
       return `${headers[locale]}\n\n${lines.join('\n')}`
     }
     case 'contact_info': {
-      const lines = policies.map((policy) => {
+      const lines = policies.flatMap((policy) => {
         const agent = policy.agent
-        return `• ${policy.insurerName}: ${agent.name} — ${agent.phone} — ${agent.email}`
+        const primary = `• ${policy.insurerName}: ${agent.name} — ${agent.phone}${agent.email ? ` — ${agent.email}` : ''}`
+        const extra = (policy.insurerContacts ?? [])
+          .filter((line) => line.phone || line.email)
+          .map((line) => {
+            const label = line.label ? `${line.label}: ` : ''
+            const phone = line.phone ?? ''
+            const email = line.email ? ` — ${line.email}` : ''
+            return `  ↳ ${label}${phone}${email}`
+          })
+        return extra.length > 0 ? [primary, ...extra] : [primary]
       })
       const headers: Record<Locale, string> = {
         es: 'Contactos de agentes y aseguradoras registrados:',

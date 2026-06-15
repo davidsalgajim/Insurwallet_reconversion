@@ -1,4 +1,5 @@
 import type { PolicyAgentFieldsValues } from '@/components/policies/policy-agent-fields'
+import { insurerContactRowsToLines } from '@/components/policies/policy-agent-fields'
 import type { PolicyBasicFieldsValues } from '@/components/policies/policy-basic-fields'
 import {
   sanitizeBenefitRows,
@@ -48,6 +49,7 @@ export function buildCreateInputFromForm(
       phone: agent.agentPhone.trim() || undefined,
       email: agent.agentEmail.trim() || undefined,
     },
+    insurerContacts: insurerContactRowsToLines(agent.insurerContactRows),
     coverageEntries: sanitizeCoverageRows(coverageRows),
     deductibleEntries: sanitizeDeductibleRows(deductibleRows),
     benefitEntries: sanitizeBenefitRows(benefitRows),

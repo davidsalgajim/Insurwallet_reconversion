@@ -329,8 +329,13 @@
       "email": "Correo",
       "emailPlaceholder": "agente@aseguradora.com",
       "assistanceLinesTitle": "Líneas de asistencia detectadas",
-      "assistanceLinesHint": "Haz clic en un número para usarlo como teléfono principal del agente.",
-      "assistanceLineFallback": "Línea {index}"
+      "assistanceLinesHint": "SAC, líneas regionales u otras asistencias del documento. Elige cuál usar como contacto principal.",
+      "assistanceLineFallback": "Línea {index}",
+      "assistanceLineDefaultLabel": "Línea de atención",
+      "assistanceLabelPlaceholder": "Etiqueta (SAC, Europa…)",
+      "useAsPrimary": "Usar como principal",
+      "addAssistanceLine": "Agregar línea de atención",
+      "removeAssistanceLine": "Quitar línea"
     },
     "savedDirectory": {
       "pickAdvisor": "Elegir de mis asesores guardados",
