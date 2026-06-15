@@ -1,33 +1,14 @@
 import { z } from 'zod'
 
 import type { PolicyAgent } from '@/lib/schemas/policy'
-
-const EXTRACTED_AGENT_EMAIL_SENTINELS = new Set([
-  'none',
-  'n/a',
-  'na',
-  'null',
-  'nil',
-  'sin email',
-  'no email',
-  'no aplica',
-  'ninguno',
-  'ninguna',
-  'not available',
-  'no disponible',
-])
+import { normalizeOptionalString } from '@/lib/utils/normalize-optional-string'
 
 /** Claude/OCR sometimes emit sentinel strings instead of omitting agent email. */
 export function normalizeExtractedAgentEmail(
   email: string | undefined | null
 ): string {
-  const trimmed = email?.trim()
+  const trimmed = normalizeOptionalString(email)
   if (!trimmed) {
-    return ''
-  }
-
-  const lowered = trimmed.toLowerCase()
-  if (EXTRACTED_AGENT_EMAIL_SENTINELS.has(lowered)) {
     return ''
   }
 
@@ -77,40 +58,44 @@ export function isPlaceholderAgent(
 
 /** Strip legacy placeholder values for form display and extraction merge. */
 export function sanitizeAgentForDisplay(
-  agent: Partial<PolicyAgent> | undefined
+  agent: Partial<PolicyAgent> | undefined,
+  options?: { forPersist?: boolean }
 ): Partial<PolicyAgent> | undefined {
   if (!agent) {
     return undefined
   }
 
-  const name = isAgentPlaceholderField('name', agent.name)
+  const rawHadEmail = agent.email !== undefined
+  const normalizedName = normalizeOptionalString(agent.name)
+  const name = isAgentPlaceholderField('name', normalizedName)
     ? undefined
-    : agent.name?.trim()
+    : normalizedName || undefined
   const phone = isAgentPlaceholderField('phone', agent.phone)
     ? undefined
     : agent.phone?.trim()
   const normalizedEmail = normalizeExtractedAgentEmail(agent.email)
   const email = isAgentPlaceholderField('email', normalizedEmail)
     ? undefined
-    : normalizedEmail || undefined
+    : normalizedEmail || (options?.forPersist && rawHadEmail ? '' : undefined)
 
-  if (!name && !phone && !email) {
+  if (!name && !phone && email === undefined) {
     return undefined
   }
 
   return {
     ...(name ? { name } : {}),
     ...(phone ? { phone } : {}),
-    ...(email ? { email } : {}),
+    ...(email !== undefined ? { email } : {}),
   }
 }
 
 export function resolveAgentForStorage(
   agent?: Partial<PolicyAgent>
 ): PolicyAgent {
-  const name = isAgentPlaceholderField('name', agent?.name)
+  const normalizedName = normalizeOptionalString(agent?.name)
+  const name = isAgentPlaceholderField('name', normalizedName)
     ? ''
-    : (agent?.name?.trim() ?? '')
+    : normalizedName
   const phone = isAgentPlaceholderField('phone', agent?.phone)
     ? ''
     : (agent?.phone?.trim() ?? '')

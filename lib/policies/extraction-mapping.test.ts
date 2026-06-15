@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { mergePolicyUpdate } from '@/lib/firebase/policies'
 import {
   extractionFieldsToCreateInput,
   mergeExtractionFieldsIntoPolicy,
+  sanitizeExtractionFieldsForPersist,
 } from '@/lib/policies/extraction-mapping'
 import type { PolicyExtractionFields } from '@/lib/schemas/extraction'
 
@@ -169,6 +171,71 @@ describe('extraction mapping', () => {
       name: 'Servicio al cliente - Seguros',
       phone: '+5717435333',
       email: 'servicioalcliente@segurosalfa.com.co',
+    })
+  })
+
+  it('drops sentinel agent email and insurerContacts before persist', () => {
+    const sanitized = sanitizeExtractionFieldsForPersist({
+      agent: {
+        name: 'ASA AGENCIA DE SEGUROS LTDA.',
+        phone: '+5715320610',
+        email: 'none',
+      },
+      insurerContacts: {
+        email: 'n/a',
+        phone: '+5715320610',
+      },
+      notes: 'pendiente',
+    })
+
+    expect(sanitized.agent).toEqual({
+      name: 'ASA AGENCIA DE SEGUROS LTDA.',
+      phone: '+5715320610',
+      email: '',
+    })
+    expect(sanitized.insurerContacts).toEqual({ phone: '+5715320610' })
+    expect(sanitized.notes).toBeUndefined()
+  })
+
+  it('mergeExtractionFieldsIntoPolicy survives agent email sentinel', () => {
+    const merged = mergeExtractionFieldsIntoPolicy(basePolicy, {
+      agent: {
+        name: 'Laura Gómez',
+        phone: '+573001112233',
+        email: 'none',
+      },
+    })
+
+    expect(() =>
+      mergePolicyUpdate(basePolicy, {
+        agent: merged.agent,
+      })
+    ).not.toThrow()
+    expect(merged.agent.email).toBe('')
+  })
+
+  it('clears placeholder policy email when extraction sends sentinel', () => {
+    const draftPolicy = {
+      ...basePolicy,
+      agent: {
+        name: 'Por definir',
+        phone: '+570000000000',
+        email: 'pendiente@example.com',
+      },
+    }
+
+    const merged = mergeExtractionFieldsIntoPolicy(draftPolicy, {
+      agent: {
+        name: 'Laura Gómez',
+        phone: '+573001112233',
+        email: 'none',
+      },
+    })
+
+    expect(merged.agent).toEqual({
+      name: 'Laura Gómez',
+      phone: '+573001112233',
+      email: '',
     })
   })
 })

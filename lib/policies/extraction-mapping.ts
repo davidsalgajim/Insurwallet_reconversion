@@ -1,6 +1,7 @@
 import type { CreatePolicyInput } from '@/lib/firebase/policies'
 import {
   isPlaceholderAgent,
+  normalizeExtractedAgentEmail,
   resolveAgentForStorage,
   sanitizeAgentForDisplay,
 } from '@/lib/policies/agent-placeholders'
@@ -9,6 +10,57 @@ import type {
   PolicyExtractionFields,
 } from '@/lib/schemas/extraction'
 import type { Policy, PolicyAgent } from '@/lib/schemas/policy'
+import { normalizeOptionalString } from '@/lib/utils/normalize-optional-string'
+
+const OPTIONAL_TEXT_FIELDS = [
+  'coverages',
+  'beneficiaries',
+  'exclusions',
+  'waitingPeriods',
+  'notes',
+] as const satisfies ReadonlyArray<keyof PolicyExtractionFields>
+
+/** Single choke point before CreatePolicyInput / mergePolicyUpdate. */
+export function sanitizeExtractionFieldsForPersist(
+  fields: PolicyExtractionFields
+): PolicyExtractionFields {
+  const sanitized: PolicyExtractionFields = { ...fields }
+
+  if (sanitized.agent || fields.agent) {
+    sanitized.agent = sanitizeAgentForDisplay(fields.agent, {
+      forPersist: true,
+    })
+    if (!sanitized.agent) {
+      delete sanitized.agent
+    }
+  }
+
+  if (sanitized.insurerContacts) {
+    const phone = normalizeOptionalString(sanitized.insurerContacts.phone)
+    const email = normalizeExtractedAgentEmail(sanitized.insurerContacts.email)
+    const label = normalizeOptionalString(sanitized.insurerContacts.label)
+
+    if (!phone && !email && !label) {
+      delete sanitized.insurerContacts
+    } else {
+      sanitized.insurerContacts = {
+        ...(phone ? { phone } : {}),
+        ...(email ? { email } : {}),
+        ...(label && !label.includes('@') ? { label } : {}),
+      }
+    }
+  }
+
+  for (const key of OPTIONAL_TEXT_FIELDS) {
+    const value = sanitized[key]
+    if (typeof value === 'string') {
+      const normalized = normalizeOptionalString(value)
+      sanitized[key] = normalized || undefined
+    }
+  }
+
+  return sanitized
+}
 
 function shortInsurerLabel(insurerName?: string): string | undefined {
   const trimmed = insurerName?.trim()
@@ -34,7 +86,10 @@ function mergeInsurerContactsIntoAgent(
     merged.phone = contacts.phone.trim()
   }
   if (!merged.email?.trim() && contacts.email?.trim()) {
-    merged.email = contacts.email.trim().toLowerCase()
+    const normalizedEmail = normalizeExtractedAgentEmail(contacts.email)
+    if (normalizedEmail) {
+      merged.email = normalizedEmail.toLowerCase()
+    }
   }
   if (!merged.name?.trim()) {
     const label = contacts.label?.trim()
@@ -65,7 +120,7 @@ export function resolveAgentForReview(
   }
 
   const extracted = mergeInsurerContactsIntoAgent(
-    sanitizeAgentForDisplay(fields.agent),
+    sanitizeAgentForDisplay(fields.agent, { forPersist: true }),
     fields.insurerContacts,
     fields.insurerName ?? fallback?.insurerName
   )
@@ -94,36 +149,41 @@ export function extractionFieldsToCreateInput(
   ownerUid: string,
   fallback?: Partial<Policy>
 ): CreatePolicyInput {
+  const normalizedFields = sanitizeExtractionFieldsForPersist(fields)
   const base = fallback ?? {}
-  const startDate = fields.startDate ?? base.startDate ?? new Date()
+  const startDate = normalizedFields.startDate ?? base.startDate ?? new Date()
   const hasNoExpiration =
-    fields.hasNoExpiration ?? base.hasNoExpiration ?? false
-  const agent = resolveAgentFromExtraction(fields, base)
+    normalizedFields.hasNoExpiration ?? base.hasNoExpiration ?? false
+  const agent = resolveAgentFromExtraction(normalizedFields, base)
 
   return {
     ownerUid,
-    insurerName: fields.insurerName ?? base.insurerName ?? '',
-    policyNumber: fields.policyNumber ?? base.policyNumber ?? '',
-    policyType: fields.policyType ?? base.policyType ?? 'other',
-    holderName: fields.holderName ?? base.holderName ?? base.insurerName ?? '',
+    insurerName: normalizedFields.insurerName ?? base.insurerName ?? '',
+    policyNumber: normalizedFields.policyNumber ?? base.policyNumber ?? '',
+    policyType: normalizedFields.policyType ?? base.policyType ?? 'other',
+    holderName:
+      normalizedFields.holderName ?? base.holderName ?? base.insurerName ?? '',
     startDate,
-    endDate: fields.endDate ?? base.endDate ?? startDate,
+    endDate: normalizedFields.endDate ?? base.endDate ?? startDate,
     hasNoExpiration,
-    premium: fields.premium ?? base.premium ?? 0,
-    currency: fields.currency ?? base.currency ?? 'COP',
+    premium: normalizedFields.premium ?? base.premium ?? 0,
+    currency: normalizedFields.currency ?? base.currency ?? 'COP',
     paymentFrequency:
-      fields.paymentFrequency ?? base.paymentFrequency ?? 'annual',
-    coverages: fields.coverages ?? base.coverages,
-    beneficiaries: fields.beneficiaries ?? base.beneficiaries,
-    exclusions: fields.exclusions ?? base.exclusions,
-    waitingPeriods: fields.waitingPeriods ?? base.waitingPeriods,
-    notes: fields.notes ?? base.notes,
+      normalizedFields.paymentFrequency ?? base.paymentFrequency ?? 'annual',
+    coverages: normalizedFields.coverages ?? base.coverages,
+    beneficiaries: normalizedFields.beneficiaries ?? base.beneficiaries,
+    exclusions: normalizedFields.exclusions ?? base.exclusions,
+    waitingPeriods: normalizedFields.waitingPeriods ?? base.waitingPeriods,
+    notes: normalizedFields.notes ?? base.notes,
     ...(agent ? { agent } : {}),
-    coverageEntries: fields.coverageEntries ?? base.coverageEntries ?? [],
-    deductibleEntries: fields.deductibleEntries ?? base.deductibleEntries ?? [],
+    coverageEntries:
+      normalizedFields.coverageEntries ?? base.coverageEntries ?? [],
+    deductibleEntries:
+      normalizedFields.deductibleEntries ?? base.deductibleEntries ?? [],
     beneficiaryEntries:
-      fields.beneficiaryEntries ?? base.beneficiaryEntries ?? [],
-    benefitEntries: fields.benefitEntries ?? base.benefitEntries ?? [],
+      normalizedFields.beneficiaryEntries ?? base.beneficiaryEntries ?? [],
+    benefitEntries:
+      normalizedFields.benefitEntries ?? base.benefitEntries ?? [],
   }
 }
 

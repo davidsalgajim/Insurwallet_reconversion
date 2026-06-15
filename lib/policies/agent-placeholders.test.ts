@@ -57,6 +57,7 @@ describe('agent placeholders', () => {
 
   it('drops Claude sentinel agent emails like "none"', () => {
     expect(normalizeExtractedAgentEmail('none')).toBe('')
+    expect(normalizeExtractedAgentEmail('not-an-email')).toBe('')
     expect(
       resolveAgentForStorage({
         name: 'ASA AGENCIA DE SEGUROS LTDA.',
