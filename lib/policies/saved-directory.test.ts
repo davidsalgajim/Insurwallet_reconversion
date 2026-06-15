@@ -109,6 +109,7 @@ describe('saved-directory helpers', () => {
           agentName: 'Ana Pérez',
           agentPhone: '+57 300',
           agentEmail: '',
+          insurerContactRows: [],
         },
         contacts
       )
@@ -120,6 +121,7 @@ describe('saved-directory helpers', () => {
           agentName: 'Nuevo',
           agentPhone: '',
           agentEmail: '',
+          insurerContactRows: [],
         },
         contacts
       )

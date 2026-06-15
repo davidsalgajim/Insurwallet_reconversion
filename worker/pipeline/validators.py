@@ -833,7 +833,7 @@ def _coerce_expiration_raw(raw: dict[str, object]) -> dict[str, object]:
 def validate_extraction(raw: dict[str, object]) -> ValidationResult:
     """Validate Claude output and produce per-field confidence scores."""
     raw = _coerce_expiration_raw(raw)
-    policy_number = validate_policy_number(
+    policy_number_field = validate_policy_number(
         raw.get("policyNumber") if isinstance(raw.get("policyNumber"), str) else None
     )
     insurer = validate_insurer_name(
@@ -867,7 +867,7 @@ def validate_extraction(raw: dict[str, object]) -> ValidationResult:
     agent_fields: dict[str, ValidatedField] = {}
     agent_confidence: dict[str, ConfidenceLevel] = {}
     policy_number_raw = raw.get("policyNumber")
-    policy_number = (
+    policy_number_for_collision = (
         str(policy_number_raw).strip()
         if isinstance(policy_number_raw, str)
         else None
@@ -880,7 +880,9 @@ def validate_extraction(raw: dict[str, object]) -> ValidationResult:
         agent_phone_raw = (
             agent_raw.get("phone") if isinstance(agent_raw.get("phone"), str) else None
         )
-        if phone_collides_with_policy_number(agent_phone_raw, policy_number):
+        if phone_collides_with_policy_number(
+            agent_phone_raw, policy_number_for_collision
+        ):
             agent_phone = ValidatedField(None, "low", ("policy_number_collision",))
         else:
             agent_phone = validate_agent_phone(agent_phone_raw)
@@ -900,7 +902,7 @@ def validate_extraction(raw: dict[str, object]) -> ValidationResult:
 
     fields = {
         "insurerName": insurer,
-        "policyNumber": policy_number,
+        "policyNumber": policy_number_field,
         "holderName": holder,
         "premium": premium,
         "currency": currency,

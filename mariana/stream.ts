@@ -413,6 +413,7 @@ export function buildStubResponse(
             phone: '+570000000000',
             email: 'a@example.com',
           },
+          insurerContacts: [],
           coverageEntries: [],
           deductibleEntries: [],
           beneficiaryEntries: [],

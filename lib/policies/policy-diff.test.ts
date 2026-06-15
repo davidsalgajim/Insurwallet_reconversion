@@ -16,6 +16,7 @@ const basePolicy: Policy = {
   currency: 'COP',
   paymentFrequency: 'annual',
   agent: { name: 'Agent', phone: '+573001112233', email: 'a@demo.com' },
+  insurerContacts: [],
   coverageEntries: [{ name: 'Base', amount: 1000000 }],
   deductibleEntries: [],
   beneficiaryEntries: [],

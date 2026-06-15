@@ -11,7 +11,11 @@ from pipeline.sanitizer import sanitize_document_text
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
+
+
+def resolve_claude_model() -> str:
+    return os.environ.get("ANTHROPIC_MODEL", "").strip() or DEFAULT_MODEL
 
 TRANSCRIBE_SYSTEM_PROMPT = """You transcribe insurance policy documents for search indexing.
 
@@ -82,12 +86,14 @@ def transcribe_document_from_images(
     *,
     has_suspicious_content: bool = False,
     api_key: str | None = None,
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
     client: Any | None = None,
 ) -> str:
     """Page-by-page vision transcription for RAG (scanned PDFs)."""
     if not page_images:
         return ""
+
+    resolved_model = model or resolve_claude_model()
 
     key = api_key or os.environ.get("ANTHROPIC_API_KEY", "").strip()
     anthropic_client = client
@@ -106,7 +112,7 @@ def transcribe_document_from_images(
                 anthropic_client,
                 image_bytes=image_bytes,
                 page_number=index,
-                model=model,
+                model=resolved_model,
                 has_suspicious_content=has_suspicious_content,
             )
         except Exception:

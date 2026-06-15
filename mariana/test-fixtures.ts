@@ -34,6 +34,7 @@ export function makeMarianaPolicyContext(
       phone: '+573001112233',
       email: 'agent@demo.com',
     },
+    insurerContacts: [],
     coverageEntries: [],
     deductibleEntries: [],
     beneficiaryEntries: [],

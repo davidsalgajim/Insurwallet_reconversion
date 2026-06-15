@@ -33,7 +33,6 @@ import {
 import {
   mergeAgentFromExtraction,
   mergeBasicValuesFromExtraction,
-  mergeInsurerContactsFromExtraction,
   mergeStructuredRowsFromExtraction,
 } from '@/lib/policies/review-form-state'
 import { computePolicyExtractionDiff } from '@/lib/policies/policy-diff'
@@ -67,10 +66,6 @@ export function PolicyReviewForm({
   )
   const [agent, setAgent] = useState<PolicyAgentFieldsValues>(() =>
     mergeAgentFromExtraction(policy, extraction)
-  )
-  const assistanceContacts = mergeInsurerContactsFromExtraction(
-    policy,
-    extraction
   )
   const [coverageRows, setCoverageRows] = useState<CoverageRow[]>(
     structured.coverageRows
@@ -288,7 +283,6 @@ export function PolicyReviewForm({
 
         <PolicyAgentFields
           values={agent}
-          assistanceContacts={assistanceContacts}
           onChange={(field, value) =>
             setAgent((current) => ({ ...current, [field]: value }))
           }

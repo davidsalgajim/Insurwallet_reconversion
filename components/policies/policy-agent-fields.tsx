@@ -48,11 +48,16 @@ export function insurerContactRowsToLines(
   rows: InsurerContactRow[]
 ): InsurerContactLine[] {
   return rows
-    .map((row) => ({
-      ...(row.label.trim() ? { label: row.label.trim() } : {}),
-      ...(row.phone.trim() ? { phone: row.phone.trim() } : {}),
-      ...(row.email.trim() ? { email: row.email.trim() } : {}),
-    }))
+    .map((row) => {
+      const label = (row.label ?? '').trim()
+      const phone = (row.phone ?? '').trim()
+      const email = (row.email ?? '').trim()
+      return {
+        ...(label ? { label } : {}),
+        ...(phone ? { phone } : {}),
+        ...(email ? { email } : {}),
+      }
+    })
     .filter((line) => line.phone || line.email || line.label)
 }
 
@@ -78,14 +83,17 @@ export function PolicyAgentFields({
   }
 
   function applyContactAsPrimary(row: InsurerContactRow) {
-    if (row.phone.trim()) {
-      onChange('agentPhone', row.phone.trim())
+    const phone = (row.phone ?? '').trim()
+    const email = (row.email ?? '').trim()
+    const label = (row.label ?? '').trim()
+    if (phone) {
+      onChange('agentPhone', phone)
     }
-    if (row.email.trim()) {
-      onChange('agentEmail', row.email.trim())
+    if (email) {
+      onChange('agentEmail', email)
     }
-    if (!values.agentName.trim() && row.label.trim()) {
-      onChange('agentName', row.label.trim())
+    if (!values.agentName.trim() && label) {
+      onChange('agentName', label)
     }
   }
 
@@ -189,7 +197,8 @@ export function PolicyAgentFields({
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-medium text-muted-foreground">
-                    {row.label.trim() || t('assistanceLineDefaultLabel')}
+                    {(row.label ?? '').trim() ||
+                      t('assistanceLineDefaultLabel')}
                   </span>
                   <button
                     type="button"

@@ -191,6 +191,7 @@ export async function processDocumentJob(
           currency: 'COP',
           paymentFrequency: 'annual',
           agent: { name: '', phone: '', email: '' },
+          insurerContacts: [],
           coverageEntries: [],
           deductibleEntries: [],
           beneficiaryEntries: [],

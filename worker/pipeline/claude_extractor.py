@@ -27,7 +27,12 @@ from pipeline.policy_lexicon import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
+
+
+def resolve_claude_model() -> str:
+    """Model for extraction/transcription; override via ANTHROPIC_MODEL."""
+    return os.environ.get("ANTHROPIC_MODEL", "").strip() or DEFAULT_MODEL
 
 _POLICY_TYPE_ENUM = list(POLICY_TYPE_VALUES)
 _PAYMENT_FREQUENCY_ENUM = list(PAYMENT_FREQUENCY_VALUES)
@@ -306,14 +311,17 @@ def _call_claude_tool_use(
     model: str,
     content: list[dict[str, object]],
 ) -> ClaudeExtractionResult:
-    response = anthropic_client.messages.create(
-        model=model,
-        max_tokens=4096,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": content}],
-        tools=[EXTRACTION_TOOL],
-        tool_choice={"type": "tool", "name": "extract_policy_fields"},
-    )
+    try:
+        response = anthropic_client.messages.create(
+            model=model,
+            max_tokens=4096,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": content}],
+            tools=[EXTRACTION_TOOL],
+            tool_choice={"type": "tool", "name": "extract_policy_fields"},
+        )
+    except Exception as exc:
+        raise ClaudeExtractionError(f"Claude API error: {exc}") from exc
 
     tool_block = next(
         (block for block in response.content if getattr(block, "type", None) == "tool_use"),
@@ -448,7 +456,7 @@ def extract_policy_fields(
     *,
     has_suspicious_content: bool = False,
     api_key: str | None = None,
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
     client: Any | None = None,
 ) -> ClaudeExtractionResult:
     """Call Anthropic Messages API with mandatory tool-use for structured output."""
@@ -467,7 +475,7 @@ def extract_policy_fields(
 
     return _call_claude_tool_use(
         anthropic_client,
-        model=model,
+        model=model or resolve_claude_model(),
         content=[
             {
                 "type": "text",
@@ -482,7 +490,7 @@ def extract_policy_fields_from_images(
     *,
     has_suspicious_content: bool = False,
     api_key: str | None = None,
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
     client: Any | None = None,
 ) -> ClaudeExtractionResult:
     """Extract structured policy fields from scanned PDF page images (vision)."""
@@ -518,7 +526,11 @@ def extract_policy_fields_from_images(
         }
     )
 
-    return _call_claude_tool_use(anthropic_client, model=model, content=content)
+    return _call_claude_tool_use(
+        anthropic_client,
+        model=model or resolve_claude_model(),
+        content=content,
+    )
 
 
 def serialize_fields_for_api(fields: dict[str, object]) -> dict[str, object]:

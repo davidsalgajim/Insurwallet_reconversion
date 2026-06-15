@@ -25,6 +25,7 @@ function makePolicy(overrides: Partial<PolicyDocument> = {}): PolicyDocument {
       phone: '+570000000000',
       email: 'agent@demo.com',
     },
+    insurerContacts: [],
     coverageEntries: [],
     deductibleEntries: [],
     beneficiaryEntries: [],

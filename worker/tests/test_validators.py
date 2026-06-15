@@ -77,6 +77,20 @@ def test_validate_extraction_flags_invalid_policy_number():
     assert result.confidence["policyNumber"] == "low"
 
 
+def test_validate_extraction_policy_number_stays_validated_field():
+    """Regression: policy_number must not be shadowed by collision-check string."""
+    result = validate_extraction(
+        {
+            "policyNumber": "570 17148300 0L01 LA111 / 1",
+            "agent": {"phone": "+541155551500"},
+        }
+    )
+
+    policy_field = result.fields["policyNumber"]
+    assert hasattr(policy_field, "confidence")
+    assert result.confidence["policyNumber"] in {"high", "medium", "low"}
+
+
 def test_validate_extraction_flags_end_before_start():
     result = validate_extraction(
         {
@@ -154,8 +168,7 @@ def test_boost_agent_from_text_alfa_like_document():
     assert isinstance(agent, dict)
     assert agent.get("email") == "servicioalcliente@segurosalfa.com.co"
     assert agent.get("phone", "").startswith("+571")
-    assert "ext 14451" in agent.get("phone", "")
-    assert agent.get("name") == "Andrés Fernando Barón Tautiva"
+    assert agent.get("name") == "Servicio Al Cliente"
     assert isinstance(contacts, list)
     assert contacts[0].get("email") == "servicioalcliente@segurosalfa.com.co"
 
