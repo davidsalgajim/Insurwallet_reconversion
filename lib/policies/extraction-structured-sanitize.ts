@@ -6,8 +6,62 @@ import type {
   BeneficiaryEntry,
   CoverageEntry,
   DeductibleEntry,
+  InsurerContactLine,
 } from '@/lib/schemas/policy'
 import { normalizeOptionalString } from '@/lib/utils/normalize-optional-string'
+
+const CONTACT_LIKE_BENEFIT_NAME =
+  /^(?:asistencia(?:\s*[—–-]\s*.+)?|whatsapp(?:\s+de\s+asistencia)?|am[eé]rica\s+latina|latinoam[eé]rica|norteam[eé]rica|asia|europa|colombia|m[eé]xico|brasil|central(?:es)?(?:\s+de\s+asistencia)?|l[ií]nea\s+(?:nacional|internacional|de\s+atenci[oó]n)|servicio\s+al\s+cliente|sac)\s*$/i
+
+function phoneDigits(value: string | undefined | null): string {
+  return (value ?? '').replace(/\D/g, '')
+}
+
+function collectInsurerContactPhones(
+  contacts: InsurerContactLine[] | undefined
+): Set<string> {
+  const phones = new Set<string>()
+  for (const contact of contacts ?? []) {
+    const digits = phoneDigits(contact.phone?.split(' ext ')[0])
+    if (digits) {
+      phones.add(digits)
+    }
+  }
+  return phones
+}
+
+function isContactLikeBenefitEntry(
+  entry: BenefitEntry,
+  insurerPhones: Set<string>
+): boolean {
+  const name = normalizeOptionalString(entry.name) ?? ''
+  if (CONTACT_LIKE_BENEFIT_NAME.test(name)) {
+    return true
+  }
+  if (/^asistencia\s*[—–-]/i.test(name)) {
+    return true
+  }
+
+  const contactInfo = normalizeOptionalString(entry.contactInfo)
+  if (contactInfo) {
+    const digits = phoneDigits(contactInfo.split(' ext ')[0])
+    if (digits && insurerPhones.has(digits)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+export function dropContactLikeBenefitEntries(
+  entries: BenefitEntry[],
+  insurerContacts?: InsurerContactLine[]
+): BenefitEntry[] {
+  const insurerPhones = collectInsurerContactPhones(insurerContacts)
+  return entries.filter(
+    (entry) => !isContactLikeBenefitEntry(entry, insurerPhones)
+  )
+}
 
 function coerceNonNegativeNumber(value: unknown): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -157,7 +211,8 @@ export function sanitizeDeductibleEntriesForPersist(
 }
 
 export function sanitizeBenefitEntriesForPersist(
-  entries: BenefitEntry[]
+  entries: BenefitEntry[],
+  insurerContacts?: InsurerContactLine[]
 ): BenefitEntry[] {
   const sanitized: BenefitEntry[] = []
 
@@ -181,7 +236,7 @@ export function sanitizeBenefitEntriesForPersist(
     })
   }
 
-  return sanitized
+  return dropContactLikeBenefitEntries(sanitized, insurerContacts)
 }
 
 export function sanitizeStructuredExtractionArraysForPersist<
@@ -190,6 +245,7 @@ export function sanitizeStructuredExtractionArraysForPersist<
     coverageEntries?: CoverageEntry[]
     deductibleEntries?: DeductibleEntry[]
     benefitEntries?: BenefitEntry[]
+    insurerContacts?: InsurerContactLine[]
   },
 >(fields: T): T {
   const sanitized = { ...fields }
@@ -211,7 +267,8 @@ export function sanitizeStructuredExtractionArraysForPersist<
   }
   if (fields.benefitEntries !== undefined) {
     sanitized.benefitEntries = sanitizeBenefitEntriesForPersist(
-      fields.benefitEntries
+      fields.benefitEntries,
+      fields.insurerContacts
     )
   }
 

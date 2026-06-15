@@ -290,7 +290,7 @@ describe('extraction mapping', () => {
       ],
       benefitEntries: [
         {
-          name: 'Asistencia',
+          name: 'Asistencia vial',
           contactInfo: 'none',
           quantity: '2',
         },
@@ -303,7 +303,7 @@ describe('extraction mapping', () => {
     ])
     expect(sanitized.deductibleEntries).toEqual([])
     expect(sanitized.benefitEntries).toEqual([
-      { name: 'Asistencia', quantity: '2' },
+      { name: 'Asistencia vial', quantity: '2' },
     ])
   })
 
@@ -349,6 +349,23 @@ describe('extraction mapping', () => {
       'América Latina',
       'Norteamérica',
       'Europa',
+    ])
+  })
+
+  it('drops regional hotlines from benefitEntries when insurerContacts present', () => {
+    const sanitized = sanitizeExtractionFieldsForPersist({
+      insurerContacts: [
+        { label: 'América Latina', phone: '+5451155551500' },
+        { label: 'Norteamérica', phone: '+18008742223' },
+      ],
+      benefitEntries: [
+        { name: 'Norteamérica', contactInfo: '+18008742223' },
+        { name: 'Traslado médico', description: 'Incluido' },
+      ],
+    })
+
+    expect(sanitized.benefitEntries).toEqual([
+      { name: 'Traslado médico', description: 'Incluido' },
     ])
   })
 })

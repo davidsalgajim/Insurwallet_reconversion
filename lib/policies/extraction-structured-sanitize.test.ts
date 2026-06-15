@@ -81,4 +81,28 @@ describe('extraction structured sanitize', () => {
       },
     ])
   })
+
+  it('drops contact-like benefit rows duplicated from insurerContacts', () => {
+    const insurerContacts = [
+      { label: 'América Latina', phone: '+5451155551500' },
+      { label: 'Norteamérica', phone: '+18008742223' },
+      { label: 'WhatsApp asistencia', phone: '+5491127039665' },
+    ]
+
+    const rows = sanitizeBenefitEntriesForPersist(
+      [
+        { name: 'WhatsApp asistencia', contactInfo: '+5491127039665' },
+        { name: 'América Latina', contactInfo: '+5451155551500' },
+        { name: 'Asistencia — Europa', contactInfo: '+34917883333' },
+        { name: 'Traslado médico', description: 'USD 50,000' },
+        { name: 'Grúa', contactInfo: '+573001112233' },
+      ] as never,
+      insurerContacts
+    )
+
+    expect(rows).toEqual([
+      { name: 'Traslado médico', description: 'USD 50,000' },
+      { name: 'Grúa', contactInfo: '+573001112233' },
+    ])
+  })
 })

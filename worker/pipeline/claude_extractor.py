@@ -261,9 +261,10 @@ Rules:
    b) Secondary — if no dedicated agent, put SAC / servicio al cliente / línea de atención phone and email in insurerContacts (label e.g. "Servicio al cliente - {{insurer short name}}"). Do NOT put SAC email in agent.name.
    c) Tertiary — firma autorizada person name in agent.name only when clearly a natural person near a signature block; never a company name.
 11. insurerContacts: array of ALL insurer assistance lines on the document — SAC, línea nacional/internacional, regional hotlines, WhatsApp. Each entry: label + phone and/or email. Applies to every policy type (auto, life, health, travel, etc.). NEVER put policy/certificate/voucher numbers in agent.phone or insurerContacts.phone.
-12. travel / e-voucher / Assist Card: put EACH regional assistance line (América, Europa, Asia, Colombia, etc.) in insurerContacts[] with label+phone; also mirror in benefitEntries when useful. agent.phone only for named asesor/intermediario.
-13. When multiple phones exist, agent.phone = named asesor/agente if present; all other lines stay in insurerContacts[].
-14. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
+12. travel / e-voucher / Assist Card: put EACH regional assistance line (América, Europa, Asia, Colombia, WhatsApp, etc.) in insurerContacts[] with label+phone ONLY — do NOT duplicate hotlines in benefitEntries. agent.phone only for named asesor/intermediario.
+13. benefitEntries: REAL coverage or assistance SERVICES from benefit/prestaciones tables (e.g. traslado médico, equipaje, cancelación, asistencia vial). NOT phone hotlines, NOT regional central lines, NOT WhatsApp contacts — those belong exclusively in insurerContacts[].
+14. When multiple phones exist, agent.phone = named asesor/agente if present; all other lines stay in insurerContacts[].
+15. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
 
 {format_regional_extraction_rules()}
 

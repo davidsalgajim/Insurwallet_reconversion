@@ -238,8 +238,37 @@ def test_boost_agent_from_text_evoucher_rejects_policy_number_phone():
     )
 
     benefits = boosted.get("benefitEntries")
+    assert benefits is None or benefits == []
+
+    insurer_contacts = boosted.get("insurerContacts")
+    assert isinstance(insurer_contacts, list)
+    assert len(insurer_contacts) >= 5
+    labels = {c.get("label") for c in insurer_contacts}
+    assert "América Latina" in labels
+    assert "Norteamérica" in labels
+    assert "Asia" in labels
+    assert "Europa" in labels
+
+
+def test_dedupe_contact_like_benefit_entries_evoucher():
+    boosted = boost_agent_from_text(
+        {
+            "policyNumber": "570 17148300 0L01 LA111 / 1",
+            "benefitEntries": [
+                {"name": "WhatsApp asistencia", "contactInfo": "+5491127039665"},
+                {"name": "América Latina", "contactInfo": "+5451155551500"},
+                {"name": "Asistencia — Norteamérica", "contactInfo": "+18008742223"},
+                {"name": "Traslado médico", "description": "USD 50,000"},
+            ],
+            "insurerContacts": [
+                {"label": "Norteamérica", "phone": "+18008742223"},
+            ],
+        },
+        EVOUCHER_SAMPLE,
+    )
+    benefits = boosted.get("benefitEntries")
     assert isinstance(benefits, list)
-    assert len(benefits) >= 4
+    assert benefits == [{"name": "Traslado médico", "description": "USD 50,000"}]
 
 
 def test_validate_extraction_clears_agent_phone_matching_policy_number():

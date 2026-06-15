@@ -405,6 +405,7 @@ def format_regional_extraction_rules() -> str:
 - coverages: summarize main amparos/coberturas/garantias (e.g. Muerte, ITP, incapacidad).
 - agent: tiered extraction — (1) named asesor/agente/corredor with phone/email in agent; (2) SAC/servicio al cliente and other assistance lines in insurerContacts[] with label+phone/email; (3) firma autorizada person name in agent.name only when clearly a natural person. Colombia phones: +57 mobile 3xx or Bogotá (601)/(60-1) landline with ext when shown. NEVER put policy/certificate/voucher numbers in agent.phone or insurerContacts.phone.
 - insurerContacts: ALL assistance lines on the document (any policy type): SAC, línea nacional/internacional, regional hotlines, WhatsApp. For travel/e-voucher/Assist Card: EACH region (América Latina, Europa, Asia, Colombia) as separate entry with label+phone. agent.phone only for named asesor/intermediario.
+- benefitEntries: covered assistance SERVICES/prestaciones from benefit tables (traslado médico, equipaje, etc.) — NOT phone hotlines (those go in insurerContacts[] only).
 - travel/voucher and all other policies: multiple phones → insurerContacts[]; policy/certificate number stays in policyNumber only.
 - Omit fields not clearly visible; do not invent values."""
 

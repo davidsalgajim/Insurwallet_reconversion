@@ -85,6 +85,18 @@ REGIONAL_ASSISTANCE_LABEL = re.compile(
     r")\s*$",
     re.IGNORECASE,
 )
+CONTACT_LIKE_BENEFIT_NAME = re.compile(
+    r"^(?:"
+    r"asistencia(?:\s*[—\-–]\s*.+)?|"
+    r"whatsapp(?:\s+de\s+asistencia)?|"
+    r"am[eé]rica\s+latina|latinoam[eé]rica|norteam[eé]rica|"
+    r"asia|europa|colombia|m[eé]xico|brasil|"
+    r"central(?:es)?(?:\s+de\s+asistencia)?|"
+    r"l[ií]nea\s+(?:nacional|internacional|de\s+atenci[oó]n)|"
+    r"servicio\s+al\s+cliente|sac"
+    r")\s*$",
+    re.IGNORECASE,
+)
 INTERNATIONAL_PHONE_LINE = re.compile(
     r"(?:\+?\d{1,3}[\s.\-]?)?"
     r"(?:\(?\d{1,4}\)?[\s.\-]?)?"
@@ -508,41 +520,49 @@ def extract_regional_assistance_contacts(text: str) -> list[dict[str, str]]:
     return contacts
 
 
-def _merge_assistance_into_benefit_entries(
-    fields: dict[str, object],
-    contacts: list[dict[str, str]],
-) -> None:
-    if not contacts:
-        return
-    existing: list[dict[str, object]] = []
-    raw = fields.get("benefitEntries")
-    if isinstance(raw, list):
-        existing = [dict(entry) for entry in raw if isinstance(entry, dict)]
-
-    existing_names = {
-        str(entry.get("name", "")).strip().lower()
-        for entry in existing
-        if entry.get("name")
-    }
+def _collect_insurer_contact_phones(fields: dict[str, object]) -> set[str]:
+    phones: set[str] = set()
+    raw = fields.get("insurerContacts")
+    contacts = _normalize_insurer_contacts_list(raw) if raw else []
     for contact in contacts:
-        label = contact.get("label", "Asistencia").strip()
-        phone = contact.get("phone", "").strip()
-        if not phone:
+        phone = contact.get("phone")
+        if phone:
+            phones.add(phone)
+    return phones
+
+
+def _is_contact_like_benefit_entry(
+    entry: dict[str, object],
+    insurer_phones: set[str],
+) -> bool:
+    name = str(entry.get("name", "")).strip()
+    if not name:
+        return False
+    if CONTACT_LIKE_BENEFIT_NAME.match(name):
+        return True
+    if re.match(r"^asistencia\s*[—\-–]", name, re.IGNORECASE):
+        return True
+    contact_info = entry.get("contactInfo")
+    if isinstance(contact_info, str):
+        phone = normalize_phone(contact_info)
+        if phone and phone in insurer_phones:
+            return True
+    return False
+
+
+def _dedupe_contact_like_benefit_entries(fields: dict[str, object]) -> None:
+    raw = fields.get("benefitEntries")
+    if not isinstance(raw, list) or not raw:
+        return
+    insurer_phones = _collect_insurer_contact_phones(fields)
+    filtered: list[dict[str, object]] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
             continue
-        benefit_name = f"Asistencia — {label}"
-        key = benefit_name.lower()
-        if key in existing_names:
+        if _is_contact_like_benefit_entry(entry, insurer_phones):
             continue
-        existing_names.add(key)
-        existing.append(
-            {
-                "name": benefit_name,
-                "category": "travel",
-                "contactInfo": phone,
-            }
-        )
-    if existing:
-        fields["benefitEntries"] = existing
+        filtered.append(entry)
+    fields["benefitEntries"] = filtered
 
 
 def extract_insurer_contacts_from_text(text: str) -> list[dict[str, str]]:
@@ -659,10 +679,6 @@ def boost_agent_from_text(
         boosted.get("insurerContacts")
     )
 
-    regional = extract_regional_assistance_contacts(raw_text)
-    if regional:
-        _merge_assistance_into_benefit_entries(boosted, regional)
-
     scanned = extract_insurer_contacts_from_text(raw_text)
     scanned = filter_insurer_contacts_policy_collision(scanned, policy_number)
     insurer_contacts = _merge_insurer_contact_lists(
@@ -709,6 +725,8 @@ def boost_agent_from_text(
 
     if agent:
         boosted["agent"] = agent
+
+    _dedupe_contact_like_benefit_entries(boosted)
 
     return boosted
 
@@ -1111,4 +1129,5 @@ def sanitize_structured_extraction_arrays(
     for key, sanitizer in array_keys:
         if key in sanitized:
             sanitized[key] = sanitizer(sanitized[key])
+    _dedupe_contact_like_benefit_entries(sanitized)
     return sanitized
