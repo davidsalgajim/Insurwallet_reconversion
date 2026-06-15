@@ -445,6 +445,7 @@
         "failedProtectedPdf": "Este PDF está protegido con contraseña. Sube una copia sin protección.",
         "waitingJob": "Esperando cola de procesamiento…",
         "jobPermissionDenied": "No pudimos leer el estado del procesamiento. Recarga la página; si persiste, contacta soporte.",
+        "jobDataInvalid": "No pudimos mostrar el estado del procesamiento. Recarga la página o intenta subir el documento de nuevo.",
         "multiProgress": "Procesados {ready} de {total} documentos",
         "allReady": "Todos los documentos están listos para revisión.",
         "goToReview": "Ir a revisión",

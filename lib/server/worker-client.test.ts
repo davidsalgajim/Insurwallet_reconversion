@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  classifyWorkerFailure,
+  invokeWorkerWithRetries,
   parseWorkerExtraction,
+  parseWorkerPipelineSteps,
   WorkerProcessResponseSchema,
 } from '@/lib/server/worker-client'
 
@@ -86,6 +89,11 @@ describe('worker-client', () => {
     expect(parsed.extraction?.fields.insurerName).toBe('Mapfre')
     expect(parsed.document_text).toContain('Exclusión')
     expect(parsed.rag_word_count).toBe(2400)
+    expect(parseWorkerPipelineSteps(parsed.pipeline_steps, 'odl')).toEqual([
+      'vision',
+      'claude',
+      'transcribe',
+    ])
   })
 
   it('accepts null bboxes from worker extraction payload', () => {
@@ -109,5 +117,74 @@ describe('worker-client', () => {
     const extraction = parseWorkerExtraction(parsed.extraction!)
     expect(extraction.fields.insurerName).toBe('Zurich')
     expect(extraction.bboxes).toBeUndefined()
+  })
+
+  it('parseWorkerPipelineSteps falls back when steps are empty', () => {
+    expect(parseWorkerPipelineSteps(undefined, 'surya')).toEqual(['surya'])
+    expect(parseWorkerPipelineSteps([], 'odl')).toEqual(['odl'])
+  })
+
+  it('parseWorkerPipelineSteps drops unknown steps and keeps valid ones', () => {
+    expect(
+      parseWorkerPipelineSteps(['vision', 'claude', 'unknown-step'], 'odl')
+    ).toEqual(['vision', 'claude'])
+  })
+
+  it('classifies missing WORKER_URL as 503 with dev hint', () => {
+    const err = classifyWorkerFailure(new Error('WORKER_URL is not configured'))
+    expect(err.code).toBe('WORKER_NOT_CONFIGURED')
+    expect(err.httpStatus).toBe(503)
+    expect(err.devHint).toContain('WORKER_URL')
+  })
+
+  it('classifies connection failures as worker unreachable', () => {
+    const err = classifyWorkerFailure(new TypeError('fetch failed'))
+    expect(err.code).toBe('WORKER_UNREACHABLE')
+    expect(err.httpStatus).toBe(503)
+    expect(err.devHint).toContain('uvicorn')
+  })
+
+  it('classifies worker 401 as auth failure', () => {
+    const err = classifyWorkerFailure(
+      new Error('Worker responded with 401: Invalid Bearer token')
+    )
+    expect(err.code).toBe('WORKER_AUTH_FAILED')
+    expect(err.httpStatus).toBe(503)
+    expect(err.devHint).toContain('INTERNAL_API_SECRET')
+  })
+
+  it('fails fast when WORKER_URL is unset', async () => {
+    const previous = process.env.WORKER_URL
+    delete process.env.WORKER_URL
+
+    await expect(
+      invokeWorkerWithRetries({
+        jobId: 'job-fast-fail',
+        storagePath: 'users/u/policies/p/docs/d/file.pdf',
+      })
+    ).rejects.toMatchObject({ code: 'WORKER_NOT_CONFIGURED', httpStatus: 503 })
+
+    process.env.WORKER_URL = previous
+  })
+
+  it('does not retry when worker is unreachable', async () => {
+    const previous = process.env.WORKER_URL
+    process.env.WORKER_URL = 'http://127.0.0.1:9'
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new TypeError('fetch failed'))
+
+    await expect(
+      invokeWorkerWithRetries({
+        jobId: 'job-no-retry',
+        storagePath: 'users/u/policies/p/docs/d/file.pdf',
+      })
+    ).rejects.toMatchObject({ code: 'WORKER_UNREACHABLE' })
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+    fetchSpy.mockRestore()
+    process.env.WORKER_URL = previous
   })
 })

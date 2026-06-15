@@ -10,12 +10,22 @@ export const JobStateSchema = z.enum([
 ])
 export type JobState = z.infer<typeof JobStateSchema>
 
+/**
+ * Ordered steps recorded on `jobs/{jobId}.pipeline` after worker processing.
+ * Must stay aligned with `worker/pipeline/extract.py` (`pipeline_steps`).
+ *
+ * - odl / surya / markitdown: text extraction backend
+ * - vision: Claude vision field extraction (scanned PDFs)
+ * - claude: structured policy field extraction
+ * - transcribe: page-by-page vision transcription for MarIAna RAG (`claude_transcriber.py`)
+ */
 export const PipelineMethodSchema = z.enum([
   'odl',
   'surya',
   'markitdown',
   'claude',
   'vision',
+  'transcribe',
 ])
 export type PipelineMethod = z.infer<typeof PipelineMethodSchema>
 

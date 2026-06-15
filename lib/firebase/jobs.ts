@@ -11,7 +11,7 @@ import {
   type Firestore,
   type Unsubscribe,
 } from 'firebase/firestore'
-import { z } from 'zod'
+import { z, ZodError } from 'zod'
 
 import {
   JobSchema,
@@ -63,6 +63,21 @@ export type UpdateDocumentProcessingJobInput = z.infer<
 >
 
 export const JOBS_COLLECTION = 'jobs'
+
+/** Sentinel message — map to i18n in UI (`policies.upload.processing.jobDataInvalid`). */
+export const JOB_DATA_INVALID_ERROR = 'JOB_DATA_INVALID'
+
+export function isJobDataInvalidError(error: Error): boolean {
+  return error.message === JOB_DATA_INVALID_ERROR
+}
+
+function toJobListenerError(error: unknown): Error {
+  if (error instanceof ZodError) {
+    return new Error(JOB_DATA_INVALID_ERROR)
+  }
+
+  return error instanceof Error ? error : new Error('Invalid job document')
+}
 
 function firestoreValueToDate(value: unknown): Date {
   if (value instanceof Timestamp) {
@@ -171,8 +186,7 @@ export function subscribeToJob(
         onChange({
           job: null,
           loading: false,
-          error:
-            error instanceof Error ? error : new Error('Invalid job document'),
+          error: toJobListenerError(error),
         })
       }
     },
@@ -214,8 +228,7 @@ export function subscribeToDocumentJob(
         onChange({
           job: null,
           loading: false,
-          error:
-            error instanceof Error ? error : new Error('Invalid job document'),
+          error: toJobListenerError(error),
         })
       }
     },

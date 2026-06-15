@@ -5,6 +5,7 @@ import {
   PolicyExtractionSchema,
   type PolicyExtraction,
 } from '@/lib/schemas/extraction'
+import { PipelineMethodSchema, type PipelineMethod } from '@/lib/schemas/job'
 
 export type WorkerExtractionPayload = {
   fields: Record<string, unknown>
@@ -63,6 +64,32 @@ export const WorkerProcessResponseSchema = z.object({
   document_text: z.string().optional(),
   extraction: WorkerExtractionPayloadSchema.nullable().optional(),
 })
+
+/** Normalizes worker `pipeline_steps` to the Job schema enum (see PipelineMethodSchema). */
+export function parseWorkerPipelineSteps(
+  steps: string[] | undefined,
+  fallback: PipelineMethod | PolicyExtraction['method']
+): PipelineMethod[] {
+  const resolvedFallback: PipelineMethod =
+    fallback === 'stub' || !PipelineMethodSchema.safeParse(fallback).success
+      ? 'odl'
+      : fallback
+
+  if (!steps?.length) {
+    return [resolvedFallback]
+  }
+
+  const parsed = z.array(PipelineMethodSchema).safeParse(steps)
+  if (parsed.success) {
+    return parsed.data
+  }
+
+  const valid = steps.filter(
+    (step): step is PipelineMethod =>
+      PipelineMethodSchema.safeParse(step).success
+  )
+  return valid.length > 0 ? valid : [resolvedFallback]
+}
 
 export function parseWorkerExtraction(
   payload: WorkerExtractionPayload
@@ -157,26 +184,137 @@ export async function invokeWorkerProcessJob(input: {
   return WorkerProcessResponseSchema.parse(json)
 }
 
-export function mapWorkerFailureMessage(error: unknown): string {
+export type WorkerErrorCode =
+  | 'WORKER_NOT_CONFIGURED'
+  | 'WORKER_UNREACHABLE'
+  | 'WORKER_AUTH_FAILED'
+  | 'WORKER_UNAVAILABLE'
+  | 'EXTRACTION_FAILED'
+  | 'PROTECTED_PDF'
+
+export class WorkerProcessError extends Error {
+  readonly code: WorkerErrorCode
+  readonly httpStatus: number
+  readonly devHint?: string
+
+  constructor(options: {
+    code: WorkerErrorCode
+    message: string
+    httpStatus?: number
+    devHint?: string
+  }) {
+    super(options.message)
+    this.name = 'WorkerProcessError'
+    this.code = options.code
+    this.httpStatus = options.httpStatus ?? 500
+    this.devHint = options.devHint
+  }
+}
+
+function isWorkerConnectionError(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('econnrefused') ||
+    lower.includes('enotfound') ||
+    lower.includes('etimedout') ||
+    lower.includes('fetch failed') ||
+    lower.includes('failed to fetch') ||
+    lower.includes('network') ||
+    lower.includes('connect timeout') ||
+    lower.includes('socket hang up') ||
+    lower.includes('other side closed')
+  )
+}
+
+function isWorkerAuthError(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    message.includes('401') ||
+    lower.includes('invalid bearer token') ||
+    lower.includes('missing bearer token') ||
+    lower.includes('unauthorized')
+  )
+}
+
+export function classifyWorkerFailure(error: unknown): WorkerProcessError {
+  if (error instanceof WorkerProcessError) {
+    return error
+  }
+
   const message = error instanceof Error ? error.message : String(error)
 
   if (isProtectedPdfJobError(message)) {
-    return USER_FACING_JOB_ERRORS.protectedPdf
+    return new WorkerProcessError({
+      code: 'PROTECTED_PDF',
+      message: USER_FACING_JOB_ERRORS.protectedPdf,
+      httpStatus: 422,
+    })
   }
 
   if (message.includes('WORKER_URL')) {
-    return USER_FACING_JOB_ERRORS.workerUnavailable
+    return new WorkerProcessError({
+      code: 'WORKER_NOT_CONFIGURED',
+      message: USER_FACING_JOB_ERRORS.workerUnavailable,
+      httpStatus: 503,
+      devHint:
+        'Set WORKER_URL=http://localhost:8080 in .env.local (see .env.example).',
+    })
+  }
+
+  if (isWorkerConnectionError(message)) {
+    return new WorkerProcessError({
+      code: 'WORKER_UNREACHABLE',
+      message: USER_FACING_JOB_ERRORS.workerUnavailable,
+      httpStatus: 503,
+      devHint:
+        'Start the document worker: cd worker && uvicorn main:app --reload --port 8080',
+    })
+  }
+
+  if (isWorkerAuthError(message)) {
+    return new WorkerProcessError({
+      code: 'WORKER_AUTH_FAILED',
+      message: USER_FACING_JOB_ERRORS.workerUnavailable,
+      httpStatus: 503,
+      devHint:
+        'Set the same INTERNAL_API_SECRET (min 16 chars) in .env.local and the worker shell.',
+    })
   }
 
   if (
     message.includes('503') ||
-    message.includes('OIDC audience is not configured') ||
-    message.includes('401 Unauthorized')
+    message.includes('OIDC audience is not configured')
   ) {
-    return USER_FACING_JOB_ERRORS.workerUnavailable
+    return new WorkerProcessError({
+      code: 'WORKER_UNAVAILABLE',
+      message: USER_FACING_JOB_ERRORS.workerUnavailable,
+      httpStatus: 503,
+    })
   }
 
-  return USER_FACING_JOB_ERRORS.extractionFailed
+  return new WorkerProcessError({
+    code: 'EXTRACTION_FAILED',
+    message: USER_FACING_JOB_ERRORS.extractionFailed,
+    httpStatus: 500,
+  })
+}
+
+/** @deprecated Use classifyWorkerFailure(error).message */
+export function mapWorkerFailureMessage(error: unknown): string {
+  return classifyWorkerFailure(error).message
+}
+
+function shouldRetryWorkerInvocation(error: Error, attempt: number): boolean {
+  if (attempt >= MAX_WORKER_ATTEMPTS - 1) {
+    return false
+  }
+
+  const classified = classifyWorkerFailure(error)
+  return (
+    classified.code !== 'WORKER_NOT_CONFIGURED' &&
+    classified.code !== 'WORKER_UNREACHABLE' &&
+    classified.code !== 'WORKER_AUTH_FAILED'
+  )
 }
 
 const BACKOFF_MS = [1_000, 3_000, 9_000] as const
@@ -187,6 +325,10 @@ export async function invokeWorkerWithRetries(input: {
   storagePath: string
   mimeType?: string
 }): Promise<WorkerProcessResponse> {
+  if (!process.env.WORKER_URL?.trim()) {
+    throw classifyWorkerFailure(new Error('WORKER_URL is not configured'))
+  }
+
   let lastError: Error | null = null
 
   for (let attempt = 0; attempt < MAX_WORKER_ATTEMPTS; attempt += 1) {
@@ -201,15 +343,18 @@ export async function invokeWorkerWithRetries(input: {
       return result
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
-      if (attempt < MAX_WORKER_ATTEMPTS - 1) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, BACKOFF_MS[attempt] ?? 9_000)
-        )
+      if (!shouldRetryWorkerInvocation(lastError, attempt)) {
+        break
       }
+      await new Promise((resolve) =>
+        setTimeout(resolve, BACKOFF_MS[attempt] ?? 9_000)
+      )
     }
   }
 
-  throw lastError ?? new Error('Worker processing failed')
+  throw classifyWorkerFailure(
+    lastError ?? new Error('Worker processing failed')
+  )
 }
 
 export const USER_FACING_JOB_ERRORS = {

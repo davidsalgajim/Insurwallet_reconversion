@@ -20,9 +20,10 @@ import {
 import type { ProcessingState } from '@/lib/schemas/document'
 import type { Job } from '@/lib/schemas/job'
 import {
+  classifyWorkerFailure,
   invokeWorkerWithRetries,
-  mapWorkerFailureMessage,
   parseWorkerExtraction,
+  parseWorkerPipelineSteps,
   USER_FACING_JOB_ERRORS,
 } from '@/lib/server/worker-client'
 import { notifyDocumentJobReady } from '@/lib/server/push-notifications'
@@ -214,7 +215,7 @@ export async function processDocumentJob(
 
   let extraction: PolicyExtraction
   let pipelineMethod: PolicyExtraction['method'] = 'odl'
-  let pipelineSteps: string[] = []
+  let pipelineSteps: ReturnType<typeof parseWorkerPipelineSteps> = []
   let documentTextPayload: Awaited<
     ReturnType<typeof persistExtractedDocumentText>
   > = null
@@ -227,7 +228,10 @@ export async function processDocumentJob(
 
     extraction = parseWorkerExtraction(workerResult.extraction!)
     pipelineMethod = extraction.method
-    pipelineSteps = workerResult.pipeline_steps ?? [pipelineMethod]
+    pipelineSteps = parseWorkerPipelineSteps(
+      workerResult.pipeline_steps,
+      pipelineMethod
+    )
 
     if (workerResult.document_text?.trim()) {
       documentTextPayload = await persistExtractedDocumentText({
@@ -236,13 +240,17 @@ export async function processDocumentJob(
       })
     }
   } catch (error) {
-    const userMessage = mapWorkerFailureMessage(error)
+    const workerError = classifyWorkerFailure(error)
+    const storedMessage =
+      process.env.NODE_ENV === 'development' && workerError.devHint
+        ? `${workerError.message}\n\n${workerError.devHint}`
+        : workerError.message
 
     await updateJobAndDocumentState(job, 'failed', {
       attempts: attemptNumber,
-      error: userMessage,
+      error: storedMessage,
     })
-    throw new Error(userMessage)
+    throw workerError
   }
 
   await updateJobAndDocumentState(job, 'analyzing')
@@ -303,7 +311,10 @@ export async function processDocumentJob(
       transaction.update(jobRef, {
         processingState: 'ready',
         state: 'completed',
-        pipeline: pipelineSteps.length > 0 ? pipelineSteps : [pipelineMethod],
+        pipeline:
+          pipelineSteps.length > 0
+            ? pipelineSteps
+            : parseWorkerPipelineSteps(undefined, pipelineMethod),
         error: FieldValue.delete(),
         updatedAt: Timestamp.now(),
       })

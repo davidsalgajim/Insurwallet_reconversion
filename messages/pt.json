@@ -445,6 +445,7 @@
         "failedProtectedPdf": "Este PDF está protegido por senha. Envie uma cópia sem proteção.",
         "waitingJob": "Aguardando fila de processamento…",
         "jobPermissionDenied": "Não foi possível ler o status do processamento. Recarregue a página; se persistir, contate o suporte.",
+        "jobDataInvalid": "Não foi possível exibir o status do processamento. Recarregue a página ou tente enviar o documento novamente.",
         "multiProgress": "Processados {ready} de {total} documentos",
         "allReady": "Todos os documentos estão prontos para revisão.",
         "goToReview": "Ir para revisão",

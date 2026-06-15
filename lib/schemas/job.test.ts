@@ -42,4 +42,15 @@ describe('JobSchema', () => {
       }).success
     ).toBe(true)
   })
+
+  it('accepts RAG transcribe step from vision pipeline', () => {
+    expect(
+      JobSchema.safeParse({
+        ...base,
+        state: 'completed',
+        processingState: 'ready',
+        pipeline: ['vision', 'claude', 'transcribe'],
+      }).success
+    ).toBe(true)
+  })
 })

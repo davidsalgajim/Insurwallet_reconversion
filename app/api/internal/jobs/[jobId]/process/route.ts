@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { processDocumentJob } from '@/lib/server/document-job-runner'
+import { WorkerProcessError } from '@/lib/server/worker-client'
 
 export const runtime = 'nodejs'
 
@@ -35,6 +36,18 @@ export async function POST(request: Request, context: RouteContext) {
     const result = await processDocumentJob(jobId, body.ownerUid)
     return NextResponse.json(result)
   } catch (error) {
+    if (error instanceof WorkerProcessError) {
+      console.error('[internal/jobs/process] worker failure', {
+        jobId,
+        code: error.code,
+        httpStatus: error.httpStatus,
+      })
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.httpStatus }
+      )
+    }
+
     const message = error instanceof Error ? error.message : 'Processing failed'
     return NextResponse.json({ error: message }, { status: 500 })
   }

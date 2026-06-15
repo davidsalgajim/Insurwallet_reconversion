@@ -102,7 +102,7 @@ export function DocumentProcessingStatus({
       </ol>
 
       {isFailed ? (
-        <p className="text-sm text-[var(--primitive-danger)] motion-safe:animate-fade-up motion-reduce:animate-none">
+        <p className="whitespace-pre-line text-sm text-[var(--primitive-danger)] motion-safe:animate-fade-up motion-reduce:animate-none">
           {failureMessage ?? t('failed')}
         </p>
       ) : state === 'ready' ? (

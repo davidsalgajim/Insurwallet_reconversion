@@ -8,6 +8,7 @@ import type { ProcessingState } from '@/lib/schemas/document'
 import {
   subscribeToDocumentJob,
   subscribeToJob,
+  isJobDataInvalidError,
   type DocumentJobSnapshot,
 } from '@/lib/firebase/jobs'
 
@@ -140,9 +141,11 @@ export function DocumentProcessingListener({
 
       {snapshot.error ? (
         <p className="mt-3 text-sm text-[var(--primitive-danger)]">
-          {snapshot.error.message.includes('insufficient permissions')
-            ? t('jobPermissionDenied')
-            : snapshot.error.message}
+          {isJobDataInvalidError(snapshot.error)
+            ? t('jobDataInvalid')
+            : snapshot.error.message.includes('insufficient permissions')
+              ? t('jobPermissionDenied')
+              : t('failed')}
         </p>
       ) : null}
 

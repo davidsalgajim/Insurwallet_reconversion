@@ -445,6 +445,7 @@
         "failedProtectedPdf": "This PDF is password-protected. Upload an unprotected copy.",
         "waitingJob": "Waiting for processing queue…",
         "jobPermissionDenied": "We could not read the processing status. Refresh the page; if it persists, contact support.",
+        "jobDataInvalid": "We could not display the processing status. Refresh the page or try uploading the document again.",
         "multiProgress": "Processed {ready} of {total} documents",
         "allReady": "All documents are ready for review.",
         "goToReview": "Go to review",
