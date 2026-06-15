@@ -4,6 +4,8 @@ import { mergePolicyUpdate } from '@/lib/firebase/policies'
 import {
   extractionFieldsToCreateInput,
   mergeExtractionFieldsIntoPolicy,
+  resolveAgentForReview,
+  resolveInsurerContactsForReview,
   sanitizeExtractionFieldsForPersist,
 } from '@/lib/policies/extraction-mapping'
 import type { PolicyExtractionFields } from '@/lib/schemas/extraction'
@@ -29,6 +31,7 @@ const basePolicy = {
   deductibleEntries: [],
   beneficiaryEntries: [],
   benefitEntries: [],
+  insurerContacts: [],
   sharedWith: [],
   status: 'active' as const,
   createdAt: new Date('2025-01-01'),
@@ -193,7 +196,7 @@ describe('extraction mapping', () => {
       phone: '+5715320610',
       email: '',
     })
-    expect(sanitized.insurerContacts).toEqual({ phone: '+5715320610' })
+    expect(sanitized.insurerContacts).toEqual([{ phone: '+5715320610' }])
     expect(sanitized.notes).toBeUndefined()
   })
 
@@ -285,5 +288,34 @@ describe('extraction mapping', () => {
     expect(merged.beneficiaryEntries).toEqual([{ name: 'Ana', pct: 100 }])
     expect(merged.coverageEntries).toEqual([])
     expect(merged.benefitEntries).toEqual([{ name: 'Grúa' }])
+  })
+
+  it('rejects policy number as agent phone for travel voucher (EVOUCHER-like)', () => {
+    const fields: PolicyExtractionFields = {
+      policyNumber: '570 17148300 0L01 LA111 / 1',
+      insurerName: 'Assist Card',
+      insurerContacts: [
+        { label: 'América Latina', phone: '+5451155551500' },
+        { label: 'Norteamérica', phone: '+18008742223' },
+        { label: 'Europa', phone: '+34917883333' },
+      ],
+      agent: {
+        name: 'Servicio al cliente',
+        phone: '+5717148300',
+        email: 'agente@aseguradora.com',
+      },
+    }
+
+    const agent = resolveAgentForReview(fields)
+    expect(agent?.phone).not.toBe('+5717148300')
+    expect(agent?.phone).toBe('+5451155551500')
+
+    const contacts = resolveInsurerContactsForReview(fields)
+    expect(contacts).toHaveLength(3)
+    expect(contacts.map((c) => c.label)).toEqual([
+      'América Latina',
+      'Norteamérica',
+      'Europa',
+    ])
   })
 })

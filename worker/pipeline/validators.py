@@ -44,7 +44,15 @@ CO_MOBILE_SCAN = re.compile(
 )
 SAC_CONTEXT_PATTERN = re.compile(
     r"(?:servicio\s+al\s+cliente|sac|l[ií]nea\s+de\s+atenci[oó]n|"
+    r"l[ií]nea\s+nacional|l[ií]nea\s+internacional|"
     r"atenci[oó]n\s+al\s+cliente|customer\s+service)",
+    re.IGNORECASE,
+)
+ASSISTANCE_LINE_LABEL = re.compile(
+    r"(?:asesor(?:ía)?(?:\s+comercial)?|agente|corredor|intermediario|sac|"
+    r"servicio\s+al\s+cliente|l[ií]nea\s+(?:nacional|de\s+atenci[oó]n|internacional|directa)|"
+    r"atenci[oó]n\s+al\s+cliente|whatsapp|emergencias|siniestros|"
+    r"reporte\s+de\s+accidentes|defensor\s+del\s+consumidor|celular|m[oó]vil)",
     re.IGNORECASE,
 )
 FIRMA_AUTORIZADA_PATTERN = re.compile(
@@ -63,6 +71,30 @@ COMPANY_NAME_MARKERS = re.compile(
     r"\b(s\.?a\.?|s\.?a\.?s\.?|ltda|inc|corp|seguros|insurance|compa[nñ][ií]a)\b",
     re.IGNORECASE,
 )
+TRAVEL_ASSISTANCE_CONTEXT = re.compile(
+    r"(?:assist\s*card|e-?voucher|voucher|viaje|travel|asistencia|assistencia|"
+    r"centrales|whatsapp\s+de\s+asistencia|ll[aá]manos)",
+    re.IGNORECASE,
+)
+REGIONAL_ASSISTANCE_LABEL = re.compile(
+    r"^(?:"
+    r"Am[eé]rica\s+Latina|Latinoam[eé]rica|Norteam[eé]rica|"
+    r"Asia|Europa|Colombia|M[eé]xico|Brasil|"
+    r"Whatsapp(?:\s+de\s+asistencia)?|"
+    r"Central(?:es)?(?:\s+de\s+asistencia)?"
+    r")\s*$",
+    re.IGNORECASE,
+)
+INTERNATIONAL_PHONE_LINE = re.compile(
+    r"(?:\+?\d{1,3}[\s.\-]?)?"
+    r"(?:\(?\d{1,4}\)?[\s.\-]?)?"
+    r"(?:\d[\s.\-]?){6,14}\d",
+)
+TOLL_FREE_PHONE = re.compile(
+    r"(?:\+?1[\s.\-]?)?(?:800|888|877|866)[\s.\-]?\d{3}[\s.\-]?\d{4}",
+    re.IGNORECASE,
+)
+POLICY_NUMBER_MIN_COLLISION_LEN = 7
 
 
 @dataclass(frozen=True)
@@ -130,6 +162,40 @@ def validate_holder_name(value: str | None) -> ValidatedField:
     if re.search(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]", cleaned):
         return ValidatedField(cleaned, "high")
     return ValidatedField(cleaned, "medium", ("no_letters",))
+
+
+def _digits_only(value: str | None) -> str:
+    if not value:
+        return ""
+    return re.sub(r"\D", "", value)
+
+
+def phone_collides_with_policy_number(
+    phone: str | None,
+    policy_number: str | None,
+) -> bool:
+    """True when agent phone digits are likely the policy/certificate number."""
+    if not phone or not policy_number:
+        return False
+    bare = phone.split(" ext ")[0]
+    phone_digits = _digits_only(bare)
+    policy_digits = _digits_only(policy_number)
+    if len(phone_digits) < POLICY_NUMBER_MIN_COLLISION_LEN:
+        return False
+    if not policy_digits:
+        return False
+    if phone_digits == policy_digits:
+        return True
+    if phone_digits in policy_digits or policy_digits in phone_digits:
+        return len(min(phone_digits, policy_digits, key=len)) >= (
+            POLICY_NUMBER_MIN_COLLISION_LEN
+        )
+    for prefix in ("57", "54", "1", "34", "82", "52", "55", "56", "51"):
+        if phone_digits.startswith(prefix) and len(phone_digits) > len(prefix) + 6:
+            local = phone_digits[len(prefix) :]
+            if local in policy_digits and len(local) >= POLICY_NUMBER_MIN_COLLISION_LEN:
+                return True
+    return False
 
 
 def normalize_phone(value: str | None) -> str | None:
@@ -274,23 +340,300 @@ def _pick_sac_phone(text: str, phones: list[str]) -> str | None:
     return phones[0] if phones else None
 
 
-def extract_insurer_contacts_from_text(text: str) -> dict[str, str]:
-    emails = extract_emails_from_text(text)
-    phones = extract_phones_from_text(text)
-    contacts: dict[str, str] = {}
+def _scan_international_phone(raw: str) -> str | None:
+    candidate = raw.strip()
+    if not candidate:
+        return None
+    toll_free = TOLL_FREE_PHONE.search(candidate)
+    if toll_free:
+        return normalize_phone(toll_free.group(0))
+    match = INTERNATIONAL_PHONE_LINE.search(candidate)
+    if not match:
+        return None
+    return normalize_phone(match.group(0))
 
-    sac_email = _pick_sac_email(text, emails)
-    if sac_email:
-        contacts["email"] = sac_email
 
-    sac_phone = _pick_sac_phone(text, phones)
-    if sac_phone:
-        contacts["phone"] = sac_phone
+def _infer_phone_label(text: str, phone: str) -> str | None:
+    bare = phone.split(" ext ")[0]
+    idx = text.find(bare.replace("+57", ""))
+    if idx < 0:
+        idx = text.find(bare)
+    if idx < 0:
+        return None
+    window = text[max(0, idx - 120) : idx + 40]
+    label_match = ASSISTANCE_LINE_LABEL.search(window)
+    if label_match:
+        return label_match.group(0).strip().title()
+    if SAC_CONTEXT_PATTERN.search(window):
+        return "Servicio al cliente"
+    return None
 
-    if contacts and SAC_CONTEXT_PATTERN.search(text):
-        contacts["label"] = "Servicio al cliente"
+
+def extract_labeled_phones_from_text(text: str) -> list[dict[str, str]]:
+    """Extract phones with context labels from any policy type."""
+    if not text.strip():
+        return []
+
+    contacts: list[dict[str, str]] = []
+    seen_phones: set[str] = set()
+    lines = text.splitlines()
+
+    for index, line in enumerate(lines):
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+
+        label_match = ASSISTANCE_LINE_LABEL.search(line_stripped)
+        regional_match = REGIONAL_ASSISTANCE_LABEL.match(line_stripped)
+        if not label_match and not regional_match:
+            continue
+
+        label = line_stripped if regional_match else label_match.group(0).strip().title()
+        phone_raw = _scan_international_phone(line_stripped)
+        if not phone_raw:
+            for offset in range(1, 4):
+                if index + offset >= len(lines):
+                    break
+                candidate = lines[index + offset].strip()
+                if not candidate:
+                    continue
+                if ASSISTANCE_LINE_LABEL.search(candidate) or REGIONAL_ASSISTANCE_LABEL.match(
+                    candidate
+                ):
+                    break
+                phone_raw = _scan_international_phone(candidate)
+                if phone_raw:
+                    break
+
+        if not phone_raw or phone_raw in seen_phones:
+            continue
+        seen_phones.add(phone_raw)
+        contacts.append({"label": label, "phone": phone_raw})
+
+    for phone in extract_phones_from_text(text):
+        if phone in seen_phones:
+            continue
+        label = _infer_phone_label(text, phone)
+        if not label:
+            continue
+        seen_phones.add(phone)
+        contacts.append({"label": label, "phone": phone})
 
     return contacts
+
+
+def filter_insurer_contacts_policy_collision(
+    contacts: list[dict[str, str]],
+    policy_number: str | None,
+) -> list[dict[str, str]]:
+    filtered: list[dict[str, str]] = []
+    for contact in contacts:
+        phone = contact.get("phone")
+        if phone and phone_collides_with_policy_number(phone, policy_number):
+            continue
+        filtered.append(contact)
+    return filtered
+
+
+def _contact_dedup_key(contact: dict[str, str]) -> str:
+    phone = contact.get("phone", "").strip()
+    email = contact.get("email", "").strip().lower()
+    label = contact.get("label", "").strip().lower()
+    return f"{phone}|{email}|{label}"
+
+
+def _merge_insurer_contact_lists(
+    *lists: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    merged: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for items in lists:
+        for contact in items:
+            key = _contact_dedup_key(contact)
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(contact)
+    return merged
+
+
+def extract_regional_assistance_contacts(text: str) -> list[dict[str, str]]:
+    """Parse travel/voucher regional assistance blocks (Assist Card, e-voucher, etc.)."""
+    if not text.strip():
+        return []
+    if not TRAVEL_ASSISTANCE_CONTEXT.search(text):
+        return []
+
+    contacts: list[dict[str, str]] = []
+    seen_phones: set[str] = set()
+    lines = text.splitlines()
+
+    for index, line in enumerate(lines):
+        label_match = REGIONAL_ASSISTANCE_LABEL.match(line.strip())
+        if not label_match:
+            continue
+        label = line.strip()
+        phone_raw = ""
+        for offset in range(1, 4):
+            if index + offset >= len(lines):
+                break
+            candidate = lines[index + offset].strip()
+            if not candidate:
+                continue
+            if REGIONAL_ASSISTANCE_LABEL.match(candidate):
+                break
+            phone = _scan_international_phone(candidate)
+            if phone:
+                phone_raw = phone
+                break
+        if not phone_raw or phone_raw in seen_phones:
+            continue
+        seen_phones.add(phone_raw)
+        contacts.append({"label": label, "phone": phone_raw})
+
+    if contacts:
+        return contacts
+
+    for match in INTERNATIONAL_PHONE_LINE.finditer(text):
+        phone = normalize_phone(match.group(0))
+        if not phone or phone in seen_phones:
+            continue
+        start = max(0, match.start() - 80)
+        window = text[start : match.start()]
+        if not TRAVEL_ASSISTANCE_CONTEXT.search(window):
+            continue
+        seen_phones.add(phone)
+        contacts.append({"label": "Asistencia", "phone": phone})
+
+    return contacts
+
+
+def _merge_assistance_into_benefit_entries(
+    fields: dict[str, object],
+    contacts: list[dict[str, str]],
+) -> None:
+    if not contacts:
+        return
+    existing: list[dict[str, object]] = []
+    raw = fields.get("benefitEntries")
+    if isinstance(raw, list):
+        existing = [dict(entry) for entry in raw if isinstance(entry, dict)]
+
+    existing_names = {
+        str(entry.get("name", "")).strip().lower()
+        for entry in existing
+        if entry.get("name")
+    }
+    for contact in contacts:
+        label = contact.get("label", "Asistencia").strip()
+        phone = contact.get("phone", "").strip()
+        if not phone:
+            continue
+        benefit_name = f"Asistencia — {label}"
+        key = benefit_name.lower()
+        if key in existing_names:
+            continue
+        existing_names.add(key)
+        existing.append(
+            {
+                "name": benefit_name,
+                "category": "travel",
+                "contactInfo": phone,
+            }
+        )
+    if existing:
+        fields["benefitEntries"] = existing
+
+
+def extract_insurer_contacts_from_text(text: str) -> list[dict[str, str]]:
+    if not text.strip():
+        return []
+
+    labeled = extract_labeled_phones_from_text(text)
+    regional = extract_regional_assistance_contacts(text)
+    contacts = _merge_insurer_contact_lists(labeled, regional)
+
+    emails = extract_emails_from_text(text)
+    sac_email = _pick_sac_email(text, emails)
+    if sac_email:
+        merged_sac = False
+        for contact in contacts:
+            label = contact.get("label", "").lower()
+            if "servicio" in label or "sac" in label or label == "":
+                contact["email"] = sac_email
+                if not contact.get("label"):
+                    contact["label"] = "Servicio al cliente"
+                merged_sac = True
+                break
+        if not merged_sac:
+            contacts.append(
+                {"email": sac_email, "label": "Servicio al cliente"},
+            )
+
+    if not contacts:
+        phones = extract_phones_from_text(text)
+        sac_phone = _pick_sac_phone(text, phones)
+        if sac_phone:
+            contacts.append(
+                {"phone": sac_phone, "label": "Servicio al cliente"},
+            )
+
+    return contacts
+
+
+def _normalize_insurer_contacts_list(
+    raw: object,
+) -> list[dict[str, str]]:
+    if isinstance(raw, dict):
+        items: list[object] = [raw]
+    elif isinstance(raw, list):
+        items = raw
+    else:
+        return []
+
+    contacts: list[dict[str, str]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        row: dict[str, str] = {}
+        phone = normalize_phone(
+            item.get("phone") if isinstance(item.get("phone"), str) else None
+        )
+        email_raw = item.get("email")
+        email = (
+            str(email_raw).strip().lower()
+            if isinstance(email_raw, str) and "@" in str(email_raw)
+            else ""
+        )
+        label_raw = item.get("label")
+        label = str(label_raw).strip() if isinstance(label_raw, str) else ""
+        if phone:
+            row["phone"] = phone
+        if email:
+            row["email"] = email
+        if label and "@" not in label:
+            row["label"] = label
+        if row:
+            contacts.append(row)
+    return contacts
+
+
+def _pick_advisor_phone(contacts: list[dict[str, str]]) -> str | None:
+    advisor_markers = (
+        "asesor",
+        "agente",
+        "corredor",
+        "intermediario",
+        "celular",
+        "móvil",
+        "movil",
+    )
+    for contact in contacts:
+        label = contact.get("label", "").lower()
+        phone = contact.get("phone")
+        if phone and any(marker in label for marker in advisor_markers):
+            return phone
+    return None
 
 
 def boost_agent_from_text(
@@ -302,39 +645,67 @@ def boost_agent_from_text(
         return fields
 
     boosted = dict(fields)
+    policy_number = (
+        boosted.get("policyNumber")
+        if isinstance(boosted.get("policyNumber"), str)
+        else None
+    )
+
     agent: dict[str, str] = {}
     if isinstance(boosted.get("agent"), dict):
         agent = dict(boosted["agent"])  # type: ignore[arg-type]
 
-    insurer_contacts: dict[str, str] = {}
-    if isinstance(boosted.get("insurerContacts"), dict):
-        insurer_contacts = dict(boosted["insurerContacts"])  # type: ignore[arg-type]
+    insurer_contacts = _normalize_insurer_contacts_list(
+        boosted.get("insurerContacts")
+    )
 
-    scanned_contacts = extract_insurer_contacts_from_text(raw_text)
-    for key, value in scanned_contacts.items():
-        insurer_contacts.setdefault(key, value)
+    regional = extract_regional_assistance_contacts(raw_text)
+    if regional:
+        _merge_assistance_into_benefit_entries(boosted, regional)
 
-    for key in ("phone", "email", "label"):
-        raw_val = insurer_contacts.get(key)
-        if isinstance(raw_val, str) and raw_val.strip():
-            if key == "phone":
-                insurer_contacts[key] = normalize_phone(raw_val) or raw_val.strip()
-            else:
-                insurer_contacts[key] = raw_val.strip()
+    scanned = extract_insurer_contacts_from_text(raw_text)
+    scanned = filter_insurer_contacts_policy_collision(scanned, policy_number)
+    insurer_contacts = _merge_insurer_contact_lists(
+        insurer_contacts,
+        scanned,
+    )
 
     if insurer_contacts:
+        insurer_contacts = filter_insurer_contacts_policy_collision(
+            insurer_contacts,
+            policy_number,
+        )
         boosted["insurerContacts"] = insurer_contacts
 
-    for key in ("phone", "email"):
-        if not agent.get(key):
-            fallback = insurer_contacts.get(key)
-            if fallback:
-                agent[key] = fallback
+    primary_phone = _pick_advisor_phone(insurer_contacts)
+    if not primary_phone and insurer_contacts:
+        primary_phone = insurer_contacts[0].get("phone")
+    primary_email = insurer_contacts[0].get("email") if insurer_contacts else None
+    primary_label = insurer_contacts[0].get("label") if insurer_contacts else None
+
+    for key, fallback in (
+        ("phone", primary_phone),
+        ("email", primary_email),
+    ):
+        if not agent.get(key) and fallback:
+            agent[key] = fallback
+
+    if agent.get("phone") and phone_collides_with_policy_number(
+        str(agent["phone"]), policy_number
+    ):
+        agent.pop("phone", None)
+        if primary_phone and not phone_collides_with_policy_number(
+            primary_phone, policy_number
+        ):
+            agent["phone"] = primary_phone
 
     if not agent.get("name"):
-        firma = extract_firma_autorizada_name(raw_text)
-        if firma:
-            agent["name"] = firma
+        if primary_label and "@" not in primary_label:
+            agent["name"] = primary_label
+        else:
+            firma = extract_firma_autorizada_name(raw_text)
+            if firma:
+                agent["name"] = firma
 
     if agent:
         boosted["agent"] = agent
@@ -495,13 +866,24 @@ def validate_extraction(raw: dict[str, object]) -> ValidationResult:
     agent_raw = raw.get("agent")
     agent_fields: dict[str, ValidatedField] = {}
     agent_confidence: dict[str, ConfidenceLevel] = {}
+    policy_number_raw = raw.get("policyNumber")
+    policy_number = (
+        str(policy_number_raw).strip()
+        if isinstance(policy_number_raw, str)
+        else None
+    )
+
     if isinstance(agent_raw, dict):
         agent_name = validate_agent_name(
             agent_raw.get("name") if isinstance(agent_raw.get("name"), str) else None
         )
-        agent_phone = validate_agent_phone(
+        agent_phone_raw = (
             agent_raw.get("phone") if isinstance(agent_raw.get("phone"), str) else None
         )
+        if phone_collides_with_policy_number(agent_phone_raw, policy_number):
+            agent_phone = ValidatedField(None, "low", ("policy_number_collision",))
+        else:
+            agent_phone = validate_agent_phone(agent_phone_raw)
         agent_email = validate_agent_email(
             agent_raw.get("email") if isinstance(agent_raw.get("email"), str) else None
         )
@@ -598,6 +980,9 @@ def _normalize_benefit_contact_info(value: object | None) -> str | None:
         if EMAIL_PATTERN.match(lowered):
             return lowered
         return None
+    phone = normalize_phone(trimmed)
+    if phone:
+        return phone
     return trimmed
 
 

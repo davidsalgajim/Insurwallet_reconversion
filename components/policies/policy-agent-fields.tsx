@@ -1,16 +1,21 @@
 'use client'
 
+import { Phone } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { SavedAdvisorPicker } from '@/components/policies/saved-advisor-picker'
 import { policyFieldClassName } from '@/components/policies/policy-form-styles'
 import { isAdvisorAlreadySaved } from '@/lib/policies/saved-directory'
 import { useSavedAdvisors } from '@/hooks/use-saved-directory'
+import type { InsurerContactLine } from '@/lib/schemas/policy'
+
+export type InsurerContactRow = InsurerContactLine & { key: string }
 
 export type PolicyAgentFieldsValues = {
   agentName: string
   agentPhone: string
   agentEmail: string
+  insurerContactRows: InsurerContactRow[]
 }
 
 type PolicyAgentFieldsProps = {
@@ -22,6 +27,33 @@ type PolicyAgentFieldsProps = {
   saveToContacts?: boolean
   onSaveToContactsChange?: (value: boolean) => void
   disabled?: boolean
+}
+
+function createContactKey(): string {
+  return `contact-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+export function insurerContactsToRows(
+  contacts: InsurerContactLine[]
+): InsurerContactRow[] {
+  return contacts.map((contact, index) => ({
+    key: `contact-${index}-${contact.phone ?? contact.email ?? 'line'}`,
+    label: contact.label ?? '',
+    phone: contact.phone ?? '',
+    email: contact.email ?? '',
+  }))
+}
+
+export function insurerContactRowsToLines(
+  rows: InsurerContactRow[]
+): InsurerContactLine[] {
+  return rows
+    .map((row) => ({
+      ...(row.label.trim() ? { label: row.label.trim() } : {}),
+      ...(row.phone.trim() ? { phone: row.phone.trim() } : {}),
+      ...(row.email.trim() ? { email: row.email.trim() } : {}),
+    }))
+    .filter((line) => line.phone || line.email || line.label)
 }
 
 export function PolicyAgentFields({
@@ -43,6 +75,45 @@ export function PolicyAgentFields({
     onChange('agentPhone', agent.agentPhone)
     onChange('agentEmail', agent.agentEmail)
     onSaveToContactsChange?.(false)
+  }
+
+  function applyContactAsPrimary(row: InsurerContactRow) {
+    if (row.phone.trim()) {
+      onChange('agentPhone', row.phone.trim())
+    }
+    if (row.email.trim()) {
+      onChange('agentEmail', row.email.trim())
+    }
+    if (!values.agentName.trim() && row.label.trim()) {
+      onChange('agentName', row.label.trim())
+    }
+  }
+
+  function updateContactRow(
+    key: string,
+    field: keyof InsurerContactLine,
+    value: string
+  ) {
+    onChange(
+      'insurerContactRows',
+      values.insurerContactRows.map((row) =>
+        row.key === key ? { ...row, [field]: value } : row
+      )
+    )
+  }
+
+  function addContactRow() {
+    onChange('insurerContactRows', [
+      ...values.insurerContactRows,
+      { key: createContactKey(), label: '', phone: '', email: '' },
+    ])
+  }
+
+  function removeContactRow(key: string) {
+    onChange(
+      'insurerContactRows',
+      values.insurerContactRows.filter((row) => row.key !== key)
+    )
   }
 
   return (
@@ -101,6 +172,92 @@ export function PolicyAgentFields({
           />
         </div>
       </div>
+
+      {values.insurerContactRows.length > 0 ? (
+        <div className="space-y-3 rounded-[var(--radius-inner)] border border-border/70 bg-white/40 p-4">
+          <div>
+            <h4 className="text-sm font-medium">{t('assistanceLinesTitle')}</h4>
+            <p className="text-xs text-muted-foreground">
+              {t('assistanceLinesHint')}
+            </p>
+          </div>
+          <ul className="space-y-3">
+            {values.insurerContactRows.map((row) => (
+              <li
+                key={row.key}
+                className="space-y-2 rounded-[var(--radius-inner)] border border-border/60 bg-background/80 p-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {row.label.trim() || t('assistanceLineDefaultLabel')}
+                  </span>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                    onClick={() => applyContactAsPrimary(row)}
+                    disabled={disabled}
+                  >
+                    <Phone className="size-3.5" strokeWidth={1.5} />
+                    {t('useAsPrimary')}
+                  </button>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <input
+                    type="text"
+                    value={row.label}
+                    onChange={(event) =>
+                      updateContactRow(row.key, 'label', event.target.value)
+                    }
+                    placeholder={t('assistanceLabelPlaceholder')}
+                    className={policyFieldClassName}
+                    disabled={disabled}
+                    aria-label={t('assistanceLabelPlaceholder')}
+                  />
+                  <input
+                    type="tel"
+                    value={row.phone}
+                    onChange={(event) =>
+                      updateContactRow(row.key, 'phone', event.target.value)
+                    }
+                    placeholder={t('phonePlaceholder')}
+                    className={policyFieldClassName}
+                    disabled={disabled}
+                    aria-label={t('phone')}
+                  />
+                  <input
+                    type="email"
+                    value={row.email}
+                    onChange={(event) =>
+                      updateContactRow(row.key, 'email', event.target.value)
+                    }
+                    placeholder={t('emailPlaceholder')}
+                    className={policyFieldClassName}
+                    disabled={disabled}
+                    aria-label={t('email')}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-[var(--primitive-danger)]"
+                  onClick={() => removeContactRow(row.key)}
+                  disabled={disabled}
+                >
+                  {t('removeAssistanceLine')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
+        onClick={addContactRow}
+        disabled={disabled}
+      >
+        {t('addAssistanceLine')}
+      </button>
 
       {canSave && onSaveToContactsChange ? (
         <label className="flex items-start gap-2 text-sm text-muted-foreground">

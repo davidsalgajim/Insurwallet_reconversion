@@ -109,14 +109,14 @@ _AGENT = {
     "additionalProperties": False,
 }
 
-_INSURER_CONTACTS = {
+_INSURER_CONTACT_LINE = {
     "type": "object",
     "properties": {
         "phone": {
             "type": "string",
             "description": (
-                "Insurer customer-service / SAC / línea de atención phone "
-                "(e.g. (60-1) 743 53 33 Ext 14451)."
+                "Insurer customer-service / SAC / regional assistance phone "
+                "(e.g. +1 800-874-2223, +34 (91) 788-3333). NOT policy numbers."
             ),
         },
         "email": {
@@ -129,12 +129,21 @@ _INSURER_CONTACTS = {
         "label": {
             "type": "string",
             "description": (
-                "Short label for the contact line, e.g. "
-                "'Servicio al cliente - Alfa' — never an email address."
+                "Short label: 'Servicio al cliente', 'América Latina', "
+                "'Europa', 'Whatsapp asistencia' — never an email address."
             ),
         },
     },
     "additionalProperties": False,
+}
+
+_INSURER_CONTACTS = {
+    "type": "array",
+    "items": _INSURER_CONTACT_LINE,
+    "description": (
+        "Insurer SAC / assistance contact lines. For travel vouchers list each "
+        "regional hotline separately. Omit policy/certificate numbers."
+    ),
 }
 
 EXTRACTION_TOOL: dict[str, Any] = {
@@ -246,8 +255,10 @@ Rules:
    a) Primary — named agent/asesor/corredor/intermediario with phone/email.
    b) Secondary — if no dedicated agent, put SAC / servicio al cliente / línea de atención phone and email in insurerContacts (label e.g. "Servicio al cliente - {{insurer short name}}"). Do NOT put SAC email in agent.name.
    c) Tertiary — firma autorizada person name in agent.name only when clearly a natural person near a signature block; never a company name.
-11. insurerContacts: SAC / customer-service lines when no commercial agent is listed. Phone/email only; label is a short human label, not an email.
-12. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
+11. insurerContacts: array of ALL insurer assistance lines on the document — SAC, línea nacional/internacional, regional hotlines, WhatsApp. Each entry: label + phone and/or email. Applies to every policy type (auto, life, health, travel, etc.). NEVER put policy/certificate/voucher numbers in agent.phone or insurerContacts.phone.
+12. travel / e-voucher / Assist Card: put EACH regional assistance line (América, Europa, Asia, Colombia, etc.) in insurerContacts[] with label+phone; also mirror in benefitEntries when useful. agent.phone only for named asesor/intermediario.
+13. When multiple phones exist, agent.phone = named asesor/agente if present; all other lines stay in insurerContacts[].
+14. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
 
 {format_regional_extraction_rules()}
 
@@ -353,26 +364,10 @@ def _apply_expiration_heuristics(fields: dict[str, object]) -> dict[str, object]
     return fields
 
 
-def _normalize_insurer_contacts(raw: object) -> dict[str, str] | None:
-    if not isinstance(raw, dict):
-        return None
+def _normalize_insurer_contacts(raw: object) -> list[dict[str, str]] | None:
+    from pipeline.validators import _normalize_insurer_contacts_list
 
-    from pipeline.validators import normalize_phone
-
-    contacts: dict[str, str] = {}
-    phone = normalize_phone(
-        raw.get("phone") if isinstance(raw.get("phone"), str) else None
-    )
-    email = str(raw.get("email", "")).strip().lower()
-    label = str(raw.get("label", "")).strip()
-
-    if phone:
-        contacts["phone"] = phone
-    if email and "@" in email:
-        contacts["email"] = email
-    if label and "@" not in label:
-        contacts["label"] = label
-
+    contacts = _normalize_insurer_contacts_list(raw)
     return contacts or None
 
 

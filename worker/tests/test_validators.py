@@ -5,6 +5,8 @@ from pipeline.validators import (
     extract_emails_from_text,
     extract_firma_autorizada_name,
     extract_phones_from_text,
+    extract_regional_assistance_contacts,
+    phone_collides_with_policy_number,
     sanitize_structured_extraction_arrays,
     validate_extraction,
 )
@@ -17,6 +19,23 @@ servicioalcliente@segurosalfa.com.co
 Teléfono (60-1) 7 43 53 33 Ext 14451
 Andrés Fernando Barón Tautiva
 Firma Autorizada
+"""
+
+EVOUCHER_SAMPLE = """
+Tu Assist Card
+N° ASSIST CARD
+570 17148300 0L01 LA111 / 1
+Whatsapp de asistencia
++54 9 11 27039665
+Llámanos a nuestras centrales
+América Latina
++54 (11) 5555-1500
+Norteamérica
++1 800-874-2223
+Asia
++82 (2) 2023-5858
+Europa
++34 (91) 788-3333
 """
 
 
@@ -127,8 +146,8 @@ def test_boost_agent_from_text_alfa_like_document():
     assert agent.get("phone", "").startswith("+571")
     assert "ext 14451" in agent.get("phone", "")
     assert agent.get("name") == "Andrés Fernando Barón Tautiva"
-    assert isinstance(contacts, dict)
-    assert contacts.get("email") == "servicioalcliente@segurosalfa.com.co"
+    assert isinstance(contacts, list)
+    assert contacts[0].get("email") == "servicioalcliente@segurosalfa.com.co"
 
 
 def test_sanitize_structured_extraction_arrays_strips_sentinels():
@@ -155,3 +174,61 @@ def test_sanitize_structured_extraction_arrays_strips_sentinels():
     assert sanitized["benefitEntries"] == [
         {"name": "Grúa", "quantity": "3"},
     ]
+
+
+def test_phone_collides_with_policy_number_evoucher():
+    policy = "570 17148300 0L01 LA111 / 1"
+    assert phone_collides_with_policy_number("+5717148300", policy)
+    assert not phone_collides_with_policy_number("+18008742223", policy)
+
+
+def test_extract_regional_assistance_contacts_evoucher():
+    contacts = extract_regional_assistance_contacts(EVOUCHER_SAMPLE)
+    labels = {c["label"] for c in contacts}
+    phones = {c["phone"] for c in contacts}
+
+    assert "América Latina" in labels
+    assert "Norteamérica" in labels
+    assert "Asia" in labels
+    assert "Europa" in labels
+    assert any(p.startswith("+1800") for p in phones)
+    assert not any("17148300" in p for p in phones)
+
+
+def test_boost_agent_from_text_evoucher_rejects_policy_number_phone():
+    boosted = boost_agent_from_text(
+        {
+            "policyNumber": "570 17148300 0L01 LA111 / 1",
+            "agent": {
+                "name": "Servicio al cliente",
+                "phone": "+5717148300",
+                "email": "agente@aseguradora.com",
+            },
+        },
+        EVOUCHER_SAMPLE,
+    )
+    agent = boosted.get("agent")
+    assert isinstance(agent, dict)
+    assert agent.get("phone") != "+5717148300"
+    assert agent.get("phone", "").startswith("+54") or agent.get("phone", "").startswith(
+        "+1"
+    )
+
+    benefits = boosted.get("benefitEntries")
+    assert isinstance(benefits, list)
+    assert len(benefits) >= 4
+
+
+def test_validate_extraction_clears_agent_phone_matching_policy_number():
+    result = validate_extraction(
+        {
+            "policyNumber": "570 17148300 0L01 LA111 / 1",
+            "agent": {
+                "name": "Servicio al cliente",
+                "phone": "+5717148300",
+            },
+        }
+    )
+
+    assert result.fields["agent.phone"].value is None
+    assert result.confidence["agent.phone"] == "low"

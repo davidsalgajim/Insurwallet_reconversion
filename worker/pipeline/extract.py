@@ -61,26 +61,56 @@ def _merge_extraction_fields(
     if isinstance(merged.get("agent"), dict):
         agent = dict(merged["agent"])  # type: ignore[arg-type]
 
-    insurer_contacts = merged.get("insurerContacts")
-    if isinstance(insurer_contacts, dict):
+    insurer_contacts_raw = merged.get("insurerContacts")
+    insurer_contacts: list[dict[str, object]] = []
+    if isinstance(insurer_contacts_raw, list):
+        insurer_contacts = [
+            dict(entry) for entry in insurer_contacts_raw if isinstance(entry, dict)
+        ]
+    elif isinstance(insurer_contacts_raw, dict):
+        insurer_contacts = [dict(insurer_contacts_raw)]
+
+    policy_number = (
+        merged.get("policyNumber")
+        if isinstance(merged.get("policyNumber"), str)
+        else None
+    )
+
+    from pipeline.validators import phone_collides_with_policy_number
+
+    primary_contact = insurer_contacts[0] if insurer_contacts else None
+    if primary_contact:
         for subkey in ("phone", "email"):
             if not agent.get(subkey):
-                value = insurer_contacts.get(subkey)
+                value = primary_contact.get(subkey)
                 if isinstance(value, str) and value.strip():
+                    if subkey == "phone" and phone_collides_with_policy_number(
+                        value.strip(), policy_number
+                    ):
+                        continue
                     agent[subkey] = value.strip()
         if not agent.get("name"):
-            label = insurer_contacts.get("label")
+            label = primary_contact.get("label")
             if isinstance(label, str) and label.strip():
                 agent["name"] = label.strip()
 
     for subkey in ("name", "phone", "email"):
         validated = validation.fields.get(f"agent.{subkey}")
         if validated and validated.value is not None:
+            if (
+                subkey == "phone"
+                and phone_collides_with_policy_number(
+                    str(validated.value), policy_number
+                )
+            ):
+                agent.pop("phone", None)
+                continue
             agent[subkey] = validated.value
     if agent:
         merged["agent"] = agent
 
-    merged.pop("insurerContacts", None)
+    if insurer_contacts:
+        merged["insurerContacts"] = insurer_contacts
 
     return merged
 

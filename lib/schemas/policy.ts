@@ -71,6 +71,14 @@ export const BenefitEntrySchema = z.object({
 })
 export type BenefitEntry = z.infer<typeof BenefitEntrySchema>
 
+/** Insurer SAC / regional assistance line (persisted on policy for MarIAna). */
+export const InsurerContactLineSchema = z.object({
+  label: z.string().min(1).optional(),
+  phone: z.string().min(1).optional(),
+  email: z.union([z.literal(''), z.string().email()]).optional(),
+})
+export type InsurerContactLine = z.infer<typeof InsurerContactLineSchema>
+
 export const PolicyAgentSchema = z.object({
   name: z.string(),
   phone: z.string(),
@@ -110,6 +118,7 @@ export const PolicySchema = z.object({
   waitingPeriods: z.string().optional(),
   notes: z.string().optional(),
   agent: PolicyAgentSchema,
+  insurerContacts: z.array(InsurerContactLineSchema).default([]),
   coverageEntries: z.array(CoverageEntrySchema).default([]),
   deductibleEntries: z.array(DeductibleEntrySchema).default([]),
   beneficiaryEntries: z.array(BeneficiaryEntrySchema).default([]),

@@ -6,7 +6,9 @@ import {
   sanitizeAgentForDisplay,
 } from '@/lib/policies/agent-placeholders'
 import { sanitizeStructuredExtractionArraysForPersist } from '@/lib/policies/extraction-structured-sanitize'
+import { phoneCollidesWithPolicyNumber } from '@/lib/policies/phone-policy-collision'
 import type {
+  InsurerContactLine,
   InsurerContactsExtraction,
   PolicyExtractionFields,
 } from '@/lib/schemas/extraction'
@@ -37,18 +39,11 @@ export function sanitizeExtractionFieldsForPersist(
   }
 
   if (sanitized.insurerContacts) {
-    const phone = normalizeOptionalString(sanitized.insurerContacts.phone)
-    const email = normalizeExtractedAgentEmail(sanitized.insurerContacts.email)
-    const label = normalizeOptionalString(sanitized.insurerContacts.label)
-
-    if (!phone && !email && !label) {
+    const lines = normalizeInsurerContactLines(sanitized.insurerContacts)
+    if (lines.length === 0) {
       delete sanitized.insurerContacts
     } else {
-      sanitized.insurerContacts = {
-        ...(phone ? { phone } : {}),
-        ...(email ? { email } : {}),
-        ...(label && !label.includes('@') ? { label } : {}),
-      }
+      sanitized.insurerContacts = lines
     }
   }
 
@@ -72,28 +67,73 @@ function shortInsurerLabel(insurerName?: string): string | undefined {
   return firstWord.length >= 2 ? firstWord : trimmed
 }
 
+function normalizeInsurerContactLine(
+  line: InsurerContactLine,
+  policyNumber?: string
+): InsurerContactLine | undefined {
+  const phone = normalizeOptionalString(line.phone)
+  const email = normalizeExtractedAgentEmail(line.email)
+  const label = normalizeOptionalString(line.label)
+
+  const safePhone =
+    phone && !phoneCollidesWithPolicyNumber(phone, policyNumber)
+      ? phone
+      : undefined
+
+  if (!safePhone && !email && !label) {
+    return undefined
+  }
+
+  return {
+    ...(safePhone ? { phone: safePhone } : {}),
+    ...(email ? { email: email.toLowerCase() } : {}),
+    ...(label && !label.includes('@') ? { label } : {}),
+  }
+}
+
+export function normalizeInsurerContactLines(
+  contacts: InsurerContactsExtraction | undefined,
+  policyNumber?: string
+): InsurerContactLine[] {
+  if (!contacts) {
+    return []
+  }
+  const items = Array.isArray(contacts) ? contacts : [contacts]
+  const normalized: InsurerContactLine[] = []
+  for (const item of items) {
+    const line = normalizeInsurerContactLine(item, policyNumber)
+    if (line) {
+      normalized.push(line)
+    }
+  }
+  return normalized
+}
+
 function mergeInsurerContactsIntoAgent(
   agent: Partial<PolicyAgent> | undefined,
   contacts: InsurerContactsExtraction | undefined,
-  insurerName?: string
+  insurerName?: string,
+  policyNumber?: string
 ): Partial<PolicyAgent> | undefined {
-  if (!contacts) {
+  const lines = normalizeInsurerContactLines(contacts, policyNumber)
+  if (lines.length === 0) {
     return agent
   }
 
+  const primary = lines[0]
   const merged: Partial<PolicyAgent> = { ...(agent ?? {}) }
 
-  if (!merged.phone?.trim() && contacts.phone?.trim()) {
-    merged.phone = contacts.phone.trim()
+  if (!merged.phone?.trim() && primary?.phone?.trim()) {
+    merged.phone = primary.phone.trim()
   }
-  if (!merged.email?.trim() && contacts.email?.trim()) {
-    const normalizedEmail = normalizeExtractedAgentEmail(contacts.email)
+  if (!merged.email?.trim() && primary?.email?.trim()) {
+    const normalizedEmail = normalizeExtractedAgentEmail(primary.email)
     if (normalizedEmail) {
       merged.email = normalizedEmail.toLowerCase()
     }
   }
   if (!merged.name?.trim()) {
-    const label = contacts.label?.trim()
+    const label = primary?.label?.trim()
     if (label && !label.includes('@')) {
       merged.name = label
     } else {
@@ -101,6 +141,20 @@ function mergeInsurerContactsIntoAgent(
       if (short && (merged.phone || merged.email)) {
         merged.name = `Servicio al cliente - ${short}`
       }
+    }
+  }
+
+  if (
+    merged.phone &&
+    phoneCollidesWithPolicyNumber(merged.phone, policyNumber)
+  ) {
+    delete merged.phone
+    const fallback = lines.find(
+      (line) =>
+        line.phone && !phoneCollidesWithPolicyNumber(line.phone, policyNumber)
+    )
+    if (fallback?.phone) {
+      merged.phone = fallback.phone
     }
   }
 
@@ -123,7 +177,8 @@ export function resolveAgentForReview(
   const extracted = mergeInsurerContactsIntoAgent(
     sanitizeAgentForDisplay(fields.agent, { forPersist: true }),
     fields.insurerContacts,
-    fields.insurerName ?? fallback?.insurerName
+    fields.insurerName ?? fallback?.insurerName,
+    fields.policyNumber ?? fallback?.policyNumber
   )
   if (extracted) {
     return extracted as PolicyAgent
@@ -144,6 +199,23 @@ function resolveAgentFromExtraction(
   return resolveAgentForReview(fields, fallback)
 }
 
+/** Regional assistance / SAC lines for review UI (not merged into agent alone). */
+export function resolveInsurerContactsForReview(
+  fields: PolicyExtractionFields | undefined,
+  fallback?: Partial<Policy>
+): InsurerContactLine[] {
+  const fromExtraction = fields?.insurerContacts
+    ? normalizeInsurerContactLines(
+        fields.insurerContacts,
+        fields.policyNumber ?? fallback?.policyNumber
+      )
+    : []
+  if (fromExtraction.length > 0) {
+    return fromExtraction
+  }
+  return fallback?.insurerContacts ?? []
+}
+
 /** Maps extracted fields onto CreatePolicyInput, falling back to existing policy values. */
 export function extractionFieldsToCreateInput(
   fields: PolicyExtractionFields,
@@ -156,6 +228,10 @@ export function extractionFieldsToCreateInput(
   const hasNoExpiration =
     normalizedFields.hasNoExpiration ?? base.hasNoExpiration ?? false
   const agent = resolveAgentFromExtraction(normalizedFields, base)
+  const insurerContacts = normalizeInsurerContactLines(
+    normalizedFields.insurerContacts,
+    normalizedFields.policyNumber ?? base.policyNumber
+  )
 
   return {
     ownerUid,
@@ -177,6 +253,7 @@ export function extractionFieldsToCreateInput(
     waitingPeriods: normalizedFields.waitingPeriods ?? base.waitingPeriods,
     notes: normalizedFields.notes ?? base.notes,
     ...(agent ? { agent } : {}),
+    ...(insurerContacts.length > 0 ? { insurerContacts } : {}),
     coverageEntries:
       normalizedFields.coverageEntries ?? base.coverageEntries ?? [],
     deductibleEntries:
@@ -216,6 +293,7 @@ export function mergeExtractionFieldsIntoPolicy(
       : isPlaceholderAgent(policy.agent)
         ? resolveAgentForStorage()
         : policy.agent,
+    insurerContacts: input.insurerContacts ?? policy.insurerContacts,
     coverageEntries: input.coverageEntries ?? policy.coverageEntries,
     deductibleEntries: input.deductibleEntries ?? policy.deductibleEntries,
     beneficiaryEntries: input.beneficiaryEntries ?? policy.beneficiaryEntries,

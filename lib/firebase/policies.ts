@@ -24,11 +24,13 @@ import {
   CoverageEntrySchema,
   DeductibleEntrySchema,
   PaymentFrequencySchema,
+  InsurerContactLineSchema,
   PolicyAgentSchema,
   PolicySchema,
   PolicyTypeSchema,
   type Policy,
   type PolicyAgent,
+  type InsurerContactLine,
 } from '@/lib/schemas/policy'
 import { resolveAgentForStorage } from '@/lib/policies/agent-placeholders'
 import { resolveEndDateForStorage } from '@/lib/utils/policy-dates'
@@ -55,6 +57,7 @@ export const CreatePolicyInputSchema = z.object({
   waitingPeriods: z.string().optional(),
   notes: z.string().optional(),
   agent: PolicyAgentSchema.partial().optional(),
+  insurerContacts: z.array(InsurerContactLineSchema).optional(),
   coverageEntries: z.array(CoverageEntrySchema).optional(),
   deductibleEntries: z.array(DeductibleEntrySchema).optional(),
   beneficiaryEntries: z.array(BeneficiaryEntrySchema).optional(),
@@ -154,6 +157,7 @@ export function buildPolicyFromInput(
     waitingPeriods: parsed.waitingPeriods,
     notes: parsed.notes,
     agent: resolveAgent(parsed.agent),
+    insurerContacts: parsed.insurerContacts ?? [],
     coverageEntries: parsed.coverageEntries ?? [],
     deductibleEntries: parsed.deductibleEntries ?? [],
     beneficiaryEntries: parsed.beneficiaryEntries ?? [],

@@ -327,7 +327,10 @@
       "phone": "Phone",
       "phonePlaceholder": "+1 555 000 0000",
       "email": "Email",
-      "emailPlaceholder": "agent@insurer.com"
+      "emailPlaceholder": "agent@insurer.com",
+      "assistanceLinesTitle": "Detected assistance lines",
+      "assistanceLinesHint": "Click a number to use it as the primary agent phone.",
+      "assistanceLineFallback": "Line {index}"
     },
     "savedDirectory": {
       "pickAdvisor": "Choose from saved advisors",

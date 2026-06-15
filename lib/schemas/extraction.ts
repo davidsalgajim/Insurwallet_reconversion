@@ -12,10 +12,14 @@ import {
   BeneficiaryEntrySchema,
   CoverageEntrySchema,
   DeductibleEntrySchema,
+  InsurerContactLineSchema,
   PaymentFrequencySchema,
   PolicyAgentExtractionSchema,
   PolicyTypeSchema,
+  type InsurerContactLine,
 } from '@/lib/schemas/policy'
+
+export { InsurerContactLineSchema, type InsurerContactLine }
 
 export const ExtractionConfidenceSchema = z.enum(['high', 'medium', 'low'])
 export type ExtractionConfidence = z.infer<typeof ExtractionConfidenceSchema>
@@ -30,11 +34,10 @@ export const FieldBboxSchema = z.object({
 export type FieldBbox = z.infer<typeof FieldBboxSchema>
 
 /** Insurer SAC / customer-service lines — merged into agent on review when agent is empty. */
-export const InsurerContactsExtractionSchema = z.object({
-  phone: z.string().min(1).optional(),
-  email: z.string().min(1).optional(),
-  label: z.string().min(1).optional(),
-})
+export const InsurerContactsExtractionSchema = z.union([
+  InsurerContactLineSchema,
+  z.array(InsurerContactLineSchema),
+])
 export type InsurerContactsExtraction = z.infer<
   typeof InsurerContactsExtractionSchema
 >

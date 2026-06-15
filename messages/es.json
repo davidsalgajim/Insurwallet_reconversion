@@ -327,7 +327,10 @@
       "phone": "Teléfono",
       "phonePlaceholder": "+57 300 000 0000",
       "email": "Correo",
-      "emailPlaceholder": "agente@aseguradora.com"
+      "emailPlaceholder": "agente@aseguradora.com",
+      "assistanceLinesTitle": "Líneas de asistencia detectadas",
+      "assistanceLinesHint": "Haz clic en un número para usarlo como teléfono principal del agente.",
+      "assistanceLineFallback": "Línea {index}"
     },
     "savedDirectory": {
       "pickAdvisor": "Elegir de mis asesores guardados",

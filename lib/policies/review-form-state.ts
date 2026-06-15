@@ -1,4 +1,5 @@
 import type { PolicyAgentFieldsValues } from '@/components/policies/policy-agent-fields'
+import { insurerContactsToRows } from '@/components/policies/policy-agent-fields'
 import {
   policyDocumentToFormValues,
   type PolicyBasicFieldsValues,
@@ -13,7 +14,11 @@ import {
 } from '@/components/policies/policy-structured-fields'
 import { toDateInputValue } from '@/components/policies/policy-form-styles'
 import type { PolicyDocument } from '@/lib/firebase/policies'
-import { resolveAgentForReview } from '@/lib/policies/extraction-mapping'
+import {
+  resolveAgentForReview,
+  resolveInsurerContactsForReview,
+} from '@/lib/policies/extraction-mapping'
+import type { InsurerContactLine } from '@/lib/schemas/extraction'
 import type { PolicyExtraction } from '@/lib/schemas/extraction'
 import {
   beneficiaryEntryToManualRow,
@@ -103,16 +108,28 @@ export function mergeBasicValuesFromExtraction(
   }
 }
 
+export function mergeInsurerContactsFromExtraction(
+  policy: PolicyDocument,
+  extraction?: PolicyExtraction
+): InsurerContactLine[] {
+  return resolveInsurerContactsForReview(extraction?.fields, policy)
+}
+
 export function mergeAgentFromExtraction(
   policy: PolicyDocument,
   extraction?: PolicyExtraction
 ): PolicyAgentFieldsValues {
   const agent = resolveAgentForReview(extraction?.fields, policy)
+  const insurerContacts = resolveInsurerContactsForReview(
+    extraction?.fields,
+    policy
+  )
 
   return {
     agentName: agent?.name ?? '',
     agentPhone: agent?.phone ?? '',
     agentEmail: agent?.email ?? '',
+    insurerContactRows: insurerContactsToRows(insurerContacts),
   }
 }
 

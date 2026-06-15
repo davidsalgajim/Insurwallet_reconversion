@@ -327,7 +327,10 @@
       "phone": "Telefone",
       "phonePlaceholder": "+55 11 90000 0000",
       "email": "E-mail",
-      "emailPlaceholder": "agente@seguradora.com"
+      "emailPlaceholder": "agente@seguradora.com",
+      "assistanceLinesTitle": "Linhas de assistência detectadas",
+      "assistanceLinesHint": "Clique em um número para usá-lo como telefone principal do agente.",
+      "assistanceLineFallback": "Linha {index}"
     },
     "savedDirectory": {
       "pickAdvisor": "Escolher dos meus assessores salvos",
