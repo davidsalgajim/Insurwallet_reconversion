@@ -5,7 +5,7 @@ import { getApiSession } from '@/lib/firebase/api-auth'
 import { readUserDocument } from '@/lib/firebase/user-doc-server'
 import { getFeatureFlags } from '@/lib/feature-flags'
 import { loadMarianaPolicyContext } from '@/lib/server/mariana-context'
-import { getServerEnv } from '@/lib/server/env-server'
+import { hasAnthropicApiKey } from '@/lib/server/env-server'
 import { toErrorMessage } from '@/lib/server/safe-error'
 import { isCloudAIDeclined, UserConsentsSchema } from '@/lib/schemas/consents'
 import {
@@ -109,8 +109,9 @@ export async function POST(request: Request) {
     const cloudAiDeclined = isCloudAIDeclined(
       consents.success ? consents.data : null
     )
-    const { ANTHROPIC_API_KEY } = getServerEnv()
-    const apiKey = ANTHROPIC_API_KEY?.trim() || undefined
+    const apiKey = hasAnthropicApiKey()
+      ? process.env.ANTHROPIC_API_KEY!.trim()
+      : undefined
 
     const encoder = new TextEncoder()
     const stream = new ReadableStream({

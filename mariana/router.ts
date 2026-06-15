@@ -32,8 +32,9 @@ const TIER0_PATTERNS: ReadonlyArray<{
   {
     intent: 'policy_expiry',
     patterns: [
-      /\b(cu[aá]ndo\s+vence|fecha\s+de\s+vencimiento|vencimiento|renovaci[oó]n|expire|expir)/i,
-      /\b(when\s+does\s+.*\s+expire|renewal\s+date)\b/i,
+      /\b(cu[aá]ndo\s+vence|fecha\s+de\s+vencimiento|vencimiento|vencid[oa]s?|renovaci[oó]n|expire|expir)/i,
+      /\b(when\s+does\s+.*\s+expire|renewal\s+date|expired\s+polic)/i,
+      /\b(qu[eé]\s+pol[ií]zas?\s+vencid)/i,
     ],
   },
   {

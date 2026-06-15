@@ -60,6 +60,9 @@ describe('matchTier0Intent', () => {
     expect(matchTier0Intent('¿Cuándo vence mi póliza de auto?')).toBe(
       'policy_expiry'
     )
+    expect(matchTier0Intent('que polizas vencidas tengo hoy')).toBe(
+      'policy_expiry'
+    )
     expect(matchTier0Intent('¿Cuánto pago de prima al mes?')).toBe(
       'premium_info'
     )
