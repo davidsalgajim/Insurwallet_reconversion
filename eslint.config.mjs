@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Compiled Cloud Functions output (source is functions/src/)
     "functions/lib/**",
+    // pdf.js vendor worker (eslint-disable comments reference plugins we do not use)
+    "public/**/*.mjs",
   ]),
 ]);
 
