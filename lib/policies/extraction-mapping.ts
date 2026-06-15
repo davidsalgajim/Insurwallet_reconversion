@@ -30,8 +30,8 @@ export function sanitizeExtractionFieldsForPersist(
   const withAgentEmail = liftInsurerContactEmailToAgent(fields)
   const sanitized: PolicyExtractionFields = { ...withAgentEmail }
 
-  if (sanitized.agent || fields.agent) {
-    sanitized.agent = sanitizeAgentForDisplay(fields.agent, {
+  if (sanitized.agent || withAgentEmail.agent) {
+    sanitized.agent = sanitizeAgentForDisplay(withAgentEmail.agent, {
       forPersist: true,
     })
     if (!sanitized.agent) {
