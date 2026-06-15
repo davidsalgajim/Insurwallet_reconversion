@@ -374,7 +374,15 @@ def validate_agent_email(value: str | None) -> ValidatedField:
     if not value or not str(value).strip():
         return ValidatedField(None, "low", ("missing",))
     cleaned = value.strip().lower()
-    if cleaned in {"pendiente@example.com", "n/a", "na", "sin correo"}:
+    if cleaned in {
+        "pendiente@example.com",
+        "n/a",
+        "na",
+        "none",
+        "null",
+        "sin correo",
+        "no email",
+    }:
         return ValidatedField(None, "low", ("placeholder",))
     if EMAIL_PATTERN.match(cleaned):
         return ValidatedField(cleaned, "high")
@@ -522,3 +530,198 @@ def validate_extraction(raw: dict[str, object]) -> ValidationResult:
     confidence = {name: field.confidence for name, field in fields.items()}
     confidence.update(agent_confidence)
     return ValidationResult(fields=fields, confidence=confidence)
+
+
+EXTRACTION_STRING_SENTINELS = frozenset(
+    {
+        "none",
+        "n/a",
+        "na",
+        "null",
+        "nil",
+        "sin email",
+        "no email",
+        "no aplica",
+        "ninguno",
+        "ninguna",
+        "not available",
+        "no disponible",
+        "pendiente",
+        "tbd",
+        "por definir",
+        "sin correo",
+        "sin dato",
+    }
+)
+
+
+def _normalize_optional_string(value: object | None) -> str | None:
+    if not isinstance(value, str):
+        return None
+    trimmed = value.strip()
+    if not trimmed or trimmed.lower() in EXTRACTION_STRING_SENTINELS:
+        return None
+    return trimmed
+
+
+def _coerce_non_negative_number(value: object | None) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        number = float(value)
+        return number if number >= 0 else None
+    if isinstance(value, str):
+        normalized = _normalize_optional_string(value)
+        if not normalized:
+            return None
+        try:
+            number = float(normalized.replace(",", ""))
+        except ValueError:
+            return None
+        return number if number >= 0 else None
+    return None
+
+
+def _coerce_pct(value: object | None) -> float | None:
+    amount = _coerce_non_negative_number(value)
+    if amount is None:
+        return None
+    return min(amount, 100.0)
+
+
+def _normalize_benefit_contact_info(value: object | None) -> str | None:
+    trimmed = _normalize_optional_string(value)
+    if not trimmed:
+        return None
+    if "@" in trimmed:
+        lowered = trimmed.lower()
+        if EMAIL_PATTERN.match(lowered):
+            return lowered
+        return None
+    return trimmed
+
+
+def _normalize_benefit_quantity(value: object | None) -> str | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        number = float(value)
+        if number > 0 and number.is_integer():
+            return str(int(number))
+        return None
+    if isinstance(value, str):
+        trimmed = _normalize_optional_string(value)
+        if not trimmed:
+            return None
+        try:
+            number = float(trimmed.replace(",", ""))
+        except ValueError:
+            return trimmed
+        if number > 0 and number.is_integer():
+            return str(int(number))
+        return trimmed
+    return None
+
+
+def _sanitize_beneficiary_entries(
+    entries: object,
+) -> list[dict[str, object]]:
+    if not isinstance(entries, list):
+        return []
+    sanitized: list[dict[str, object]] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        name = _normalize_optional_string(entry.get("name"))
+        pct = _coerce_pct(entry.get("pct"))
+        if not name or pct is None:
+            continue
+        row: dict[str, object] = {"name": name, "pct": pct}
+        notes = _normalize_optional_string(entry.get("notes"))
+        if notes:
+            row["notes"] = notes
+        sanitized.append(row)
+    return sanitized
+
+
+def _sanitize_coverage_entries(entries: object) -> list[dict[str, object]]:
+    if not isinstance(entries, list):
+        return []
+    sanitized: list[dict[str, object]] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        name = _normalize_optional_string(entry.get("name"))
+        amount = _coerce_non_negative_number(entry.get("amount"))
+        if not name or amount is None:
+            continue
+        sanitized.append({"name": name, "amount": amount})
+    return sanitized
+
+
+def _sanitize_deductible_entries(entries: object) -> list[dict[str, object]]:
+    if not isinstance(entries, list):
+        return []
+    sanitized: list[dict[str, object]] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        incident_type = _normalize_optional_string(entry.get("incidentType"))
+        amount = _coerce_non_negative_number(entry.get("amount"))
+        if not incident_type or amount is None:
+            continue
+        is_percentage = entry.get("isPercentage")
+        sanitized.append(
+            {
+                "incidentType": incident_type,
+                "amount": amount,
+                "isPercentage": bool(is_percentage)
+                if isinstance(is_percentage, bool)
+                else False,
+            }
+        )
+    return sanitized
+
+
+def _sanitize_benefit_entries(entries: object) -> list[dict[str, object]]:
+    if not isinstance(entries, list):
+        return []
+    sanitized: list[dict[str, object]] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        name = _normalize_optional_string(entry.get("name"))
+        if not name:
+            continue
+        row: dict[str, object] = {"name": name}
+        description = _normalize_optional_string(entry.get("description"))
+        if description:
+            row["description"] = description
+        category = _normalize_optional_string(entry.get("category"))
+        if category:
+            row["category"] = category
+        contact_info = _normalize_benefit_contact_info(entry.get("contactInfo"))
+        if contact_info:
+            row["contactInfo"] = contact_info
+        quantity = _normalize_benefit_quantity(entry.get("quantity"))
+        if quantity:
+            row["quantity"] = quantity
+        sanitized.append(row)
+    return sanitized
+
+
+def sanitize_structured_extraction_arrays(
+    fields: dict[str, object],
+) -> dict[str, object]:
+    """Strip sentinel strings and invalid rows from structured extraction arrays."""
+    sanitized = dict(fields)
+    array_keys: tuple[tuple[str, object], ...] = (
+        ("beneficiaryEntries", _sanitize_beneficiary_entries),
+        ("coverageEntries", _sanitize_coverage_entries),
+        ("deductibleEntries", _sanitize_deductible_entries),
+        ("benefitEntries", _sanitize_benefit_entries),
+    )
+    for key, sanitizer in array_keys:
+        if key in sanitized:
+            sanitized[key] = sanitizer(sanitized[key])
+    return sanitized

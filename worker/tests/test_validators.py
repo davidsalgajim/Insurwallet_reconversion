@@ -5,6 +5,7 @@ from pipeline.validators import (
     extract_emails_from_text,
     extract_firma_autorizada_name,
     extract_phones_from_text,
+    sanitize_structured_extraction_arrays,
     validate_extraction,
 )
 
@@ -128,3 +129,29 @@ def test_boost_agent_from_text_alfa_like_document():
     assert agent.get("name") == "Andrés Fernando Barón Tautiva"
     assert isinstance(contacts, dict)
     assert contacts.get("email") == "servicioalcliente@segurosalfa.com.co"
+
+
+def test_sanitize_structured_extraction_arrays_strips_sentinels():
+    sanitized = sanitize_structured_extraction_arrays(
+        {
+            "beneficiaryEntries": [
+                {"name": "Carlos", "pct": 100},
+                {"name": "none", "pct": "none"},
+            ],
+            "coverageEntries": [
+                {"name": "RC", "amount": -1},
+                {"name": "Hospitalización", "amount": 1_000_000},
+            ],
+            "benefitEntries": [
+                {"name": "Grúa", "contactInfo": "none", "quantity": "3"},
+            ],
+        }
+    )
+
+    assert sanitized["beneficiaryEntries"] == [{"name": "Carlos", "pct": 100}]
+    assert sanitized["coverageEntries"] == [
+        {"name": "Hospitalización", "amount": 1_000_000}
+    ]
+    assert sanitized["benefitEntries"] == [
+        {"name": "Grúa", "quantity": "3"},
+    ]

@@ -28,7 +28,12 @@ from pipeline.text_extractors import (
     extract_pdf_full,
     run_surya_ocr,
 )
-from pipeline.validators import ValidationResult, boost_agent_from_text, validate_extraction
+from pipeline.validators import (
+    ValidationResult,
+    boost_agent_from_text,
+    sanitize_structured_extraction_arrays,
+    validate_extraction,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +197,7 @@ def extract_document(
 
     claude_fields = _apply_expiration_heuristics(dict(claude_result.fields))
     boosted_fields = boost_agent_from_text(claude_fields, sanitized.text)
+    boosted_fields = sanitize_structured_extraction_arrays(boosted_fields)
     validation = validate_extraction(boosted_fields)
     api_method = _map_method_to_api(backend)
 

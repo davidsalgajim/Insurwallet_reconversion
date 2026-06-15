@@ -238,4 +238,52 @@ describe('extraction mapping', () => {
       email: '',
     })
   })
+
+  it('sanitizes structured extraction arrays before persist', () => {
+    const sanitized = sanitizeExtractionFieldsForPersist({
+      beneficiaryEntries: [
+        { name: 'Carlos', pct: 100 },
+        { name: 'none', pct: 'none' as never },
+      ],
+      coverageEntries: [
+        { name: 'RC', amount: -500 },
+        { name: 'Hospitalización', amount: 1_000_000 },
+      ],
+      deductibleEntries: [
+        { incidentType: 'n/a', amount: 10, isPercentage: false },
+      ],
+      benefitEntries: [
+        {
+          name: 'Asistencia',
+          contactInfo: 'none',
+          quantity: '2',
+        },
+      ],
+    })
+
+    expect(sanitized.beneficiaryEntries).toEqual([{ name: 'Carlos', pct: 100 }])
+    expect(sanitized.coverageEntries).toEqual([
+      { name: 'Hospitalización', amount: 1_000_000 },
+    ])
+    expect(sanitized.deductibleEntries).toEqual([])
+    expect(sanitized.benefitEntries).toEqual([
+      { name: 'Asistencia', quantity: '2' },
+    ])
+  })
+
+  it('mergeExtractionFieldsIntoPolicy survives invalid structured arrays', () => {
+    const merged = mergeExtractionFieldsIntoPolicy(basePolicy, {
+      beneficiaryEntries: [
+        { name: 'Ana', pct: 100 },
+        { name: 'none', pct: -10 },
+      ],
+      coverageEntries: [{ name: 'RC', amount: -1 }],
+      benefitEntries: [{ name: 'Grúa', contactInfo: 'none@invalid' }],
+    })
+
+    expect(() => mergePolicyUpdate(basePolicy, merged)).not.toThrow()
+    expect(merged.beneficiaryEntries).toEqual([{ name: 'Ana', pct: 100 }])
+    expect(merged.coverageEntries).toEqual([])
+    expect(merged.benefitEntries).toEqual([{ name: 'Grúa' }])
+  })
 })

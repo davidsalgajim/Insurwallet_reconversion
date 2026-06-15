@@ -5,6 +5,7 @@ import {
   resolveAgentForStorage,
   sanitizeAgentForDisplay,
 } from '@/lib/policies/agent-placeholders'
+import { sanitizeStructuredExtractionArraysForPersist } from '@/lib/policies/extraction-structured-sanitize'
 import type {
   InsurerContactsExtraction,
   PolicyExtractionFields,
@@ -59,7 +60,7 @@ export function sanitizeExtractionFieldsForPersist(
     }
   }
 
-  return sanitized
+  return sanitizeStructuredExtractionArraysForPersist(sanitized)
 }
 
 function shortInsurerLabel(insurerName?: string): string | undefined {
