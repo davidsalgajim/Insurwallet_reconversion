@@ -144,12 +144,19 @@ describe('worker-client', () => {
     expect(err.devHint).toContain('uvicorn')
   })
 
-  it('classifies fetch timeouts as worker unreachable', () => {
+  it('classifies fetch timeouts as worker request timeout', () => {
     const err = classifyWorkerFailure(
       new DOMException('Timed out', 'TimeoutError')
     )
-    expect(err.code).toBe('WORKER_UNREACHABLE')
-    expect(err.httpStatus).toBe(503)
+    expect(err.code).toBe('WORKER_TIMEOUT')
+    expect(err.httpStatus).toBe(504)
+    expect(err.message).toContain('tardando más de lo usual')
+  })
+
+  it('classifies WORKER_REQUEST_TIMEOUT sentinel as worker timeout', () => {
+    const err = classifyWorkerFailure(new Error('WORKER_REQUEST_TIMEOUT'))
+    expect(err.code).toBe('WORKER_TIMEOUT')
+    expect(err.httpStatus).toBe(504)
   })
 
   it('classifies job processing timeout with actionable message', () => {

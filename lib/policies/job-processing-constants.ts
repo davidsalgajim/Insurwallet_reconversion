@@ -1,5 +1,5 @@
-/** Per-request timeout when Next.js calls the document worker. */
-export const WORKER_REQUEST_TIMEOUT_MS = 90_000
+/** Per-request timeout when Next.js calls the document worker (vision+Claude can take 2–5 min). */
+export const WORKER_REQUEST_TIMEOUT_MS = 300_000
 
 /** Wall-clock cap for a single document job worker invocation. */
 export const JOB_PROCESSING_TIMEOUT_MS = 10 * 60 * 1000

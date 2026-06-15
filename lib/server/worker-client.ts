@@ -182,16 +182,24 @@ export async function invokeWorkerProcessJob(input: {
   const headers = await buildWorkerAuthHeaders(workerUrl)
   const timeoutMs = resolveWorkerRequestTimeoutMs()
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    signal: AbortSignal.timeout(timeoutMs),
-    body: JSON.stringify({
-      job_id: input.jobId,
-      storage_path: input.storagePath,
-      mime_type: input.mimeType ?? 'application/pdf',
-    }),
-  })
+  let response: Response
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      signal: AbortSignal.timeout(timeoutMs),
+      body: JSON.stringify({
+        job_id: input.jobId,
+        storage_path: input.storagePath,
+        mime_type: input.mimeType ?? 'application/pdf',
+      }),
+    })
+  } catch (error) {
+    if (isWorkerRequestTimeout(error)) {
+      throw new Error('WORKER_REQUEST_TIMEOUT')
+    }
+    throw error
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '')
@@ -212,6 +220,7 @@ export async function invokeWorkerProcessJob(input: {
 export type WorkerErrorCode =
   | 'WORKER_NOT_CONFIGURED'
   | 'WORKER_UNREACHABLE'
+  | 'WORKER_TIMEOUT'
   | 'WORKER_AUTH_FAILED'
   | 'WORKER_UNAVAILABLE'
   | 'EXTRACTION_FAILED'
@@ -238,16 +247,28 @@ export class WorkerProcessError extends Error {
   }
 }
 
-function isWorkerConnectionError(message: string): boolean {
+function isWorkerRequestTimeout(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === 'TimeoutError') {
+    return true
+  }
+
+  const message = error instanceof Error ? error.message : String(error)
+  if (message === 'WORKER_REQUEST_TIMEOUT') {
+    return true
+  }
+
   const lower = message.toLowerCase()
-  const errorName =
-    message === 'TimeoutError' || lower.includes('aborterror')
-      ? 'timeout'
-      : lower
+  return (
+    message === 'TimeoutError' ||
+    lower.includes('timed out') ||
+    (lower.includes('aborterror') && lower.includes('timeout'))
+  )
+}
+
+function isWorkerUnreachableError(message: string): boolean {
+  const lower = message.toLowerCase()
 
   return (
-    errorName.includes('timeout') ||
-    lower.includes('timed out') ||
     lower.includes('econnrefused') ||
     lower.includes('enotfound') ||
     lower.includes('etimedout') ||
@@ -353,13 +374,23 @@ export function classifyWorkerFailure(error: unknown): WorkerProcessError {
     })
   }
 
-  if (isWorkerConnectionError(message)) {
+  if (isWorkerRequestTimeout(error) || message === 'WORKER_REQUEST_TIMEOUT') {
+    return new WorkerProcessError({
+      code: 'WORKER_TIMEOUT',
+      message: USER_FACING_JOB_ERRORS.workerRequestTimeout,
+      httpStatus: 504,
+      devHint:
+        'Worker HTTP call exceeded WORKER_REQUEST_TIMEOUT_MS — the worker may still be processing. Increase the timeout in .env.local or retry after npm run dev:worker is running.',
+    })
+  }
+
+  if (isWorkerUnreachableError(message)) {
     return new WorkerProcessError({
       code: 'WORKER_UNREACHABLE',
       message: USER_FACING_JOB_ERRORS.workerUnavailable,
       httpStatus: 503,
       devHint:
-        'Start the document worker: cd worker && uvicorn main:app --reload --port 8080',
+        'Start the document worker: npm run dev:worker (or cd worker && uvicorn main:app --reload --port 8080)',
     })
   }
 
@@ -440,6 +471,7 @@ function shouldRetryWorkerInvocation(error: Error, attempt: number): boolean {
   if (
     classified.code === 'WORKER_NOT_CONFIGURED' ||
     classified.code === 'WORKER_UNREACHABLE' ||
+    classified.code === 'WORKER_TIMEOUT' ||
     classified.code === 'WORKER_AUTH_FAILED' ||
     classified.code === 'PROTECTED_PDF'
   ) {
@@ -495,6 +527,8 @@ export async function invokeWorkerWithRetries(input: {
 export const USER_FACING_JOB_ERRORS = {
   workerUnavailable:
     'No pudimos analizar tu documento. Verifica tu conexión e inténtalo de nuevo.',
+  workerRequestTimeout:
+    'El análisis está tardando más de lo usual. Inténtalo de nuevo en unos minutos o ingresa los datos manualmente.',
   extractionFailed:
     'No pudimos extraer los datos de la póliza. Revisa que el PDF sea legible o ingresa los datos manualmente.',
   claudeUnavailable:
