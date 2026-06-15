@@ -99,4 +99,10 @@ def verify_worker_authorization(
     if _verify_shared_secret(token):
         return
 
+    if not _oidc_audience() and _internal_secret():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Bearer token",
+        )
+
     _verify_oidc_token(token)
