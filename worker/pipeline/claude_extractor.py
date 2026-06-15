@@ -244,7 +244,7 @@ Rules:
 9. policyType must be one of: {", ".join(_POLICY_TYPE_ENUM)}.
 10. agent (tiered):
    a) Primary — named agent/asesor/corredor/intermediario with phone/email.
-   b) Secondary — if no dedicated agent, put SAC / servicio al cliente / línea de atención phone and email in insurerContacts (label e.g. "Servicio al cliente - {insurer short name}"). Do NOT put SAC email in agent.name.
+   b) Secondary — if no dedicated agent, put SAC / servicio al cliente / línea de atención phone and email in insurerContacts (label e.g. "Servicio al cliente - {{insurer short name}}"). Do NOT put SAC email in agent.name.
    c) Tertiary — firma autorizada person name in agent.name only when clearly a natural person near a signature block; never a company name.
 11. insurerContacts: SAC / customer-service lines when no commercial agent is listed. Phone/email only; label is a short human label, not an email.
 12. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
