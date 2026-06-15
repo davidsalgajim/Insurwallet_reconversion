@@ -9,6 +9,7 @@ import pytest
 
 from pipeline.claude_extractor import (
     ClaudeExtractionError,
+    _normalize_agent,
     extract_policy_fields,
 )
 
@@ -83,6 +84,21 @@ def test_extract_policy_fields_requires_api_key_without_client(monkeypatch: pyte
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     with pytest.raises(ClaudeExtractionError, match="ANTHROPIC_API_KEY"):
         extract_policy_fields("some text", api_key="")
+
+
+def test_normalize_agent_drops_sentinel_email_values() -> None:
+    normalized = _normalize_agent(
+        {
+            "name": "ASA AGENCIA DE SEGUROS LTDA.",
+            "phone": "+5715320610",
+            "email": "none",
+        }
+    )
+
+    assert normalized == {
+        "name": "ASA AGENCIA DE SEGUROS LTDA.",
+        "phone": "+5715320610",
+    }
 
 
 def test_extract_policy_fields_rejects_empty_text():

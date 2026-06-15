@@ -168,6 +168,39 @@ describe('worker-client', () => {
     expect(err.devHint).toContain('INTERNAL_API_SECRET')
   })
 
+  it('classifies worker 422 Claude extraction errors', () => {
+    const err = classifyWorkerFailure(
+      new Error(
+        'Worker responded with 422: {"detail":"ANTHROPIC_API_KEY is not configured"}'
+      )
+    )
+    expect(err.code).toBe('CLAUDE_UNAVAILABLE')
+    expect(err.httpStatus).toBe(422)
+    expect(err.message).toContain('IA')
+  })
+
+  it('classifies persist validation failures', async () => {
+    const { classifyJobPersistFailure } =
+      await import('@/lib/server/worker-client')
+    const { z } = await import('zod')
+    vi.stubEnv('NODE_ENV', 'development')
+
+    const err = classifyJobPersistFailure(
+      new z.ZodError([
+        {
+          code: 'invalid_string',
+          validation: 'email',
+          path: ['agent', 'email'],
+          message: 'Invalid email',
+        },
+      ])
+    )
+
+    expect(err.code).toBe('PERSIST_FAILED')
+    expect(err.httpStatus).toBe(422)
+    expect(err.devHint).toContain('agent.email')
+  })
+
   it('fails fast when WORKER_URL is unset', async () => {
     const previous = process.env.WORKER_URL
     delete process.env.WORKER_URL

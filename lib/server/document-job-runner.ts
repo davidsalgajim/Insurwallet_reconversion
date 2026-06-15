@@ -21,6 +21,7 @@ import {
 import type { ProcessingState } from '@/lib/schemas/document'
 import type { Job } from '@/lib/schemas/job'
 import {
+  classifyJobPersistFailure,
   classifyWorkerFailure,
   invokeWorkerWithRetries,
   parseWorkerExtraction,
@@ -323,15 +324,37 @@ export async function processDocumentJob(
       })
     })
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : USER_FACING_JOB_ERRORS.generic
+    const message = error instanceof Error ? error.message : String(error)
 
-    if (message !== USER_FACING_JOB_ERRORS.policyNotFound) {
+    if (message === USER_FACING_JOB_ERRORS.policyNotFound) {
+      throw error
+    }
+
+    const persistError = classifyJobPersistFailure(error)
+
+    console.error('[document-job-runner] persist failed', {
+      jobId,
+      policyId: job.policyId,
+      code: persistError.code,
+      ...(process.env.NODE_ENV === 'development'
+        ? {
+            message: error instanceof Error ? error.message : String(error),
+            devHint: persistError.devHint,
+          }
+        : {}),
+    })
+
+    const storedMessage =
+      process.env.NODE_ENV === 'development' && persistError.devHint
+        ? `${persistError.message}\n\n${persistError.devHint}`
+        : persistError.message
+
+    if (persistError.message !== USER_FACING_JOB_ERRORS.policyNotFound) {
       await updateJobAndDocumentState(job, 'failed', {
         attempts: attemptNumber,
-        error: USER_FACING_JOB_ERRORS.generic,
+        error: storedMessage,
       })
-      throw new Error(USER_FACING_JOB_ERRORS.generic)
+      throw persistError
     }
 
     throw error

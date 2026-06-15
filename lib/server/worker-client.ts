@@ -195,6 +195,11 @@ export async function invokeWorkerProcessJob(input: {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '')
+    console.error('[worker-client] worker HTTP error', {
+      status: response.status,
+      jobId: input.jobId,
+      body: detail.slice(0, 2_000),
+    })
     throw new Error(
       `Worker responded with ${response.status}${detail ? `: ${detail}` : ''}`
     )
@@ -210,7 +215,9 @@ export type WorkerErrorCode =
   | 'WORKER_AUTH_FAILED'
   | 'WORKER_UNAVAILABLE'
   | 'EXTRACTION_FAILED'
+  | 'CLAUDE_UNAVAILABLE'
   | 'PROTECTED_PDF'
+  | 'PERSIST_FAILED'
 
 export class WorkerProcessError extends Error {
   readonly code: WorkerErrorCode
@@ -263,14 +270,62 @@ function isWorkerAuthError(message: string): boolean {
   )
 }
 
+function extractWorkerErrorDetail(message: string): string {
+  const prefix = message.match(/^Worker responded with \d+: ([\s\S]*)$/)
+  if (!prefix?.[1]) {
+    return message
+  }
+
+  const raw = prefix[1].trim()
+  try {
+    const json = JSON.parse(raw) as { detail?: unknown; message?: unknown }
+    const detail = json.detail ?? json.message
+    if (typeof detail === 'string') {
+      return detail
+    }
+    if (detail != null) {
+      return JSON.stringify(detail)
+    }
+  } catch {
+    // keep raw body
+  }
+
+  return raw
+}
+
+function isClaudeWorkerDetail(detail: string): boolean {
+  const lower = detail.toLowerCase()
+  return (
+    lower.includes('anthropic_api_key') ||
+    lower.includes('claude') ||
+    lower.includes('anthropic') ||
+    lower.includes('tool_use') ||
+    lower.includes('rate limit') ||
+    lower.includes('overloaded')
+  )
+}
+
+function isTransientWorkerDetail(detail: string): boolean {
+  const lower = detail.toLowerCase()
+  return (
+    lower.includes('rate limit') ||
+    lower.includes('overloaded') ||
+    lower.includes('timeout') ||
+    lower.includes('temporarily unavailable') ||
+    lower.includes('503') ||
+    lower.includes('529')
+  )
+}
+
 export function classifyWorkerFailure(error: unknown): WorkerProcessError {
   if (error instanceof WorkerProcessError) {
     return error
   }
 
   const message = error instanceof Error ? error.message : String(error)
+  const workerDetail = extractWorkerErrorDetail(message)
 
-  if (isProtectedPdfJobError(message)) {
+  if (isProtectedPdfJobError(message) || isProtectedPdfJobError(workerDetail)) {
     return new WorkerProcessError({
       code: 'PROTECTED_PDF',
       message: USER_FACING_JOB_ERRORS.protectedPdf,
@@ -320,7 +375,8 @@ export function classifyWorkerFailure(error: unknown): WorkerProcessError {
 
   if (
     message.includes('503') ||
-    message.includes('OIDC audience is not configured')
+    message.includes('OIDC audience is not configured') ||
+    workerDetail.includes('OIDC audience is not configured')
   ) {
     return new WorkerProcessError({
       code: 'WORKER_UNAVAILABLE',
@@ -329,10 +385,44 @@ export function classifyWorkerFailure(error: unknown): WorkerProcessError {
     })
   }
 
+  if (
+    message.includes('422') ||
+    workerDetail.toLowerCase().includes('cannot extract')
+  ) {
+    if (isClaudeWorkerDetail(workerDetail)) {
+      return new WorkerProcessError({
+        code: 'CLAUDE_UNAVAILABLE',
+        message: USER_FACING_JOB_ERRORS.claudeUnavailable,
+        httpStatus: 422,
+        devHint:
+          process.env.NODE_ENV === 'development' ? workerDetail : undefined,
+      })
+    }
+
+    return new WorkerProcessError({
+      code: 'EXTRACTION_FAILED',
+      message: USER_FACING_JOB_ERRORS.extractionFailed,
+      httpStatus: 422,
+      devHint:
+        process.env.NODE_ENV === 'development' ? workerDetail : undefined,
+    })
+  }
+
+  if (isClaudeWorkerDetail(workerDetail)) {
+    return new WorkerProcessError({
+      code: 'CLAUDE_UNAVAILABLE',
+      message: USER_FACING_JOB_ERRORS.claudeUnavailable,
+      httpStatus: 500,
+      devHint:
+        process.env.NODE_ENV === 'development' ? workerDetail : undefined,
+    })
+  }
+
   return new WorkerProcessError({
     code: 'EXTRACTION_FAILED',
     message: USER_FACING_JOB_ERRORS.extractionFailed,
     httpStatus: 500,
+    devHint: process.env.NODE_ENV === 'development' ? workerDetail : undefined,
   })
 }
 
@@ -347,10 +437,18 @@ function shouldRetryWorkerInvocation(error: Error, attempt: number): boolean {
   }
 
   const classified = classifyWorkerFailure(error)
+  if (
+    classified.code === 'WORKER_NOT_CONFIGURED' ||
+    classified.code === 'WORKER_UNREACHABLE' ||
+    classified.code === 'WORKER_AUTH_FAILED' ||
+    classified.code === 'PROTECTED_PDF'
+  ) {
+    return false
+  }
+
+  const detail = extractWorkerErrorDetail(error.message)
   return (
-    classified.code !== 'WORKER_NOT_CONFIGURED' &&
-    classified.code !== 'WORKER_UNREACHABLE' &&
-    classified.code !== 'WORKER_AUTH_FAILED'
+    isTransientWorkerDetail(error.message) || isTransientWorkerDetail(detail)
   )
 }
 
@@ -399,13 +497,49 @@ export const USER_FACING_JOB_ERRORS = {
     'No pudimos analizar tu documento. Verifica tu conexión e inténtalo de nuevo.',
   extractionFailed:
     'No pudimos extraer los datos de la póliza. Revisa que el PDF sea legible o ingresa los datos manualmente.',
+  claudeUnavailable:
+    'El análisis con IA no está disponible en este momento. Inténtalo más tarde o ingresa los datos manualmente.',
   protectedPdf:
     'Este PDF está protegido con contraseña. Sube una copia sin protección.',
   policyNotFound: 'No encontramos la póliza asociada a este documento.',
   jobTimeout:
     'El procesamiento tardó demasiado. Asegúrate de que el worker esté en ejecución (npm run dev:worker) e inténtalo de nuevo.',
+  persistFailed:
+    'Extrajimos datos del documento pero no pudimos guardarlos. Inténtalo de nuevo o ingresa los datos manualmente.',
   generic: 'Ocurrió un error al procesar el documento. Inténtalo más tarde.',
 } as const
+
+export function classifyJobPersistFailure(error: unknown): WorkerProcessError {
+  if (error instanceof WorkerProcessError) {
+    return error
+  }
+
+  if (error instanceof z.ZodError) {
+    const fields = error.issues
+      .map((issue) => issue.path.join('.'))
+      .filter(Boolean)
+      .join(', ')
+
+    return new WorkerProcessError({
+      code: 'PERSIST_FAILED',
+      message: USER_FACING_JOB_ERRORS.persistFailed,
+      httpStatus: 422,
+      devHint:
+        process.env.NODE_ENV === 'development' && fields
+          ? `Validation failed: ${fields}`
+          : undefined,
+    })
+  }
+
+  const message = error instanceof Error ? error.message : String(error)
+
+  return new WorkerProcessError({
+    code: 'PERSIST_FAILED',
+    message: USER_FACING_JOB_ERRORS.persistFailed,
+    httpStatus: 500,
+    devHint: process.env.NODE_ENV === 'development' ? message : undefined,
+  })
+}
 
 export async function withJobProcessingTimeout<T>(
   operation: Promise<T>,

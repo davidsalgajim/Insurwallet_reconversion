@@ -376,6 +376,35 @@ def _normalize_insurer_contacts(raw: object) -> dict[str, str] | None:
     return contacts or None
 
 
+_AGENT_EMAIL_SENTINELS = frozenset(
+    {
+        "none",
+        "n/a",
+        "na",
+        "null",
+        "nil",
+        "sin email",
+        "no email",
+        "no aplica",
+        "ninguno",
+        "ninguna",
+        "not available",
+        "no disponible",
+    }
+)
+
+
+def _normalize_agent_email(raw: object) -> str | None:
+    if not isinstance(raw, str):
+        return None
+
+    email = raw.strip().lower()
+    if not email or email in _AGENT_EMAIL_SENTINELS or "@" not in email:
+        return None
+
+    return email
+
+
 def _normalize_agent(raw: object) -> dict[str, str] | None:
     if not isinstance(raw, dict):
         return None
@@ -386,7 +415,7 @@ def _normalize_agent(raw: object) -> dict[str, str] | None:
     phone = normalize_phone(
         raw.get("phone") if isinstance(raw.get("phone"), str) else None
     )
-    email = str(raw.get("email", "")).strip().lower()
+    email = _normalize_agent_email(raw.get("email"))
 
     agent: dict[str, str] = {}
     if name:

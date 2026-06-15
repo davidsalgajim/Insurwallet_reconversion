@@ -1,4 +1,38 @@
+import { z } from 'zod'
+
 import type { PolicyAgent } from '@/lib/schemas/policy'
+
+const EXTRACTED_AGENT_EMAIL_SENTINELS = new Set([
+  'none',
+  'n/a',
+  'na',
+  'null',
+  'nil',
+  'sin email',
+  'no email',
+  'no aplica',
+  'ninguno',
+  'ninguna',
+  'not available',
+  'no disponible',
+])
+
+/** Claude/OCR sometimes emit sentinel strings instead of omitting agent email. */
+export function normalizeExtractedAgentEmail(
+  email: string | undefined | null
+): string {
+  const trimmed = email?.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  const lowered = trimmed.toLowerCase()
+  if (EXTRACTED_AGENT_EMAIL_SENTINELS.has(lowered)) {
+    return ''
+  }
+
+  return z.string().email().safeParse(trimmed).success ? trimmed : ''
+}
 
 /** Legacy persisted defaults — UI-only; never treat as extracted data. */
 export const AGENT_PLACEHOLDER_NAME = 'Por definir'
@@ -55,9 +89,10 @@ export function sanitizeAgentForDisplay(
   const phone = isAgentPlaceholderField('phone', agent.phone)
     ? undefined
     : agent.phone?.trim()
-  const email = isAgentPlaceholderField('email', agent.email)
+  const normalizedEmail = normalizeExtractedAgentEmail(agent.email)
+  const email = isAgentPlaceholderField('email', normalizedEmail)
     ? undefined
-    : agent.email?.trim()
+    : normalizedEmail || undefined
 
   if (!name && !phone && !email) {
     return undefined
@@ -79,9 +114,10 @@ export function resolveAgentForStorage(
   const phone = isAgentPlaceholderField('phone', agent?.phone)
     ? ''
     : (agent?.phone?.trim() ?? '')
-  const email = isAgentPlaceholderField('email', agent?.email)
+  const normalizedEmail = normalizeExtractedAgentEmail(agent?.email)
+  const email = isAgentPlaceholderField('email', normalizedEmail)
     ? ''
-    : (agent?.email?.trim() ?? '')
+    : normalizedEmail
 
   return { name, phone, email }
 }

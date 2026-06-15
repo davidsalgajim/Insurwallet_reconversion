@@ -5,6 +5,7 @@ import {
   AGENT_PLACEHOLDER_NAME,
   AGENT_PLACEHOLDER_PHONE,
   isPlaceholderAgent,
+  normalizeExtractedAgentEmail,
   resolveAgentForStorage,
   sanitizeAgentForDisplay,
 } from '@/lib/policies/agent-placeholders'
@@ -52,5 +53,30 @@ describe('agent placeholders', () => {
         email: AGENT_PLACEHOLDER_EMAIL,
       })
     ).toEqual({ name: '', phone: '', email: '' })
+  })
+
+  it('drops Claude sentinel agent emails like "none"', () => {
+    expect(normalizeExtractedAgentEmail('none')).toBe('')
+    expect(
+      resolveAgentForStorage({
+        name: 'ASA AGENCIA DE SEGUROS LTDA.',
+        phone: '+5715320610',
+        email: 'none',
+      })
+    ).toEqual({
+      name: 'ASA AGENCIA DE SEGUROS LTDA.',
+      phone: '+5715320610',
+      email: '',
+    })
+    expect(
+      sanitizeAgentForDisplay({
+        name: 'ASA AGENCIA DE SEGUROS LTDA.',
+        phone: '+5715320610',
+        email: 'none',
+      })
+    ).toEqual({
+      name: 'ASA AGENCIA DE SEGUROS LTDA.',
+      phone: '+5715320610',
+    })
   })
 })
