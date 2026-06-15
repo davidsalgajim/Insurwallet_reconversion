@@ -440,6 +440,9 @@
       "processing": {
         "title": "Status do processamento",
         "pendingNote": "Seu documento está na fila. Avisaremos quando a extração estiver pronta para revisão.",
+        "slowNote": "Está demorando mais que o normal. Para PDFs digitalizados, confirme que o worker está ativo (npm run dev:worker) e que ANTHROPIC_API_KEY está configurada.",
+        "retry": "Tentar processar novamente",
+        "retrying": "Tentando novamente…",
         "ready": "Extração pronta — você pode revisar e confirmar os dados.",
         "failed": "Não foi possível processar o documento. Tente enviar novamente.",
         "failedProtectedPdf": "Este PDF está protegido por senha. Envie uma cópia sem proteção.",

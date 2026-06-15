@@ -1,9 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { DocumentProcessingStatus } from '@/components/policies/document-processing-status'
+import {
+  isJobProcessingSlow,
+  isJobProcessingStale,
+} from '@/lib/policies/job-processing-constants'
 import type { ProcessingState } from '@/lib/schemas/document'
 import {
   subscribeToDocumentJob,
@@ -37,6 +41,28 @@ function resolveProcessingState(
   return 'pending'
 }
 
+async function postProcessJob(
+  jobId: string,
+  force: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  const url = force
+    ? `/api/jobs/${jobId}/process?force=true`
+    : `/api/jobs/${jobId}/process`
+
+  try {
+    const response = await fetch(url, { method: 'POST' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string
+      } | null
+      return { ok: false, error: payload?.error }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false }
+  }
+}
+
 export function DocumentProcessingListener({
   ownerUid,
   policyId,
@@ -54,7 +80,10 @@ export function DocumentProcessingListener({
     error: null,
   })
   const [failureMessage, setFailureMessage] = useState<string | null>(null)
+  const [isRetrying, setIsRetrying] = useState(false)
+  const [clock, setClock] = useState(() => Date.now())
   const processRequestedRef = useRef(false)
+  const staleRetryRequestedRef = useRef(false)
   const notifiedTerminalStateRef = useRef<'ready' | 'failed' | null>(null)
   const onReadyRef = useRef(onReady)
   const onFailedRef = useRef(onFailed)
@@ -80,21 +109,72 @@ export function DocumentProcessingListener({
 
   const processingState = resolveProcessingState(snapshot)
 
+  const isSlow =
+    snapshot.job !== null &&
+    isJobProcessingSlow(
+      snapshot.job.processingState,
+      snapshot.job.updatedAt,
+      new Date(clock)
+    )
+
   useEffect(() => {
-    if (!snapshot.job || processRequestedRef.current) {
+    if (
+      !snapshot.job ||
+      snapshot.job.processingState === 'ready' ||
+      snapshot.job.processingState === 'failed'
+    ) {
       return
     }
 
-    if (snapshot.job.processingState !== 'pending') {
+    const intervalId = window.setInterval(() => setClock(Date.now()), 15_000)
+    return () => window.clearInterval(intervalId)
+  }, [snapshot.job?.id, snapshot.job?.processingState])
+
+  useEffect(() => {
+    const activeJob = snapshot.job
+    if (!activeJob || processRequestedRef.current) {
+      return
+    }
+
+    if (activeJob.processingState !== 'pending') {
       return
     }
 
     processRequestedRef.current = true
 
-    void fetch(`/api/jobs/${snapshot.job.id}/process`, {
-      method: 'POST',
-    }).catch(() => {
-      processRequestedRef.current = false
+    void postProcessJob(activeJob.id, false).then((result) => {
+      if (!result.ok) {
+        processRequestedRef.current = false
+        if (result.error) {
+          setFailureMessage(result.error)
+        }
+      }
+    })
+  }, [snapshot.job])
+
+  useEffect(() => {
+    const activeJob = snapshot.job
+    if (!activeJob) {
+      return
+    }
+
+    if (
+      !isJobProcessingStale(activeJob.processingState, activeJob.updatedAt) ||
+      staleRetryRequestedRef.current
+    ) {
+      return
+    }
+
+    staleRetryRequestedRef.current = true
+    processRequestedRef.current = true
+
+    void postProcessJob(activeJob.id, true).then((result) => {
+      if (!result.ok) {
+        processRequestedRef.current = false
+        if (result.error) {
+          setFailureMessage(result.error)
+        }
+      }
     })
   }, [snapshot.job])
 
@@ -131,12 +211,48 @@ export function DocumentProcessingListener({
     }
   }, [jobIdValue, processingStateValue, jobError])
 
+  const handleRetry = useCallback(async () => {
+    const activeJobId = snapshot.job?.id
+    if (!activeJobId) {
+      return
+    }
+
+    processRequestedRef.current = true
+    staleRetryRequestedRef.current = true
+    setIsRetrying(true)
+
+    const result = await postProcessJob(activeJobId, true)
+    if (!result.ok) {
+      processRequestedRef.current = false
+      if (result.error) {
+        setFailureMessage(result.error)
+      }
+    }
+
+    setIsRetrying(false)
+  }, [snapshot.job?.id])
+
+  const canRetry =
+    processingState === 'failed' ||
+    (processingState !== 'ready' &&
+      snapshot.job !== null &&
+      isJobProcessingStale(
+        snapshot.job.processingState,
+        snapshot.job.updatedAt
+      ))
+
   return (
     <div className={className}>
       <DocumentProcessingStatus
         state={processingState}
         fileName={fileName}
         failureMessage={failureMessage}
+        isSlow={isSlow}
+        canRetry={canRetry}
+        isRetrying={isRetrying}
+        onRetry={() => {
+          void handleRetry()
+        }}
       />
 
       {snapshot.error ? (

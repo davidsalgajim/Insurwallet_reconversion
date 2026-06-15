@@ -144,6 +144,21 @@ describe('worker-client', () => {
     expect(err.devHint).toContain('uvicorn')
   })
 
+  it('classifies fetch timeouts as worker unreachable', () => {
+    const err = classifyWorkerFailure(
+      new DOMException('Timed out', 'TimeoutError')
+    )
+    expect(err.code).toBe('WORKER_UNREACHABLE')
+    expect(err.httpStatus).toBe(503)
+  })
+
+  it('classifies job processing timeout with actionable message', () => {
+    const err = classifyWorkerFailure(new Error('JOB_PROCESSING_TIMEOUT'))
+    expect(err.code).toBe('WORKER_UNAVAILABLE')
+    expect(err.httpStatus).toBe(504)
+    expect(err.message).toContain('worker')
+  })
+
   it('classifies worker 401 as auth failure', () => {
     const err = classifyWorkerFailure(
       new Error('Worker responded with 401: Invalid Bearer token')

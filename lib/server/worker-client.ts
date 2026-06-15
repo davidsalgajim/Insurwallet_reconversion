@@ -1,5 +1,9 @@
 import { z } from 'zod'
 
+import {
+  JOB_PROCESSING_TIMEOUT_MS,
+  WORKER_REQUEST_TIMEOUT_MS,
+} from '@/lib/policies/job-processing-constants'
 import { isProtectedPdfJobError } from '@/lib/policies/upload-errors'
 import {
   PolicyExtractionSchema,
@@ -149,6 +153,20 @@ async function buildWorkerAuthHeaders(
   }
 }
 
+function resolveWorkerRequestTimeoutMs(): number {
+  const raw = process.env.WORKER_REQUEST_TIMEOUT_MS?.trim()
+  if (!raw) {
+    return WORKER_REQUEST_TIMEOUT_MS
+  }
+
+  const parsed = Number.parseInt(raw, 10)
+  if (!Number.isFinite(parsed) || parsed < 5_000) {
+    return WORKER_REQUEST_TIMEOUT_MS
+  }
+
+  return parsed
+}
+
 export async function invokeWorkerProcessJob(input: {
   jobId: string
   storagePath: string
@@ -162,10 +180,12 @@ export async function invokeWorkerProcessJob(input: {
 
   const endpoint = `${workerUrl.replace(/\/$/, '')}/jobs/process`
   const headers = await buildWorkerAuthHeaders(workerUrl)
+  const timeoutMs = resolveWorkerRequestTimeoutMs()
 
   const response = await fetch(endpoint, {
     method: 'POST',
     headers,
+    signal: AbortSignal.timeout(timeoutMs),
     body: JSON.stringify({
       job_id: input.jobId,
       storage_path: input.storagePath,
@@ -213,7 +233,14 @@ export class WorkerProcessError extends Error {
 
 function isWorkerConnectionError(message: string): boolean {
   const lower = message.toLowerCase()
+  const errorName =
+    message === 'TimeoutError' || lower.includes('aborterror')
+      ? 'timeout'
+      : lower
+
   return (
+    errorName.includes('timeout') ||
+    lower.includes('timed out') ||
     lower.includes('econnrefused') ||
     lower.includes('enotfound') ||
     lower.includes('etimedout') ||
@@ -258,6 +285,16 @@ export function classifyWorkerFailure(error: unknown): WorkerProcessError {
       httpStatus: 503,
       devHint:
         'Set WORKER_URL=http://localhost:8080 in .env.local (see .env.example).',
+    })
+  }
+
+  if (message === 'JOB_PROCESSING_TIMEOUT') {
+    return new WorkerProcessError({
+      code: 'WORKER_UNAVAILABLE',
+      message: USER_FACING_JOB_ERRORS.jobTimeout,
+      httpStatus: 504,
+      devHint:
+        'Start the document worker: npm run dev:worker — scanned PDFs also need ANTHROPIC_API_KEY in .env.local.',
     })
   }
 
@@ -365,5 +402,29 @@ export const USER_FACING_JOB_ERRORS = {
   protectedPdf:
     'Este PDF está protegido con contraseña. Sube una copia sin protección.',
   policyNotFound: 'No encontramos la póliza asociada a este documento.',
+  jobTimeout:
+    'El procesamiento tardó demasiado. Asegúrate de que el worker esté en ejecución (npm run dev:worker) e inténtalo de nuevo.',
   generic: 'Ocurrió un error al procesar el documento. Inténtalo más tarde.',
 } as const
+
+export async function withJobProcessingTimeout<T>(
+  operation: Promise<T>,
+  timeoutMs: number = JOB_PROCESSING_TIMEOUT_MS
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('JOB_PROCESSING_TIMEOUT'))
+        }, timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+  }
+}

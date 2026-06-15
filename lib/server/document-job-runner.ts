@@ -26,6 +26,7 @@ import {
   parseWorkerExtraction,
   parseWorkerPipelineSteps,
   USER_FACING_JOB_ERRORS,
+  withJobProcessingTimeout,
 } from '@/lib/server/worker-client'
 import { notifyDocumentJobReady } from '@/lib/server/push-notifications'
 import { persistExtractedDocumentText } from '@/lib/server/document-text-storage'
@@ -203,7 +204,7 @@ export async function processDocumentJob(
     }
   }
 
-  if (job.processingState === 'failed') {
+  if (job.processingState === 'failed' && !options?.force) {
     throw new Error(job.error ?? USER_FACING_JOB_ERRORS.generic)
   }
 
@@ -221,10 +222,12 @@ export async function processDocumentJob(
   > = null
 
   try {
-    const workerResult = await invokeWorkerWithRetries({
-      jobId,
-      storagePath: job.storagePath,
-    })
+    const workerResult = await withJobProcessingTimeout(
+      invokeWorkerWithRetries({
+        jobId,
+        storagePath: job.storagePath,
+      })
+    )
 
     extraction = parseWorkerExtraction(workerResult.extraction!)
     pipelineMethod = extraction.method

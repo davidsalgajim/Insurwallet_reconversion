@@ -3,6 +3,7 @@
 import { CheckCircle2, Circle, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import { Button } from '@/components/ui/button'
 import type { ProcessingState } from '@/lib/schemas/document'
 import { cn } from '@/lib/utils/cn'
 
@@ -10,6 +11,10 @@ type DocumentProcessingStatusProps = {
   state: ProcessingState
   fileName: string
   failureMessage?: string | null
+  isSlow?: boolean
+  canRetry?: boolean
+  isRetrying?: boolean
+  onRetry?: () => void
   className?: string
 }
 
@@ -30,6 +35,10 @@ export function DocumentProcessingStatus({
   state,
   fileName,
   failureMessage,
+  isSlow = false,
+  canRetry = false,
+  isRetrying = false,
+  onRetry,
   className,
 }: DocumentProcessingStatusProps) {
   const t = useTranslations('policies.upload.processing')
@@ -102,17 +111,45 @@ export function DocumentProcessingStatus({
       </ol>
 
       {isFailed ? (
-        <p className="whitespace-pre-line text-sm text-[var(--primitive-danger)] motion-safe:animate-fade-up motion-reduce:animate-none">
-          {failureMessage ?? t('failed')}
-        </p>
+        <div className="space-y-3">
+          <p className="whitespace-pre-line text-sm text-[var(--primitive-danger)] motion-safe:animate-fade-up motion-reduce:animate-none">
+            {failureMessage ?? t('failed')}
+          </p>
+          {canRetry && onRetry ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-[var(--radius-pill)]"
+              disabled={isRetrying}
+              onClick={onRetry}
+            >
+              {isRetrying ? t('retrying') : t('retry')}
+            </Button>
+          ) : null}
+        </div>
       ) : state === 'ready' ? (
         <p className="text-sm text-[var(--primitive-success)] motion-safe:animate-fade-up motion-reduce:animate-none">
           {t('ready')}
         </p>
       ) : (
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          {t('pendingNote')}
-        </p>
+        <div className="space-y-3">
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {isSlow ? t('slowNote') : t('pendingNote')}
+          </p>
+          {canRetry && onRetry ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-[var(--radius-pill)]"
+              disabled={isRetrying}
+              onClick={onRetry}
+            >
+              {isRetrying ? t('retrying') : t('retry')}
+            </Button>
+          ) : null}
+        </div>
       )}
     </div>
   )

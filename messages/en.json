@@ -440,6 +440,9 @@
       "processing": {
         "title": "Processing status",
         "pendingNote": "Your document is queued. We will notify you when extraction is ready to review.",
+        "slowNote": "This is taking longer than usual. For scanned PDFs, ensure the worker is running (npm run dev:worker) and ANTHROPIC_API_KEY is set.",
+        "retry": "Retry processing",
+        "retrying": "Retrying…",
         "ready": "Extraction ready — you can review and confirm the data.",
         "failed": "We could not process the document. Try uploading again.",
         "failedProtectedPdf": "This PDF is password-protected. Upload an unprotected copy.",
