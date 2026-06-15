@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  promoteBenefitRowsToCoverages,
   sanitizeBeneficiaryEntriesForPersist,
   sanitizeBenefitEntriesForPersist,
   sanitizeCoverageEntriesForPersist,
   sanitizeDeductibleEntriesForPersist,
+  sanitizeStructuredExtractionArraysForPersist,
 } from '@/lib/policies/extraction-structured-sanitize'
 
 describe('extraction structured sanitize', () => {
@@ -94,15 +96,87 @@ describe('extraction structured sanitize', () => {
         { name: 'WhatsApp asistencia', contactInfo: '+5491127039665' },
         { name: 'América Latina', contactInfo: '+5451155551500' },
         { name: 'Asistencia — Europa', contactInfo: '+34917883333' },
-        { name: 'Traslado médico', description: 'USD 50,000' },
+        { name: 'Traslado médico', description: 'Incluido' },
         { name: 'Grúa', contactInfo: '+573001112233' },
       ] as never,
       insurerContacts
     )
 
     expect(rows).toEqual([
-      { name: 'Traslado médico', description: 'USD 50,000' },
+      { name: 'Traslado médico', description: 'Incluido' },
       { name: 'Grúa', contactInfo: '+573001112233' },
+    ])
+  })
+
+  it('promotes EVOUCHER RESUMEN DE PRESTACIONES rows to coverageEntries', () => {
+    const routed = promoteBenefitRowsToCoverages({
+      benefitEntries: [
+        {
+          name: 'Anticipo de fondos para fianzas',
+          description: 'USD 8.000',
+        },
+        {
+          name: 'Indemnización por demora en entrega equipaje',
+          description: 'USD 50',
+        },
+        {
+          name: 'Indemnización por extravío equipaje',
+          description: 'USD 1.000',
+        },
+        {
+          name: 'Seguro accidentes personales muerte',
+          description: 'USD 50.000',
+        },
+        {
+          name: 'Seguro accidentes personales invalidez',
+          description: 'USD 40.000',
+        },
+      ],
+    })
+
+    expect(routed.benefitEntries).toEqual([])
+    expect(routed.coverageEntries).toEqual([
+      { name: 'Anticipo de fondos para fianzas', amount: 8000 },
+      { name: 'Indemnización por demora en entrega equipaje', amount: 50 },
+      { name: 'Indemnización por extravío equipaje', amount: 1000 },
+      { name: 'Seguro accidentes personales muerte', amount: 50000 },
+      { name: 'Seguro accidentes personales invalidez', amount: 40000 },
+    ])
+  })
+
+  it('keeps grúa assistance in benefitEntries while promoting clause rows', () => {
+    const routed = promoteBenefitRowsToCoverages({
+      benefitEntries: [
+        { name: 'Grúa', quantity: '3' },
+        {
+          name: 'Traslado médico',
+          description: 'USD 50,000',
+        },
+      ],
+    })
+
+    expect(routed.benefitEntries).toEqual([{ name: 'Grúa', quantity: '3' }])
+    expect(routed.coverageEntries).toEqual([
+      { name: 'Traslado médico', amount: 50000 },
+    ])
+  })
+
+  it('sanitizeStructuredExtractionArraysForPersist routes monetary benefits to coverages', () => {
+    const sanitized = sanitizeStructuredExtractionArraysForPersist({
+      benefitEntries: [
+        { name: 'Asistencia vial', quantity: '2' },
+        {
+          name: 'Seguro accidentes personales muerte',
+          description: 'USD 50.000',
+        },
+      ],
+    })
+
+    expect(sanitized.benefitEntries).toEqual([
+      { name: 'Asistencia vial', quantity: '2' },
+    ])
+    expect(sanitized.coverageEntries).toEqual([
+      { name: 'Seguro accidentes personales muerte', amount: 50000 },
     ])
   })
 })

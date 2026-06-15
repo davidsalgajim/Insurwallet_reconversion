@@ -403,9 +403,11 @@ def format_regional_extraction_rules() -> str:
 - NEVER copy startDate into endDate. If only one vigencia date appears (common in seguro deudor / vida deudores), use it as startDate only and set hasNoExpiration=true.
 - endDate must be a distinct expiration/renovación date visible on the document — not the same as inicio de vigencia.
 - coverages: summarize main amparos/coberturas/garantias (e.g. Muerte, ITP, incapacidad).
-- agent: tiered extraction — (1) named asesor/agente/corredor with phone/email in agent; (2) SAC/servicio al cliente and other assistance lines in insurerContacts[] with label+phone/email; (3) firma autorizada person name in agent.name only when clearly a natural person. Colombia phones: +57 mobile 3xx or Bogotá (601)/(60-1) landline with ext when shown. NEVER put policy/certificate/voucher numbers in agent.phone or insurerContacts.phone.
-- insurerContacts: ALL assistance lines on the document (any policy type): SAC, línea nacional/internacional, regional hotlines, WhatsApp. For travel/e-voucher/Assist Card: EACH region (América Latina, Europa, Asia, Colombia) as separate entry with label+phone. agent.phone only for named asesor/intermediario.
-- benefitEntries: covered assistance SERVICES/prestaciones from benefit tables (traslado médico, equipaje, etc.) — NOT phone hotlines (those go in insurerContacts[] only).
+- agent: tiered extraction — (1) named asesor/agente/corredor with phone/email in agent; (2) SAC/servicio al cliente phone in insurerContacts[] (label+phone) and SAC email in agent.email; (3) firma autorizada person name in agent.name only when clearly a natural person. Colombia phones: +57 mobile 3xx or Bogotá (601)/(60-1) landline with ext when shown. NEVER put policy/certificate/voucher numbers in agent.phone or insurerContacts.phone.
+- insurerContacts: phones ONLY — SAC, línea nacional/internacional, regional hotlines, WhatsApp (label+phone, no email). For travel/e-voucher/Assist Card: EACH region (América Latina, Europa, Asia, Colombia) as separate entry. agent.phone only for named asesor/intermediario.
+- coverageEntries: monetary coverages/indemnities from RESUMEN DE PRESTACIONES, Cláusulas (C.x), Coberturas tables — { name, amount } per row (indemnización equipaje, seguro accidentes, anticipo fianzas, traslado médico with USD limit, etc.).
+- benefitEntries: ONLY asistencias / assistance SERVICES from ASISTENCIAS sections (grúa, plomería, cerrajería, asistencia vial) with quantity/events per year or contactInfo — NOT RESUMEN DE PRESTACIONES clause rows, NOT monetary limits, NOT phone hotlines (those go in insurerContacts[] only).
+- travel/e-voucher Assist Card: RESUMEN DE PRESTACIONES rows always → coverageEntries[], never benefitEntries[].
 - travel/voucher and all other policies: multiple phones → insurerContacts[]; policy/certificate number stays in policyNumber only.
 - Omit fields not clearly visible; do not invent values."""
 

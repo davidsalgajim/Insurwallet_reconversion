@@ -170,7 +170,8 @@ def test_boost_agent_from_text_alfa_like_document():
     assert agent.get("phone", "").startswith("+571")
     assert agent.get("name") == "Servicio Al Cliente"
     assert isinstance(contacts, list)
-    assert contacts[0].get("email") == "servicioalcliente@segurosalfa.com.co"
+    assert contacts[0].get("phone", "").startswith("+571")
+    assert "email" not in contacts[0]
 
 
 def test_sanitize_structured_extraction_arrays_strips_sentinels():
@@ -250,6 +251,74 @@ def test_boost_agent_from_text_evoucher_rejects_policy_number_phone():
     assert "Europa" in labels
 
 
+EVOUCHER_RESUMEN_BENEFITS = [
+    {
+        "name": "Anticipo de fondos para fianzas",
+        "description": "USD 8.000",
+    },
+    {
+        "name": "Indemnización por demora en entrega equipaje",
+        "description": "USD 50",
+    },
+    {
+        "name": "Indemnización por extravío equipaje",
+        "description": "USD 1.000",
+    },
+    {
+        "name": "Seguro accidentes personales muerte",
+        "description": "USD 50.000",
+    },
+    {
+        "name": "Seguro accidentes personales invalidez",
+        "description": "USD 40.000",
+    },
+]
+
+
+def test_promote_benefit_rows_to_coverages_evoucher_resumen():
+    sanitized = sanitize_structured_extraction_arrays(
+        {
+            "benefitEntries": EVOUCHER_RESUMEN_BENEFITS,
+        }
+    )
+
+    coverages = sanitized.get("coverageEntries")
+    benefits = sanitized.get("benefitEntries")
+
+    assert isinstance(coverages, list)
+    assert len(coverages) == 5
+    assert benefits == []
+
+    by_name = {row["name"]: row["amount"] for row in coverages}
+    assert by_name["Anticipo de fondos para fianzas"] == 8000
+    assert by_name["Indemnización por demora en entrega equipaje"] == 50
+    assert by_name["Indemnización por extravío equipaje"] == 1000
+    assert by_name["Seguro accidentes personales muerte"] == 50000
+    assert by_name["Seguro accidentes personales invalidez"] == 40000
+
+
+def test_promote_benefit_rows_keeps_assistance_services():
+    sanitized = sanitize_structured_extraction_arrays(
+        {
+            "benefitEntries": [
+                {"name": "Grúa", "quantity": "3"},
+                {
+                    "name": "Indemnización por extravío equipaje",
+                    "description": "USD 1.000",
+                },
+            ],
+        }
+    )
+
+    benefits = sanitized.get("benefitEntries")
+    coverages = sanitized.get("coverageEntries")
+
+    assert benefits == [{"name": "Grúa", "quantity": "3"}]
+    assert coverages == [
+        {"name": "Indemnización por extravío equipaje", "amount": 1000},
+    ]
+
+
 def test_dedupe_contact_like_benefit_entries_evoucher():
     boosted = boost_agent_from_text(
         {
@@ -269,6 +338,14 @@ def test_dedupe_contact_like_benefit_entries_evoucher():
     benefits = boosted.get("benefitEntries")
     assert isinstance(benefits, list)
     assert benefits == [{"name": "Traslado médico", "description": "USD 50,000"}]
+
+
+def test_insurer_contacts_phones_only_from_extraction():
+    contacts = extract_insurer_contacts_from_text(ALFA_SAMPLE)
+
+    assert contacts
+    assert all("phone" in row for row in contacts)
+    assert all("email" not in row for row in contacts)
 
 
 def test_validate_extraction_clears_agent_phone_matching_policy_number():

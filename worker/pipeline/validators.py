@@ -97,6 +97,36 @@ CONTACT_LIKE_BENEFIT_NAME = re.compile(
     r")\s*$",
     re.IGNORECASE,
 )
+COVERAGE_LIKE_BENEFIT_NAME = re.compile(
+    r"(?:"
+    r"^C\.?\s*\d+|cl[aá]usula\s*\d+|"
+    r"indemnizaci[oó]n|"
+    r"seguro\s+(?:accidentes|de\s+|personal)|"
+    r"anticipo|fianza|"
+    r"cobertura|"
+    r"muerte|invalidez|"
+    r"equipaje|"
+    r"repatriaci[oó]n|"
+    r"gastos\s+m[eé]dicos|"
+    r"cancelaci[oó]n|"
+    r"traslado\s+m[eé]dico|"
+    r"hospitalizaci[oó]n|"
+    r"urgencias?"
+    r")",
+    re.IGNORECASE,
+)
+ASSISTANCE_ONLY_BENEFIT_NAME = re.compile(
+    r"^(?:gr[uú]a|plomer[ií]a|cerrajer[ií]a|electricista|"
+    r"asistencia\s+(?:vial|domiciliaria|hogar|legal)|"
+    r"servicio\s+de\s+(?:gr[uú]a|plomer[ií]a))",
+    re.IGNORECASE,
+)
+MONEY_LIMIT_IN_TEXT = re.compile(
+    r"(?:USD|US\$|COP|\$)\s*([\d][\d.,]*)",
+    re.IGNORECASE,
+)
+EUROPEAN_THOUSANDS = re.compile(r"^\d{1,3}(\.\d{3})+$")
+US_THOUSANDS = re.compile(r"^\d{1,3}(,\d{3})+$")
 INTERNATIONAL_PHONE_LINE = re.compile(
     r"(?:\+?\d{1,3}[\s.\-]?)?"
     r"(?:\(?\d{1,4}\)?[\s.\-]?)?"
@@ -565,6 +595,126 @@ def _dedupe_contact_like_benefit_entries(fields: dict[str, object]) -> None:
     fields["benefitEntries"] = filtered
 
 
+def _normalize_money_number(raw: str) -> float | None:
+    cleaned = raw.strip()
+    if not cleaned:
+        return None
+    if EUROPEAN_THOUSANDS.match(cleaned):
+        try:
+            number = float(cleaned.replace(".", ""))
+            return number if number >= 0 else None
+        except ValueError:
+            return None
+    if US_THOUSANDS.match(cleaned):
+        try:
+            number = float(cleaned.replace(",", ""))
+            return number if number >= 0 else None
+        except ValueError:
+            return None
+    if "," in cleaned and "." in cleaned:
+        if cleaned.rfind(",") > cleaned.rfind("."):
+            cleaned = cleaned.replace(".", "").replace(",", ".")
+        else:
+            cleaned = cleaned.replace(",", "")
+    elif "," in cleaned:
+        parts = cleaned.split(",")
+        if len(parts) == 2 and len(parts[1]) <= 2:
+            cleaned = cleaned.replace(",", ".")
+        else:
+            cleaned = cleaned.replace(",", "")
+    try:
+        number = float(cleaned)
+        return number if number >= 0 else None
+    except ValueError:
+        return None
+
+
+def _parse_monetary_limit_from_text(text: str) -> float | None:
+    match = MONEY_LIMIT_IN_TEXT.search(text)
+    if not match:
+        return None
+    return _normalize_money_number(match.group(1))
+
+
+def _extract_benefit_monetary_amount(entry: dict[str, object]) -> float | None:
+    direct = _coerce_non_negative_number(entry.get("amount"))
+    if direct is not None:
+        return direct
+    for key in ("description", "name"):
+        value = entry.get(key)
+        if isinstance(value, str):
+            parsed = _parse_monetary_limit_from_text(value)
+            if parsed is not None:
+                return parsed
+    return None
+
+
+def _should_promote_benefit_to_coverage(entry: dict[str, object]) -> bool:
+    name = str(entry.get("name", "")).strip()
+    if not name:
+        return False
+    if ASSISTANCE_ONLY_BENEFIT_NAME.match(name):
+        return False
+
+    amount = _extract_benefit_monetary_amount(entry)
+    if amount is None:
+        return False
+
+    description = str(entry.get("description", ""))
+    if COVERAGE_LIKE_BENEFIT_NAME.search(name):
+        return True
+    if MONEY_LIMIT_IN_TEXT.search(description):
+        return True
+    if entry.get("amount") is not None:
+        return True
+    return False
+
+
+def _coverage_entry_key(name: str) -> str:
+    return re.sub(r"\s+", " ", name.strip()).casefold()
+
+
+def _promote_benefit_rows_to_coverages(fields: dict[str, object]) -> None:
+    raw_benefits = fields.get("benefitEntries")
+    if not isinstance(raw_benefits, list) or not raw_benefits:
+        return
+
+    existing = fields.get("coverageEntries")
+    coverages: list[dict[str, object]] = (
+        list(existing) if isinstance(existing, list) else []
+    )
+    seen = {
+        _coverage_entry_key(str(row.get("name", "")))
+        for row in coverages
+        if isinstance(row, dict) and row.get("name")
+    }
+
+    remaining: list[dict[str, object]] = []
+    for entry in raw_benefits:
+        if not isinstance(entry, dict):
+            continue
+        if not _should_promote_benefit_to_coverage(entry):
+            remaining.append(entry)
+            continue
+
+        name = _normalize_optional_string(entry.get("name"))
+        amount = _extract_benefit_monetary_amount(entry)
+        if not name or amount is None:
+            remaining.append(entry)
+            continue
+
+        key = _coverage_entry_key(name)
+        if key in seen:
+            continue
+
+        row: dict[str, object] = {"name": name, "amount": amount}
+        coverages.append(row)
+        seen.add(key)
+
+    fields["coverageEntries"] = coverages
+    fields["benefitEntries"] = remaining
+
+
 def extract_insurer_contacts_from_text(text: str) -> list[dict[str, str]]:
     if not text.strip():
         return []
@@ -572,23 +722,6 @@ def extract_insurer_contacts_from_text(text: str) -> list[dict[str, str]]:
     labeled = extract_labeled_phones_from_text(text)
     regional = extract_regional_assistance_contacts(text)
     contacts = _merge_insurer_contact_lists(labeled, regional)
-
-    emails = extract_emails_from_text(text)
-    sac_email = _pick_sac_email(text, emails)
-    if sac_email:
-        merged_sac = False
-        for contact in contacts:
-            label = contact.get("label", "").lower()
-            if "servicio" in label or "sac" in label or label == "":
-                contact["email"] = sac_email
-                if not contact.get("label"):
-                    contact["label"] = "Servicio al cliente"
-                merged_sac = True
-                break
-        if not merged_sac:
-            contacts.append(
-                {"email": sac_email, "label": "Servicio al cliente"},
-            )
 
     if not contacts:
         phones = extract_phones_from_text(text)
@@ -619,22 +752,14 @@ def _normalize_insurer_contacts_list(
         phone = normalize_phone(
             item.get("phone") if isinstance(item.get("phone"), str) else None
         )
-        email_raw = item.get("email")
-        email = (
-            str(email_raw).strip().lower()
-            if isinstance(email_raw, str) and "@" in str(email_raw)
-            else ""
-        )
         label_raw = item.get("label")
         label = str(label_raw).strip() if isinstance(label_raw, str) else ""
-        if phone:
-            row["phone"] = phone
-        if email:
-            row["email"] = email
+        if not phone:
+            continue
+        row["phone"] = phone
         if label and "@" not in label:
             row["label"] = label
-        if row:
-            contacts.append(row)
+        contacts.append(row)
     return contacts
 
 
@@ -696,15 +821,16 @@ def boost_agent_from_text(
     primary_phone = _pick_advisor_phone(insurer_contacts)
     if not primary_phone and insurer_contacts:
         primary_phone = insurer_contacts[0].get("phone")
-    primary_email = insurer_contacts[0].get("email") if insurer_contacts else None
     primary_label = insurer_contacts[0].get("label") if insurer_contacts else None
 
-    for key, fallback in (
-        ("phone", primary_phone),
-        ("email", primary_email),
-    ):
-        if not agent.get(key) and fallback:
-            agent[key] = fallback
+    if not agent.get("phone") and primary_phone:
+        agent["phone"] = primary_phone
+
+    if not agent.get("email"):
+        emails = extract_emails_from_text(raw_text)
+        sac_email = _pick_sac_email(raw_text, emails)
+        if sac_email:
+            agent["email"] = sac_email
 
     if agent.get("phone") and phone_collides_with_policy_number(
         str(agent["phone"]), policy_number
@@ -1129,5 +1255,6 @@ def sanitize_structured_extraction_arrays(
     for key, sanitizer in array_keys:
         if key in sanitized:
             sanitized[key] = sanitizer(sanitized[key])
+    _promote_benefit_rows_to_coverages(sanitized)
     _dedupe_contact_like_benefit_entries(sanitized)
     return sanitized

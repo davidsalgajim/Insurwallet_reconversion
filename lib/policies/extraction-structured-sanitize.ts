@@ -13,6 +13,17 @@ import { normalizeOptionalString } from '@/lib/utils/normalize-optional-string'
 const CONTACT_LIKE_BENEFIT_NAME =
   /^(?:asistencia(?:\s*[—–-]\s*.+)?|whatsapp(?:\s+de\s+asistencia)?|am[eé]rica\s+latina|latinoam[eé]rica|norteam[eé]rica|asia|europa|colombia|m[eé]xico|brasil|central(?:es)?(?:\s+de\s+asistencia)?|l[ií]nea\s+(?:nacional|internacional|de\s+atenci[oó]n)|servicio\s+al\s+cliente|sac)\s*$/i
 
+const COVERAGE_LIKE_BENEFIT_NAME =
+  /(?:^C\.?\s*\d+|cl[aá]usula\s*\d+|indemnizaci[oó]n|seguro\s+(?:accidentes|de\s+|personal)|anticipo|fianza|cobertura|muerte|invalidez|equipaje|repatriaci[oó]n|gastos\s+m[eé]dicos|cancelaci[oó]n|traslado\s+m[eé]dico|hospitalizaci[oó]n|urgencias?)/i
+
+const ASSISTANCE_ONLY_BENEFIT_NAME =
+  /^(?:gr[uú]a|plomer[ií]a|cerrajer[ií]a|electricista|asistencia\s+(?:vial|domiciliaria|hogar|legal)|servicio\s+de\s+(?:gr[uú]a|plomer[ií]a))/i
+
+const MONEY_LIMIT_IN_TEXT = /(?:USD|US\$|COP|\$)\s*([\d][\d.,]*)/i
+
+const EUROPEAN_THOUSANDS = /^\d{1,3}(\.\d{3})+$/
+const US_THOUSANDS = /^\d{1,3}(,\d{3})+$/
+
 function phoneDigits(value: string | undefined | null): string {
   return (value ?? '').replace(/\D/g, '')
 }
@@ -61,6 +72,147 @@ export function dropContactLikeBenefitEntries(
   return entries.filter(
     (entry) => !isContactLikeBenefitEntry(entry, insurerPhones)
   )
+}
+
+function normalizeMoneyNumber(raw: string): number | undefined {
+  const cleaned = raw.trim()
+  if (!cleaned) {
+    return undefined
+  }
+
+  if (EUROPEAN_THOUSANDS.test(cleaned)) {
+    const parsed = Number(cleaned.replace(/\./g, ''))
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined
+  }
+
+  if (US_THOUSANDS.test(cleaned)) {
+    const parsed = Number(cleaned.replace(/,/g, ''))
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined
+  }
+
+  let normalized = cleaned
+  if (normalized.includes(',') && normalized.includes('.')) {
+    if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
+      normalized = normalized.replace(/\./g, '').replace(',', '.')
+    } else {
+      normalized = normalized.replace(/,/g, '')
+    }
+  } else if (normalized.includes(',')) {
+    const parts = normalized.split(',')
+    normalized =
+      parts.length === 2 && parts[1]!.length <= 2
+        ? normalized.replace(',', '.')
+        : normalized.replace(/,/g, '')
+  }
+
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined
+}
+
+function parseMonetaryLimitFromText(text: string): number | undefined {
+  const match = MONEY_LIMIT_IN_TEXT.exec(text)
+  if (!match?.[1]) {
+    return undefined
+  }
+  return normalizeMoneyNumber(match[1])
+}
+
+function extractBenefitMonetaryAmount(entry: BenefitEntry): number | undefined {
+  const direct = coerceNonNegativeNumber(
+    (entry as BenefitEntry & { amount?: unknown }).amount
+  )
+  if (direct !== undefined) {
+    return direct
+  }
+
+  for (const field of [entry.description, entry.name] as const) {
+    const text = normalizeOptionalString(field)
+    if (text) {
+      const parsed = parseMonetaryLimitFromText(text)
+      if (parsed !== undefined) {
+        return parsed
+      }
+    }
+  }
+
+  return undefined
+}
+
+function shouldPromoteBenefitToCoverage(entry: BenefitEntry): boolean {
+  const name = normalizeOptionalString(entry.name) ?? ''
+  if (!name || ASSISTANCE_ONLY_BENEFIT_NAME.test(name)) {
+    return false
+  }
+
+  const amount = extractBenefitMonetaryAmount(entry)
+  if (amount === undefined) {
+    return false
+  }
+
+  if (COVERAGE_LIKE_BENEFIT_NAME.test(name)) {
+    return true
+  }
+
+  const description = normalizeOptionalString(entry.description) ?? ''
+  if (MONEY_LIMIT_IN_TEXT.test(description)) {
+    return true
+  }
+
+  if ((entry as BenefitEntry & { amount?: unknown }).amount !== undefined) {
+    return true
+  }
+
+  return false
+}
+
+function coverageEntryKey(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+}
+
+/** RESUMEN DE PRESTACIONES / clause rows misrouted to benefitEntries → coverageEntries. */
+export function promoteBenefitRowsToCoverages<
+  T extends {
+    coverageEntries?: CoverageEntry[]
+    benefitEntries?: BenefitEntry[]
+  },
+>(fields: T): T {
+  const benefits = fields.benefitEntries
+  if (!benefits?.length) {
+    return fields
+  }
+
+  const coverages = [...(fields.coverageEntries ?? [])]
+  const seen = new Set(coverages.map((row) => coverageEntryKey(row.name)))
+
+  const remaining: BenefitEntry[] = []
+
+  for (const entry of benefits) {
+    if (!shouldPromoteBenefitToCoverage(entry)) {
+      remaining.push(entry)
+      continue
+    }
+
+    const name = normalizeOptionalString(entry.name)
+    const amount = extractBenefitMonetaryAmount(entry)
+    if (!name || amount === undefined) {
+      remaining.push(entry)
+      continue
+    }
+
+    const key = coverageEntryKey(name)
+    if (seen.has(key)) {
+      continue
+    }
+
+    coverages.push({ name, amount })
+    seen.add(key)
+  }
+
+  return {
+    ...fields,
+    coverageEntries: coverages,
+    benefitEntries: remaining,
+  }
 }
 
 function coerceNonNegativeNumber(value: unknown): number | undefined {
@@ -272,5 +424,19 @@ export function sanitizeStructuredExtractionArraysForPersist<
     )
   }
 
-  return sanitized
+  const routed = promoteBenefitRowsToCoverages(sanitized)
+
+  if (routed.coverageEntries !== undefined) {
+    routed.coverageEntries = sanitizeCoverageEntriesForPersist(
+      routed.coverageEntries
+    )
+  }
+  if (routed.benefitEntries !== undefined) {
+    routed.benefitEntries = sanitizeBenefitEntriesForPersist(
+      routed.benefitEntries,
+      routed.insurerContacts
+    )
+  }
+
+  return routed
 }

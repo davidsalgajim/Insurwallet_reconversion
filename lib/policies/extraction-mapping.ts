@@ -27,7 +27,8 @@ const OPTIONAL_TEXT_FIELDS = [
 export function sanitizeExtractionFieldsForPersist(
   fields: PolicyExtractionFields
 ): PolicyExtractionFields {
-  const sanitized: PolicyExtractionFields = { ...fields }
+  const withAgentEmail = liftInsurerContactEmailToAgent(fields)
+  const sanitized: PolicyExtractionFields = { ...withAgentEmail }
 
   if (sanitized.agent || fields.agent) {
     sanitized.agent = sanitizeAgentForDisplay(fields.agent, {
@@ -67,12 +68,41 @@ function shortInsurerLabel(insurerName?: string): string | undefined {
   return firstWord.length >= 2 ? firstWord : trimmed
 }
 
+function liftInsurerContactEmailToAgent(
+  fields: PolicyExtractionFields
+): PolicyExtractionFields {
+  const raw = fields.insurerContacts
+  if (!raw) {
+    return fields
+  }
+
+  const items = Array.isArray(raw) ? raw : [raw]
+  const existingEmail = normalizeExtractedAgentEmail(fields.agent?.email)
+  if (existingEmail) {
+    return fields
+  }
+
+  for (const item of items) {
+    const email = normalizeExtractedAgentEmail(item.email)
+    if (email) {
+      return {
+        ...fields,
+        agent: {
+          ...(fields.agent ?? {}),
+          email: email.toLowerCase(),
+        },
+      }
+    }
+  }
+
+  return fields
+}
+
 function normalizeInsurerContactLine(
   line: InsurerContactLine,
   policyNumber?: string
 ): InsurerContactLine | undefined {
   const phone = normalizeOptionalString(line.phone)
-  const email = normalizeExtractedAgentEmail(line.email)
   const label = normalizeOptionalString(line.label)
 
   const safePhone =
@@ -80,17 +110,12 @@ function normalizeInsurerContactLine(
       ? phone
       : undefined
 
-  if (!safePhone && !email) {
-    return undefined
-  }
-
-  if (!safePhone && !email && !label) {
+  if (!safePhone) {
     return undefined
   }
 
   return {
-    ...(safePhone ? { phone: safePhone } : {}),
-    ...(email ? { email: email.toLowerCase() } : {}),
+    phone: safePhone,
     ...(label && !label.includes('@') ? { label } : {}),
   }
 }
@@ -129,12 +154,6 @@ function mergeInsurerContactsIntoAgent(
 
   if (!merged.phone?.trim() && primary?.phone?.trim()) {
     merged.phone = primary.phone.trim()
-  }
-  if (!merged.email?.trim() && primary?.email?.trim()) {
-    const normalizedEmail = normalizeExtractedAgentEmail(primary.email)
-    if (normalizedEmail) {
-      merged.email = normalizedEmail.toLowerCase()
-    }
   }
   if (!merged.name?.trim()) {
     const label = primary?.label?.trim()

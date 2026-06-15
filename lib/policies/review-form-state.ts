@@ -17,6 +17,7 @@ import type { PolicyDocument } from '@/lib/firebase/policies'
 import {
   resolveAgentForReview,
   resolveInsurerContactsForReview,
+  sanitizeExtractionFieldsForPersist,
 } from '@/lib/policies/extraction-mapping'
 import type { InsurerContactLine } from '@/lib/schemas/extraction'
 import type { PolicyExtraction } from '@/lib/schemas/extraction'
@@ -143,6 +144,8 @@ export function mergeStructuredRowsFromExtraction(
   beneficiaryRows: ManualBeneficiaryRow[]
 } {
   const fields = extraction?.fields
+    ? sanitizeExtractionFieldsForPersist(extraction.fields)
+    : undefined
   return {
     coverageRows: coverageEntriesToRows(
       fields?.coverageEntries ?? policy.coverageEntries

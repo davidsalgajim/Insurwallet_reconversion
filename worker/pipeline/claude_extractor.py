@@ -40,8 +40,21 @@ _PAYMENT_FREQUENCY_ENUM = list(PAYMENT_FREQUENCY_VALUES)
 _COVERAGE_ENTRY = {
     "type": "object",
     "properties": {
-        "name": {"type": "string"},
-        "amount": {"type": "number"},
+        "name": {
+            "type": "string",
+            "description": (
+                "Coverage or clause label (e.g. RESUMEN DE PRESTACIONES row, "
+                "C.1 indemnización equipaje)."
+            ),
+        },
+        "amount": {
+            "type": "number",
+            "description": "Monetary limit / sum insured for this coverage.",
+        },
+        "description": {
+            "type": "string",
+            "description": "Optional clause detail or sub-limit notes.",
+        },
     },
     "required": ["name", "amount"],
     "additionalProperties": False,
@@ -75,11 +88,21 @@ _BENEFICIARY_ENTRY = {
 _BENEFIT_ENTRY = {
     "type": "object",
     "properties": {
-        "name": {"type": "string"},
+        "name": {
+            "type": "string",
+            "description": (
+                "Assistance service from ASISTENCIAS / servicios de asistencia "
+                "sections only (grúa, plomería, cerrajería, asistencia vial) — "
+                "NOT RESUMEN DE PRESTACIONES clause rows."
+            ),
+        },
         "description": {"type": "string"},
         "category": {"type": "string"},
         "contactInfo": {"type": "string"},
-        "quantity": {"type": "string"},
+        "quantity": {
+            "type": "string",
+            "description": "Events per year or annual limit count (e.g. 3).",
+        },
     },
     "required": ["name"],
     "additionalProperties": False,
@@ -124,13 +147,6 @@ _INSURER_CONTACT_LINE = {
                 "(e.g. +1 800-874-2223, +34 (91) 788-3333). NOT policy numbers."
             ),
         },
-        "email": {
-            "type": "string",
-            "description": (
-                "Insurer SAC or servicio al cliente email "
-                "(e.g. servicioalcliente@aseguradora.com.co)."
-            ),
-        },
         "label": {
             "type": "string",
             "description": (
@@ -146,8 +162,9 @@ _INSURER_CONTACTS = {
     "type": "array",
     "items": _INSURER_CONTACT_LINE,
     "description": (
-        "Insurer SAC / assistance contact lines. For travel vouchers list each "
-        "regional hotline separately. Omit policy/certificate numbers."
+        "Insurer SAC / assistance phone lines only (label + phone). For travel "
+        "vouchers list each regional hotline separately. SAC email → agent.email. "
+        "Omit policy/certificate numbers."
     ),
 }
 
@@ -258,13 +275,16 @@ Rules:
 9. policyType must be one of: {", ".join(_POLICY_TYPE_ENUM)}.
 10. agent (tiered):
    a) Primary — named agent/asesor/corredor/intermediario with phone/email.
-   b) Secondary — if no dedicated agent, put SAC / servicio al cliente / línea de atención phone and email in insurerContacts (label e.g. "Servicio al cliente - {{insurer short name}}"). Do NOT put SAC email in agent.name.
+   b) Secondary — if no dedicated agent, put SAC / servicio al cliente phone in insurerContacts (label e.g. "Servicio al cliente - {{insurer short name}}") and SAC email in agent.email. Do NOT put SAC email in agent.name.
    c) Tertiary — firma autorizada person name in agent.name only when clearly a natural person near a signature block; never a company name.
-11. insurerContacts: array of ALL insurer assistance lines on the document — SAC, línea nacional/internacional, regional hotlines, WhatsApp. Each entry: label + phone and/or email. Applies to every policy type (auto, life, health, travel, etc.). NEVER put policy/certificate/voucher numbers in agent.phone or insurerContacts.phone.
+11. insurerContacts: phones ONLY — SAC, línea nacional/internacional, regional hotlines, WhatsApp. Each entry: label + phone (no email). SAC email → agent.email. NEVER put policy/certificate/voucher numbers in agent.phone or insurerContacts.phone.
 12. travel / e-voucher / Assist Card: put EACH regional assistance line (América, Europa, Asia, Colombia, WhatsApp, etc.) in insurerContacts[] with label+phone ONLY — do NOT duplicate hotlines in benefitEntries. agent.phone only for named asesor/intermediario.
-13. benefitEntries: REAL coverage or assistance SERVICES from benefit/prestaciones tables (e.g. traslado médico, equipaje, cancelación, asistencia vial). NOT phone hotlines, NOT regional central lines, NOT WhatsApp contacts — those belong exclusively in insurerContacts[].
-14. When multiple phones exist, agent.phone = named asesor/agente if present; all other lines stay in insurerContacts[].
-15. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
+13. coverageEntries[] vs benefitEntries[] (CRITICAL):
+   - coverageEntries: monetary coverages / indemnities from RESUMEN DE PRESTACIONES, Cláusulas (C.1, C.2…), Coberturas — each row { name, amount }. Examples: indemnización equipaje, seguro accidentes muerte/invalidez, anticipo fianzas, traslado médico with USD limit.
+   - benefitEntries: ONLY asistencias / assistance SERVICES from ASISTENCIAS sections (grúa, plomería, cerrajería, asistencia vial) with optional quantity (events/year) and contactInfo — NOT clause-table rows, NOT monetary indemnity limits, NOT phone hotlines.
+14. travel/e-voucher RESUMEN DE PRESTACIONES: every row with clause + detail + monetary limit → coverageEntries[] only; never benefitEntries[].
+15. When multiple phones exist, agent.phone = named asesor/agente if present; all other lines stay in insurerContacts[].
+16. Expiration: if no separate end/expiration date is visible, set hasNoExpiration=true and omit endDate. Never duplicate startDate as endDate.
 
 {format_regional_extraction_rules()}
 

@@ -158,7 +158,22 @@ describe('extraction mapping', () => {
     expect(alfaSnippet).toContain('Seguros de Vida Alfa')
   })
 
-  it('fills agent phone/email from insurerContacts without SAC email as name', () => {
+  it('strips email from insurerContacts and lifts SAC email to agent', () => {
+    const sanitized = sanitizeExtractionFieldsForPersist({
+      insurerContacts: {
+        phone: '+5717435333',
+        email: 'servicioalcliente@segurosalfa.com.co',
+        label: 'Servicio al cliente',
+      },
+    })
+
+    expect(sanitized.insurerContacts).toEqual([
+      { phone: '+5717435333', label: 'Servicio al cliente' },
+    ])
+    expect(sanitized.agent?.email).toBe('servicioalcliente@segurosalfa.com.co')
+  })
+
+  it('fills agent phone from insurerContacts without SAC email as name', () => {
     const input = extractionFieldsToCreateInput(
       {
         insurerName: 'Seguros de Vida Alfa S.A.',
@@ -350,6 +365,28 @@ describe('extraction mapping', () => {
       'Norteamérica',
       'Europa',
     ])
+  })
+
+  it('promotes EVOUCHER RESUMEN rows via sanitizeExtractionFieldsForPersist', () => {
+    const sanitized = sanitizeExtractionFieldsForPersist({
+      benefitEntries: [
+        {
+          name: 'Seguro accidentes personales muerte',
+          description: 'USD 50.000',
+        },
+        {
+          name: 'Indemnización por extravío equipaje',
+          description: 'USD 1.000',
+        },
+        { name: 'Grúa', quantity: '2' },
+      ],
+    })
+
+    expect(sanitized.coverageEntries).toEqual([
+      { name: 'Seguro accidentes personales muerte', amount: 50000 },
+      { name: 'Indemnización por extravío equipaje', amount: 1000 },
+    ])
+    expect(sanitized.benefitEntries).toEqual([{ name: 'Grúa', quantity: '2' }])
   })
 
   it('drops regional hotlines from benefitEntries when insurerContacts present', () => {
