@@ -45,7 +45,7 @@
     "@firebase/rules-unit-testing": "^4.0.1",
     "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.4.0",
